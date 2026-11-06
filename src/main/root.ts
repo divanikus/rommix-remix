@@ -1,6 +1,7 @@
 import { cpSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { realHome, xdgConfigHome } from './xdg.ts'
+import { inputProbeEnabled } from './input/probe.ts'
 
 /**
  * Where RomMix keeps everything it owns.
@@ -32,7 +33,7 @@ const DEFAULT_DIR_NAME = 'rommix'
  * and before the userData path has been redirected at the root.
  */
 function pointerPath(): string {
-  return join(xdgConfigHome(), 'rommix', 'root')
+  return join(xdgConfigHome(), inputProbeEnabled() ? 'rommix-input-probe' : 'rommix', 'root')
 }
 
 export function defaultRoot(): string {

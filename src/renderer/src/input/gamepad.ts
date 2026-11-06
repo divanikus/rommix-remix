@@ -1,18 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Action, Direction, InputKind } from './types'
+import { acceptNativeGamepads, nativeGamepads } from './native-gamepad'
+import { NO_NATIVE_GAMEPADS } from '@shared/native-gamepad'
 
 /**
  * The pad, as Chromium reports it.
  *
- * The renderer is the only place gamepads are read: Chromium's Gamepad API is
- * the most dependable controller input available under both gamescope and a
- * plain desktop session, and it needs no native dependency. It is *polled*
- * rather than delivered, which is the fact the rest of this file is shaped by.
+ * Chromium is the default provider. The optional Linux helper supplies the
+ * same standard layout when Chromium misses a controller. Only one provider
+ * contributes to a frame; input dispatch and focus rules stay in this renderer.
  */
 
 /** Is a pad plugged in at all? Decides the first guess, before any input. */
 export function gamepadPresent(): boolean {
-  return navigator.getGamepads().some((pad) => pad !== null)
+  return (nativeGamepads() ?? navigator.getGamepads()).some((pad) => pad !== null)
 }
 
 /**
@@ -36,8 +37,7 @@ export function useGamepadNames(): { index: number; name: string }[] {
 
   useEffect(() => {
     const read = (): void => {
-      const next = navigator
-        .getGamepads()
+      const next = (nativeGamepads() ?? navigator.getGamepads())
         .filter((pad): pad is Gamepad => pad !== null)
         .map((pad) => ({
           index: pad.index,
@@ -244,6 +244,25 @@ export function useGamepad(
   suspendedRef.current = suspended
 
   useEffect(() => {
+    let disposed = false
+    let receivedNative = false
+    const provider = window.rommix?.nativeGamepads
+    const unsubscribe = provider?.onState((state) => {
+      receivedNative = true
+      acceptNativeGamepads(state)
+    })
+    void provider
+      ?.current()
+      .then((state) => {
+        if (!disposed && !receivedNative) acceptNativeGamepads(state)
+      })
+      .catch(() => {
+        /* Chromium remains available */
+      })
+    // Registering also enables Chromium's hotplug monitoring on Linux.
+    const connected = (): void => undefined
+    window.addEventListener('gamepadconnected', connected)
+    window.addEventListener('gamepaddisconnected', connected)
     let frame = 0
     // Per-control state so a held stick repeats but a tap fires once.
     const held = new Map<string, { since: number; last: number }>()
@@ -255,6 +274,8 @@ export function useGamepad(
     let axes = new Map<number, number[]>()
     /** Controls pressed while another window had focus, ignored until released. */
     const swallowed = new Set<string>()
+    let blockedLastFrame = false
+    let nativeMode: boolean | null = null
 
     const edge = (
       key: string,
@@ -295,10 +316,22 @@ export function useGamepad(
     }
 
     const poll = (): void => {
-      const read = readPads(navigator.getGamepads(), active, axes)
+      const native = nativeGamepads()
+      const nextMode = native !== null
+      const switched = nativeMode !== null && nextMode !== nativeMode
+      nativeMode = nextMode
+      if (switched) {
+        active = null
+        axes.clear()
+        held.clear()
+        holdSince = null
+        holdFired = false
+      }
+      const read = readPads(native ?? navigator.getGamepads(), active, axes)
       const { buttons, sticks, guide } = read
       active = read.active
       axes = read.axes
+      if (switched) for (const control of [...buttons, ...sticks]) swallowed.add(control)
 
       /**
        * An emulator owns the screen, so the pads are the emulator's.
@@ -316,6 +349,8 @@ export function useGamepad(
        */
       if (suspendedRef.current) {
         held.clear()
+        blockedLastFrame = true
+        for (const control of [...buttons, ...sticks]) swallowed.add(control)
         if (!buttons.has('start')) {
           holdSince = null
           holdFired = false
@@ -350,9 +385,17 @@ export function useGamepad(
        */
       if (!document.hasFocus() || guide) {
         held.clear()
+        blockedLastFrame = true
         for (const control of [...buttons, ...sticks]) swallowed.add(control)
         frame = requestAnimationFrame(poll)
         return
+      }
+
+      // The final in-game/overlay press may appear only on the first foreground
+      // frame. Wait for release instead of selecting or relaunching underneath it.
+      if (blockedLastFrame) {
+        blockedLastFrame = false
+        for (const control of [...buttons, ...sticks]) swallowed.add(control)
       }
 
       for (const direction of ['up', 'down', 'left', 'right'] as const) {
@@ -380,6 +423,13 @@ export function useGamepad(
     }
 
     frame = requestAnimationFrame(poll)
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      disposed = true
+      unsubscribe?.()
+      acceptNativeGamepads(NO_NATIVE_GAMEPADS)
+      window.removeEventListener('gamepadconnected', connected)
+      window.removeEventListener('gamepaddisconnected', connected)
+      cancelAnimationFrame(frame)
+    }
   }, [])
 }

@@ -1,8 +1,13 @@
-import { BrowserWindow, app, protocol } from 'electron'
+import { BrowserWindow, app, ipcMain, protocol } from 'electron'
+import { join } from 'node:path'
 import { IMAGE_SCHEME, RomMixApp } from './app.ts'
 import { registerIpc } from './ipc/index.ts'
 import { log, logSession } from './log.ts'
 import { ensureRoot } from './root.ts'
+import { startNativeGamepads } from './input/native-gamepad.ts'
+import { configureInputProbe } from './input/probe.ts'
+
+configureInputProbe(app)
 
 /** RomMix main process bootstrap. */
 
@@ -75,6 +80,7 @@ if (!app.requestSingleInstanceLock()) {
   const rommix = new RomMixApp()
   /** Set by the first quit, so the second one is let through. See below. */
   let quitting = false
+  let stopNativeGamepads = (): void => undefined
 
   void app.whenReady().then(async () => {
     const took = log.since()
@@ -88,6 +94,15 @@ if (!app.requestSingleInstanceLock()) {
     await rommix.offline.sweep(rommix.store.installed)
     await rommix.refreshEmulators()
     registerIpc(rommix)
+    const native = startNativeGamepads(
+      app.isPackaged
+        ? join(process.resourcesPath, 'linux-gamepad.py')
+        : join(app.getAppPath(), 'src/main/input/linux-gamepad.py'),
+      (state) => rommix.send('input:native-gamepads', state),
+      (message) => log.info('input', message)
+    )
+    stopNativeGamepads = native.stop
+    ipcMain.handle('input:native-gamepads', () => native.current())
     rommix.createWindow()
     // After the window, which is what the first result is announced to. The
     // check itself is delayed — see `Updater.schedule`.
@@ -130,6 +145,7 @@ if (!app.requestSingleInstanceLock()) {
   app.on('before-quit', (event) => {
     if (quitting) return
     quitting = true
+    stopNativeGamepads()
     event.preventDefault()
     void rommix.shutdown().finally(() => app.quit())
   })

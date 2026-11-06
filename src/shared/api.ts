@@ -34,6 +34,7 @@ import type {
   AuthMode
 } from './types/index.ts'
 import type { GameFile } from './gamefiles.ts'
+import type { NativeGamepads } from './native-gamepad.ts'
 
 /** Payload for `server:connect`. */
 export interface ConnectPayload {
@@ -157,6 +158,11 @@ export interface SaveProgress {
  * Every method crosses the context bridge and is therefore asynchronous.
  */
 export interface RomMixBridge {
+  /** Optional Linux input provider; absent from the web preview. */
+  nativeGamepads?: {
+    current(): Promise<NativeGamepads>
+    onState(listener: (state: NativeGamepads) => void): () => void
+  }
   server: {
     status(): Promise<ConnectionStatus>
     connect(payload: ConnectPayload): Promise<ConnectionStatus>

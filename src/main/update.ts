@@ -11,6 +11,7 @@ import { log } from './log.ts'
 import { builtForThisMachine } from './releases.ts'
 import type { Store } from './store.ts'
 import { t } from './i18n.ts'
+import { inputProbeEnabled } from './input/probe.ts'
 
 /**
  * RomMix updating itself.
@@ -400,7 +401,7 @@ function initialStatus(): UpdateStatus {
     receivedBytes: 0,
     totalBytes: 0,
     readyPath: null,
-    blockedReason: null,
+    blockedReason: inputProbeEnabled() ? t('update.devBuild') : null,
     // Decided once, at start: how RomMix was launched cannot change under it.
     restartBlocked: startedBySteam() ? t('update.steamBlocked') : null,
     error: null,
@@ -448,6 +449,7 @@ export class Updater {
    * theirs to have working.
    */
   async refreshSteamLauncher(): Promise<void> {
+    if (inputProbeEnabled()) return
     const running = process.env.APPIMAGE
     if (!running) return
     await writeSteamLauncher(dirname(running))
@@ -468,6 +470,7 @@ export class Updater {
     // change of the setting, and three visits to the segmented control must not
     // leave three checks queued.
     this.stop()
+    if (inputProbeEnabled()) return
     if (this.policy() === 'off') {
       log.info('update', 'automatic checks are off')
       return
@@ -529,6 +532,7 @@ export class Updater {
    * through a hundred megabytes to learn a version number it already had.
    */
   async check(): Promise<UpdateStatus> {
+    if (inputProbeEnabled()) return this.current
     if (this.busy) return this.current
     // An image already staged ends the subject until RomMix is restarted.
     // Without this every scheduled check would find the same release it has
@@ -742,6 +746,7 @@ export class Updater {
    * out of date because it never claimed a version in the first place.
    */
   async download(): Promise<UpdateStatus> {
+    if (inputProbeEnabled()) return this.current
     // A check is running, or another download is: either way this one has
     // nothing to add, and under `auto` the check in progress starts it anyway.
     if (this.busy) return this.current
@@ -836,6 +841,7 @@ export class Updater {
    * must not close the emulator first. See `RomMixApp.shutdown`.
    */
   async restart(beforeExit: () => Promise<void>): Promise<void> {
+    if (inputProbeEnabled()) throw new Error(t('update.devBuild'))
     if (this.current.state !== 'ready' || !this.current.readyPath) {
       throw new Error(t('update.nothingToRestartInto'))
     }

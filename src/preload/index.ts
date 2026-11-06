@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer } from 'electron'
+import type { NativeGamepads } from '@shared/native-gamepad'
 import type {
   BiosProgress,
   ConnectPayload,
@@ -37,6 +38,10 @@ function subscribe<T>(channel: string, listener: (payload: T) => void): () => vo
 }
 
 const bridge: RomMixBridge = {
+  nativeGamepads: {
+    current: () => ipcRenderer.invoke('input:native-gamepads'),
+    onState: (listener) => subscribe<NativeGamepads>('input:native-gamepads', listener)
+  },
   server: {
     status: () => ipcRenderer.invoke('server:status'),
     connect: (payload: ConnectPayload) => ipcRenderer.invoke('server:connect', payload),
