@@ -22,9 +22,14 @@ import type { Handle } from './handler.ts'
 export function registerSystemIpc(rommix: RomMixApp, handle: Handle): void {
   const { store, library } = rommix
 
+  handle('system:esdeStatus', () => rommix.esde.status())
   handle('system:settings', () => store.settings)
 
   handle('system:updateSettings', async (patch: Partial<Settings>) => {
+    if (patch.enrichEsde === true) {
+      const state = await rommix.esde.status()
+      if (state.state !== 'ready') throw new Error(state.reason ?? 'ES-DE is unavailable')
+    }
     log.info('settings', 'changed', { patch })
     const next = store.updateSettings(patch)
 

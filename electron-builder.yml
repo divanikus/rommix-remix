@@ -41,6 +41,8 @@ afterPack: ./scripts/after-pack.mjs
 # downloaded it; carrying the current one lets the version that starts put it
 # back in step. See `Updater.refreshSteamLauncher` in src/main/update.ts.
 extraResources:
+  - from: src/main/esde/enrich.py
+    to: esde-enrich.py
   - from: src/main/input/linux-gamepad.py
     to: linux-gamepad.py
   - from: packaging/rommix-steam.sh

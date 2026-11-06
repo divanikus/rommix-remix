@@ -1,3 +1,4 @@
+import { EsdeEnrichment } from './esde.ts'
 import { mediaResponse } from './media-response.ts'
 import { uiScaleFor } from './ui-scale.ts'
 import { BrowserWindow, protocol, screen, shell } from 'electron'
@@ -50,6 +51,7 @@ export function isAssetPath(path: string): boolean {
 export class RomMixApp {
   readonly store = new Store(rootPaths().config)
   readonly client = new RommClient(this.store)
+  readonly esde = new EsdeEnrichment(this.store, this.client)
   readonly saveSync = new SaveSync(this.store, this.client, rootPaths().saves)
   readonly launcher = new Launcher(this.store, this.client, this.saveSync)
   /** What RomM said about each installed game, for when it cannot be asked. */
@@ -103,7 +105,8 @@ export class RomMixApp {
       this.store,
       this.client,
       this.library,
-      () => this.launcher.playing
+      () => this.launcher.playing,
+      (rom, entry) => this.esde.completed(rom, entry)
     )
     this.bios = new BiosManager(this.store, this.client, this.offline, (system) =>
       this.activeEmulator(system)
@@ -131,6 +134,7 @@ export class RomMixApp {
   async shutdown(): Promise<void> {
     if (this.shuttingDown) return this.shuttingDown
     this.shuttingDown = (async () => {
+      this.esde.stop()
       // So neither a check nor a connection poll can fire into a window that
       // is closing.
       this.updates.stop()

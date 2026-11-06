@@ -378,6 +378,13 @@ export interface RomMixBridge {
     onStatus(listener: (status: UpdateStatus) => void): () => void
   }
   system: {
+    esdeStatus(): Promise<{
+      state: string
+      reason?: string
+      roms?: string
+      data?: string
+      pending?: number
+    }>
     settings(): Promise<Settings>
     updateSettings(patch: Partial<Settings>): Promise<Settings>
     /**

@@ -143,6 +143,7 @@ const bridge: RomMixBridge = {
       subscribe<UpdateStatus>('update:status', listener)
   },
   system: {
+    esdeStatus: () => ipcRenderer.invoke('system:esdeStatus'),
     settings: () => ipcRenderer.invoke('system:settings'),
     updateSettings: (patch: Partial<Settings>) =>
       ipcRenderer.invoke('system:updateSettings', patch),

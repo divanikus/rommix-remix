@@ -1,6 +1,6 @@
-import { type JSX, useState } from 'react'
+import { type JSX, useEffect, useState } from 'react'
 import type { RomStorage, RootLocation } from '@shared/types'
-import { RomStorageChoice, Toggle } from '../../../components'
+import { FocusButton, RomStorageChoice, Toggle } from '../../../components'
 import { useApp, useI18n } from '../../../state'
 import { RomStorageNotice } from '../RomStorageNotice'
 
@@ -23,6 +23,19 @@ export function GamesTab({ root }: { root: RootLocation | null }): JSX.Element {
    */
   const [confirming, setConfirming] = useState<RomStorage | null>(null)
 
+  const [esde, setEsde] = useState<{
+    state: string
+    reason?: string
+    roms?: string
+    pending?: number
+  } | null>(null)
+  const refreshEsde = (): void => {
+    void window.rommix.system
+      .esdeStatus()
+      .then(setEsde)
+      .catch((error: Error) => setEsde({ state: 'blocked', reason: error.message }))
+  }
+  useEffect(refreshEsde, [settings?.romStorage])
   if (!settings) return <></>
 
   const apply = (next: RomStorage): void => {
@@ -53,6 +66,32 @@ export function GamesTab({ root }: { root: RootLocation | null }): JSX.Element {
         </p>
       ) : null}
 
+      <h2 className="section-title">ES-DE</h2>
+      <Toggle
+        label={t('settings.enrichEsde')}
+        hint={t('settings.enrichEsdeHint')}
+        setting="enrichEsde"
+        on={settings.enrichEsde}
+        onToggle={() => {
+          if (!settings.enrichEsde && esde?.state !== 'ready') {
+            notify(esde?.reason ?? t('settings.esdeUnavailable'), 'warn')
+            return
+          }
+          void saveSettings({ enrichEsde: !settings.enrichEsde }).catch((error: Error) =>
+            notify(error.message, 'error')
+          )
+        }}
+      />
+      <p className="muted">
+        {esde?.state === 'ready' ? esde.roms : (esde?.reason ?? t('settings.esdeUnavailable'))}
+      </p>
+      {esde?.state === 'ready' && esde.reason ? <p className="muted">{esde.reason}</p> : null}
+      {esde?.pending ? (
+        <p className="muted">{t('settings.esdePending', { count: esde.pending })}</p>
+      ) : null}
+      <FocusButton action="esde-check" icon="refresh" onSelect={refreshEsde}>
+        {t('settings.esdeCheck')}
+      </FocusButton>
       <h2 className="section-title">{t('settings.saveSync')}</h2>
       <Toggle
         label={t('settings.syncDown')}

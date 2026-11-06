@@ -14,7 +14,7 @@ import { readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { EmulatorState } from '@config/emulators'
-import { SHARED_LIBRARY, type DownloadItem, type RommRom } from '@shared/types'
+import { SHARED_LIBRARY, type DownloadItem, type InstalledRom, type RommRom } from '@shared/types'
 import { spaceOf } from './disk.ts'
 import { DownloadManager } from './downloads.ts'
 import { Library } from './library.ts'
@@ -240,6 +240,7 @@ function manager(
     breakTimes?: number
     /** An existing folder to open again, for the case of a restart. */
     store?: Store
+    onCompleted?: (game: RommRom, entry: InstalledRom) => Promise<void>
   } = {}
 ): {
   downloads: DownloadManager
@@ -264,7 +265,7 @@ function manager(
       new RommClient(store).verifyUnpacked(game, path)
   })
   const library = new Library(store, client, cache(client), () => options.emulator ?? null)
-  const downloads = new DownloadManager(store, client, library)
+  const downloads = new DownloadManager(store, client, library, () => null, options.onCompleted)
   return { downloads, library, store, root, client, resumed }
 }
 
@@ -2048,4 +2049,21 @@ describe('the room on the drive', () => {
 
     assert.equal((await settled(downloads, 1)).state, 'done')
   })
+})
+
+test('enrichment receives only a completed recorded download and cannot fail installation', async () => {
+  let completed = 0
+  const { downloads, store } = manager({
+    onCompleted: async (game, entry) => {
+      completed++
+      assert.equal(game.id, entry.romId)
+      assert.ok(existsSync(entry.launchPath))
+      assert.ok(store.getInstalled(entry.romId))
+      throw new Error('Synthetic metadata failure')
+    }
+  })
+  assert.equal(completed, 0)
+  await downloads.enqueue(rom())
+  assert.equal((await settled(downloads, 1)).state, 'done')
+  assert.equal(completed, 1)
 })

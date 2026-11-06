@@ -168,7 +168,9 @@ export class DownloadManager extends EventEmitter {
     private readonly client: RommClient,
     private readonly library: Library,
     /** The game being played. See `Launcher.playing`. */
-    private readonly playing: () => number | null = () => null
+    private readonly playing: () => number | null = () => null,
+    private readonly onCompleted: (rom: RommRom, entry: InstalledRom) => Promise<void> = async () =>
+      undefined
   ) {
     super()
   }
@@ -879,6 +881,9 @@ export class DownloadManager extends EventEmitter {
         })
       )
 
+      await this.onCompleted(rom, installed).catch((cause: Error) =>
+        log.warn('esde', 'could not queue enrichment', { reason: cause.message })
+      )
       item.state = 'done'
       item.receivedBytes = item.totalBytes
       log.info('download', 'installed', {

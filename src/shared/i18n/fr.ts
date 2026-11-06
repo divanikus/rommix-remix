@@ -12,6 +12,16 @@ import type { Catalog } from './catalog.ts'
  * en anglais.
  */
 export const fr: Catalog = {
+  'error.esdeMedia': 'Échec du téléchargement du média ES-DE ({status})',
+  'error.esdeMediaSize': 'Ce média ES-DE dépasse la limite de transfert de 512 Mio.',
+  'error.esdeMediaIncomplete':
+    'Transfert du média ES-DE incomplet ; le fichier existant est conservé.',
+  'settings.enrichEsde': 'Enrichir ES-DE après téléchargement (Experimental)',
+  'settings.enrichEsdeHint':
+    'Compléter les métadonnées des jeux téléchargés via EmuDeck. Conserver descriptions, favoris et statistiques. Fermer ES-DE pour appliquer les changements.',
+  'settings.esdeUnavailable': 'Les chemins EmuDeck et ES-DE ne sont pas vérifiés.',
+  'settings.esdePending': 'Jeux en attente : {count}',
+  'settings.esdeCheck': 'Vérifier les chemins',
   'game.developers': 'Développeurs',
   'game.publishers': 'Éditeurs',
   'game.metadataCollections': 'Collections',

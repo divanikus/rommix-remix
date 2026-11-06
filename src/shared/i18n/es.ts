@@ -14,6 +14,16 @@ import type { Catalog } from './catalog.ts'
  * Se tutea, que es como habla el resto de una interfaz de salón.
  */
 export const es: Catalog = {
+  'error.esdeMedia': 'Falló la descarga del medio de ES-DE ({status})',
+  'error.esdeMediaSize': 'Este archivo multimedia supera el límite de transferencia de 512 MiB.',
+  'error.esdeMediaIncomplete':
+    'Transferencia multimedia incompleta; el archivo existente no se ha cambiado.',
+  'settings.enrichEsde': 'Enriquecer ES-DE tras descargar (Experimental)',
+  'settings.enrichEsdeHint':
+    'Completar metadatos de juegos descargados con EmuDeck. Conservar descripciones, favoritos y estadísticas. Cierra ES-DE para aplicar los cambios.',
+  'settings.esdeUnavailable': 'No se han verificado las rutas de EmuDeck y ES-DE.',
+  'settings.esdePending': 'Juegos pendientes: {count}',
+  'settings.esdeCheck': 'Comprobar rutas',
   'game.developers': 'Desarrolladores',
   'game.publishers': 'Editores',
   'game.metadataCollections': 'Colecciones',

@@ -23,6 +23,16 @@
  */
 
 export const en = {
+  'error.esdeMedia': 'ES-DE media request failed ({status})',
+  'error.esdeMediaSize': 'This ES-DE media file exceeds the 512 MiB transfer limit.',
+  'error.esdeMediaIncomplete':
+    'ES-DE media transfer was incomplete; the existing file was not changed.',
+  'settings.enrichEsde': 'Enrich ES-DE after downloads (Experimental)',
+  'settings.enrichEsdeHint':
+    'Fill missing metadata for completed EmuDeck downloads. Existing descriptions, favourites and statistics stay unchanged. Close ES-DE to publish queued changes.',
+  'settings.esdeUnavailable': 'EmuDeck and ES-DE paths have not been verified.',
+  'settings.esdePending': 'Pending games: {count}',
+  'settings.esdeCheck': 'Check paths',
   'game.developers': 'Developers',
   'game.publishers': 'Publishers',
   'game.metadataCollections': 'Collections',

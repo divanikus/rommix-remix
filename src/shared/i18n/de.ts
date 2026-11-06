@@ -15,6 +15,16 @@ import type { Catalog } from './catalog.ts'
  * überall gleich sein soll.
  */
 export const de: Catalog = {
+  'error.esdeMedia': 'ES-DE-Medienanfrage fehlgeschlagen ({status})',
+  'error.esdeMediaSize': 'Diese ES-DE-Mediendatei überschreitet die Grenze von 512 MiB.',
+  'error.esdeMediaIncomplete':
+    'ES-DE-Medientransfer unvollständig; die vorhandene Datei bleibt unverändert.',
+  'settings.enrichEsde': 'ES-DE nach Downloads ergänzen (Experimental)',
+  'settings.enrichEsdeHint':
+    'Fehlende Metadaten abgeschlossener EmuDeck-Downloads ergänzen. Beschreibungen, Favoriten und Statistiken bleiben erhalten. ES-DE zum Schreiben schließen.',
+  'settings.esdeUnavailable': 'EmuDeck- und ES-DE-Pfade sind nicht bestätigt.',
+  'settings.esdePending': 'Wartende Spiele: {count}',
+  'settings.esdeCheck': 'Pfade prüfen',
   'game.developers': 'Entwickler',
   'game.publishers': 'Publisher',
   'game.metadataCollections': 'Sammlungen',

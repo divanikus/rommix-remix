@@ -561,6 +561,7 @@ const SETTINGS: Settings = {
   // The demo starts past the first-run wizard: it exists to show the app, and
   // a preview that opens on "how big would you like the text" shows the setup.
   setupComplete: true,
+  enrichEsde: false,
   syncSavesDown: true,
   syncSavesUp: true,
   navigationSounds: true,
@@ -1070,6 +1071,8 @@ const bridge: RomMixBridge = {
     onStatus: noSubscription
   },
   system: {
+    esdeStatus: () =>
+      later({ state: 'blocked', reason: 'EmuDeck is not available in the browser preview' }),
     settings: () => later(SETTINGS),
     updateSettings: (patch) => {
       Object.assign(SETTINGS, patch)

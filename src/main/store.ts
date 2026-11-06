@@ -82,6 +82,7 @@ function defaultSettings(): Settings {
     // it entire — so an existing library stays exactly where it was put.
     romStorage: 'rommix',
     setupComplete: false,
+    enrichEsde: false,
     syncSavesDown: true,
     syncSavesUp: true,
     navigationSounds: true,
@@ -141,6 +142,7 @@ const SETTINGS_SHAPE: { [K in keyof Settings]: Check<Settings[K]> } = {
   emulatorPriority: isStringList,
   romStorage: oneOf(ROM_STORAGES),
   setupComplete: isBoolean,
+  enrichEsde: isBoolean,
   syncSavesDown: isBoolean,
   syncSavesUp: isBoolean,
   navigationSounds: isBoolean,

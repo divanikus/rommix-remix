@@ -145,6 +145,8 @@ export interface Settings {
    */
   setupComplete: boolean
   /** Pull newer saves down from RomM before launching. */
+  /** Opt-in, completed EmuDeck downloads only; never rewrite owner metadata. */
+  enrichEsde: boolean
   syncSavesDown: boolean
   /** Push saves/states back to RomM after the game exits. */
   syncSavesUp: boolean

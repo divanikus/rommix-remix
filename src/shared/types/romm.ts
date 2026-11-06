@@ -328,7 +328,7 @@ export interface RommRom {
   path_cover_large: string | null
   url_cover: string | null
   path_video: string | null
-  ss_metadata?: { fanart_path?: string | null } | null
+  ss_metadata?: RommArtwork | null
 
   /**
    * The scanned manual, which RomM serves as a PDF like any other asset.
@@ -648,4 +648,18 @@ export interface RomQuery {
   order_dir?: 'asc' | 'desc'
   limit?: number
   offset?: number
+}
+
+/** Optional ScreenScraper media paths exposed by RomM 5.4.1. */
+type RommArtwork = {
+  fanart_path?: string | null
+  box2d_path?: string | null
+  box2d_back_path?: string | null
+  box3d_path?: string | null
+  physical_path?: string | null
+  marquee_path?: string | null
+  logo_path?: string | null
+  title_screen_path?: string | null
+  miximage_path?: string | null
+  miximage_v2_path?: string | null
 }
