@@ -25,6 +25,8 @@ permissions:
 
 jobs:
   build:
+    # Fork builds stay manual/PR-only until the Steam Deck trial.
+    if: github.repository == 'leclercb/rommix' || github.event_name != 'push'
     # One leg per architecture, each on a runner of that architecture:
     # electron-builder packages the Electron binary for the machine it is told
     # to target, and cross-packaging an AppImage means fetching a foreign
@@ -88,6 +90,8 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      - run: python3 -m unittest discover -s src/main/input -p 'test_*.py'
+      - run: python3 -m unittest discover -s src/main/esde -p 'test_*.py'
 
       # `npm run appimage` is these two together; they are split so that a
       # failing bundle and a failing package are separate red steps. The
@@ -175,7 +179,7 @@ jobs:
     # of which publish the tip of the branch, which is what the channel is. Not
     # a pull request, which builds the same images from something nobody has
     # merged, and not a tag, which the release job below answers for.
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && (github.repository == 'leclercb/rommix' || vars.ROMMIX_PUBLISH_RELEASES == 'true')
     runs-on: ubuntu-24.04
 
     permissions:
@@ -235,7 +239,7 @@ jobs:
 
   release:
     needs: build
-    if: startsWith(github.ref, 'refs/tags/v')
+    if: startsWith(github.ref, 'refs/tags/v') && (github.repository == 'leclercb/rommix' || vars.ROMMIX_PUBLISH_RELEASES == 'true')
     runs-on: ubuntu-24.04
 
     permissions:

@@ -66,6 +66,7 @@ jobs:
           path: out/site
 
   deploy:
+    if: github.repository == 'leclercb/rommix' || vars.ROMMIX_PUBLISH_PAGES == 'true'
     needs: build
     runs-on: ubuntu-24.04
 
