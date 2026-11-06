@@ -11,8 +11,8 @@
 # An AppImage is not a sandbox, so the emulator is an ordinary child process,
 # stays inside Steam's tree, and is tagged and focused like any other game. See
 # `execPrefix` in src/main/host.ts, which is now simply the program to run.
-appId: be.bl_it.RomMix
-productName: RomMix
+appId: io.github.divanikus.RomMixRemix
+productName: RomMix-Remix
 executableName: rommix
 
 # The modern AppImage runtime. Without this electron-builder takes its legacy

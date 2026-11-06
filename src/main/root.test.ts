@@ -53,10 +53,18 @@ function bareMachine(): { home: string; config: string } {
 }
 
 describe('resolving the root', () => {
+  test('the fork does not adopt the original RomMix root pointer', () => {
+    const { home, config } = bareMachine()
+    mkdirSync(join(config, 'rommix'), { recursive: true })
+    writeFileSync(join(config, 'rommix', 'root'), '/original/library\n')
+    assert.equal(resolveRoot(), join(home, 'rommix-remix'))
+    assert.equal(readFileSync(join(config, 'rommix', 'root'), 'utf8'), '/original/library\n')
+  })
+
   test('the environment wins over everything, which is what makes it testable', () => {
     const { config } = bareMachine()
-    mkdirSync(join(config, 'rommix'), { recursive: true })
-    writeFileSync(join(config, 'rommix', 'root'), '/pointed/elsewhere\n')
+    mkdirSync(join(config, 'rommix-remix'), { recursive: true })
+    writeFileSync(join(config, 'rommix-remix', 'root'), '/pointed/elsewhere\n')
     process.env.ROMMIX_HOME = '/from/the/environment'
 
     assert.equal(resolveRoot(), '/from/the/environment')
@@ -64,8 +72,8 @@ describe('resolving the root', () => {
 
   test('a pointer file is followed when nothing in the environment says otherwise', () => {
     const { config } = bareMachine()
-    mkdirSync(join(config, 'rommix'), { recursive: true })
-    writeFileSync(join(config, 'rommix', 'root'), '  /on/the/sd/card  \n')
+    mkdirSync(join(config, 'rommix-remix'), { recursive: true })
+    writeFileSync(join(config, 'rommix-remix', 'root'), '  /on/the/sd/card  \n')
 
     assert.equal(resolveRoot(), '/on/the/sd/card')
   })
@@ -73,16 +81,16 @@ describe('resolving the root', () => {
   test('with no pointer at all it is the folder beside the user own directories', () => {
     const { home } = bareMachine()
 
-    assert.equal(resolveRoot(), join(home, 'rommix'))
-    assert.equal(defaultRoot(), join(home, 'rommix'))
+    assert.equal(resolveRoot(), join(home, 'rommix-remix'))
+    assert.equal(defaultRoot(), join(home, 'rommix-remix'))
   })
 
   test('an empty pointer is ignored rather than resolving to nothing', () => {
     const { home, config } = bareMachine()
-    mkdirSync(join(config, 'rommix'), { recursive: true })
-    writeFileSync(join(config, 'rommix', 'root'), '\n')
+    mkdirSync(join(config, 'rommix-remix'), { recursive: true })
+    writeFileSync(join(config, 'rommix-remix', 'root'), '\n')
 
-    assert.equal(resolveRoot(), join(home, 'rommix'))
+    assert.equal(resolveRoot(), join(home, 'rommix-remix'))
   })
 })
 
@@ -99,7 +107,7 @@ describe('the layout inside it', () => {
   })
 
   test('creating it makes the ROM folder too, before anything is downloaded', () => {
-    const root = join(scratch(), 'rommix')
+    const root = join(scratch(), 'rommix-remix')
 
     ensureRoot(root)
 
@@ -111,7 +119,7 @@ describe('the layout inside it', () => {
   })
 
   test('creating a root that already exists is not a failure', () => {
-    const root = join(scratch(), 'rommix')
+    const root = join(scratch(), 'rommix-remix')
 
     ensureRoot(root)
     ensureRoot(root)
@@ -130,7 +138,7 @@ describe('moving the root', () => {
     relocateRoot(to)
 
     assert.equal(readFileSync(join(to, 'config', 'settings.json'), 'utf8'), '{"settings":{}}')
-    assert.equal(readFileSync(join(config, 'rommix', 'root'), 'utf8').trim(), to)
+    assert.equal(readFileSync(join(config, 'rommix-remix', 'root'), 'utf8').trim(), to)
   })
 
   test('the old root is left complete, so changing your mind costs nothing', () => {

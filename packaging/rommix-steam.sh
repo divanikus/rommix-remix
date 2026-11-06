@@ -36,7 +36,7 @@ done
 
 if [ -z "${ROMMIX_APPIMAGE-}" ]; then
   here=$(dirname "$(readlink -f "$0")")
-  for candidate in "$here"/RomMix-*.AppImage; do
+  for candidate in "$here"/RomMix-Remix-*.AppImage; do
     [ -e "$candidate" ] || continue
     if [ -z "${ROMMIX_APPIMAGE-}" ] || [ "$candidate" -nt "$ROMMIX_APPIMAGE" ]; then
       ROMMIX_APPIMAGE=$candidate
@@ -45,9 +45,9 @@ if [ -z "${ROMMIX_APPIMAGE-}" ]; then
 fi
 
 if [ -z "${ROMMIX_APPIMAGE-}" ] || [ ! -e "$ROMMIX_APPIMAGE" ]; then
-  echo "rommix-steam.sh: no RomMix AppImage found beside this script." >&2
-  echo "  Put RomMix-x86_64.AppImage next to it, or pass" >&2
-  echo "  --appimage=/path/to/RomMix-x86_64.AppImage" >&2
+  echo "rommix-steam.sh: no RomMix-Remix AppImage found beside this script." >&2
+  echo "  Put RomMix-Remix-x86_64.AppImage next to it, or pass" >&2
+  echo "  --appimage=/path/to/RomMix-Remix-x86_64.AppImage" >&2
   exit 1
 fi
 

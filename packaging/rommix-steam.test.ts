@@ -50,10 +50,10 @@ function launch(args: string[] = [], env: Record<string, string> = {}): Launch {
   writeFileSync(join(dir, 'rommix-steam.sh'), readFileSync(SCRIPT))
   chmodSync(join(dir, 'rommix-steam.sh'), 0o755)
   writeFileSync(
-    join(dir, 'RomMix-x86_64.AppImage'),
+    join(dir, 'RomMix-Remix-x86_64.AppImage'),
     `#!/bin/sh\nprintf '%s\\n' "$@" > ${dir}/argv\nenv | grep '^ROMMIX_' > ${dir}/env || :\n`
   )
-  chmodSync(join(dir, 'RomMix-x86_64.AppImage'), 0o755)
+  chmodSync(join(dir, 'RomMix-Remix-x86_64.AppImage'), 0o755)
 
   spawnSync(join(dir, 'rommix-steam.sh'), args, {
     env: { PATH: process.env.PATH ?? '', ...env },
@@ -136,16 +136,18 @@ describe('what it hands the image', () => {
 })
 
 describe('when it cannot start', () => {
-  test('it says so where no image sits beside it', () => {
+  test('it refuses an original RomMix image when no fork image sits beside it', () => {
     const dir = scratch()
     writeFileSync(join(dir, 'rommix-steam.sh'), readFileSync(SCRIPT))
     chmodSync(join(dir, 'rommix-steam.sh'), 0o755)
+    writeFileSync(join(dir, 'RomMix-x86_64.AppImage'), '#!/bin/sh\nexit 0\n')
+    chmodSync(join(dir, 'RomMix-x86_64.AppImage'), 0o755)
     const ran = spawnSync(join(dir, 'rommix-steam.sh'), [], {
       env: { PATH: process.env.PATH ?? '' },
       encoding: 'utf8'
     })
     assert.equal(ran.status, 1)
-    assert.match(ran.stderr, /no RomMix AppImage found/)
+    assert.match(ran.stderr, /no RomMix-Remix AppImage found/)
     assert.match(ran.stderr, /--appimage=/)
   })
 })

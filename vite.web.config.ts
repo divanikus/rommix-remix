@@ -55,8 +55,8 @@ function demoLabels(): Plugin {
     name: 'rommix:preview-labels',
     transformIndexHtml: (html) =>
       html.replace(
-        '<title>RomMix</title>',
-        '<title>RomMix — demo</title>\n' +
+        /<title>[^<]*<\/title>/,
+        '<title>RomMix-Remix — demo</title>\n' +
           // No viewport tag on purpose: this is a ten-foot interface, and a
           // phone showing the whole layout scaled down beats one showing a
           // corner of it at full size.

@@ -37,7 +37,7 @@ import { inputProbeEnabled } from './input/probe.ts'
  */
 
 /** RomMix's own releases. `/latest` is the newest non-draft, non-prerelease. */
-const RELEASE_API = 'https://api.github.com/repos/leclercb/rommix/releases/latest'
+const RELEASE_API = 'https://api.github.com/repos/divanikus/rommix-remix/releases/latest'
 
 /**
  * The same releases as a list, for an installation that takes candidates.
@@ -46,7 +46,7 @@ const RELEASE_API = 'https://api.github.com/repos/leclercb/rommix/releases/lates
  * it will not pick is a pre-release — so taking those means reading the list and
  * choosing here. A page is far more releases than any copy of RomMix is behind.
  */
-const RELEASE_LIST_API = 'https://api.github.com/repos/leclercb/rommix/releases?per_page=30'
+const RELEASE_LIST_API = 'https://api.github.com/repos/divanikus/rommix-remix/releases?per_page=30'
 
 /**
  * The rolling pre-release holding the tip of `main`, one commit at a time.
@@ -58,7 +58,7 @@ const RELEASE_LIST_API = 'https://api.github.com/repos/leclercb/rommix/releases?
  * `canaryWanted`.
  */
 const CANARY_TAG = 'canary'
-const CANARY_API = `https://api.github.com/repos/leclercb/rommix/releases/tags/${CANARY_TAG}`
+const CANARY_API = `https://api.github.com/repos/divanikus/rommix-remix/releases/tags/${CANARY_TAG}`
 
 /**
  * The commit the canary tag names, which is what the images on its release
@@ -90,11 +90,11 @@ const CANARY_API = `https://api.github.com/repos/leclercb/rommix/releases/tags/$
  * `vnd.github.sha` answers with the commit alone, rather than the commit with
  * its diff attached.
  */
-const CANARY_COMMIT_API = `https://api.github.com/repos/leclercb/rommix/commits/${CANARY_TAG}`
+const CANARY_COMMIT_API = `https://api.github.com/repos/divanikus/rommix-remix/commits/${CANARY_TAG}`
 const CANARY_COMMIT_ACCEPT = 'application/vnd.github.sha'
 
 /** Where to send someone whose copy cannot replace itself. */
-export const RELEASES_PAGE = 'https://github.com/leclercb/rommix/releases'
+export const RELEASES_PAGE = 'https://github.com/divanikus/rommix-remix/releases'
 
 declare const BUILD_COMMIT: string | undefined
 
@@ -706,7 +706,7 @@ export class Updater {
         Accept: accept,
         // GitHub refuses an anonymous request with no agent, and an honest one
         // is what makes RomMix's share of the rate limit attributable.
-        'User-Agent': `RomMix/${this.current.current}`
+        'User-Agent': `RomMix-Remix/${this.current.current}`
       }
     })
     if (!response.ok) {

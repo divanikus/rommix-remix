@@ -1,14 +1,14 @@
 {
-  "name": "rommix",
-  "version": "0.23.0",
-  "description": "Big Picture style front end for your own RomM server on Linux: browse your library, download a game, play it, and your saves go back to RomM",
+  "name": "rommix-remix",
+  "version": "0.23.0-remix.1",
+  "description": "RomMix-Remix: a RomMix fork with improved controller input, richer library and game views, gamepad filters and experimental EmuDeck/ES-DE enrichment",
   "license": "MIT",
   "author": "Benjamin Leclerc",
   "main": "./out/main/index.js",
   "engines": {
     "node": ">=24"
   },
-  "desktopName": "be.bl_it.RomMix.desktop",
+  "desktopName": "io.github.divanikus.RomMixRemix.desktop",
   "scripts": {
     "dev": "electron-vite dev",
     "preview:app": "vite --config vite.web.config.ts",

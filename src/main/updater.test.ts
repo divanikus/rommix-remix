@@ -99,7 +99,7 @@ function release(
   return new Response(
     JSON.stringify({
       tag_name: tag,
-      html_url: `https://github.com/leclercb/rommix/releases/tag/${tag}`,
+      html_url: `https://github.com/divanikus/rommix-remix/releases/tag/${tag}`,
       body: 'Release notes',
       assets: assets.map((name) => ({
         name,
@@ -118,7 +118,7 @@ function releaseList(entries: { tag: string; draft?: boolean }[]): Response {
       entries.map(({ tag, draft }) => ({
         tag_name: tag,
         draft: draft ?? false,
-        html_url: `https://github.com/leclercb/rommix/releases/tag/${tag}`,
+        html_url: `https://github.com/divanikus/rommix-remix/releases/tag/${tag}`,
         assets: []
       }))
     )
@@ -256,7 +256,7 @@ describe('checking for a new version', () => {
 
     await subject.check()
 
-    assert.equal(agent, 'RomMix/1.0.0')
+    assert.equal(agent, 'RomMix-Remix/1.0.0')
   })
 })
 
@@ -269,7 +269,7 @@ describe('release candidates', () => {
 
     // The endpoint that never answers with a pre-release, so nothing else has
     // to decide whether a candidate counts.
-    assert.deepEqual(asked, ['https://api.github.com/repos/leclercb/rommix/releases/latest'])
+    assert.deepEqual(asked, ['https://api.github.com/repos/divanikus/rommix-remix/releases/latest'])
   })
 
   test('volunteering for them reads the list and takes the newest version', async () => {
@@ -307,8 +307,8 @@ describe('release candidates', () => {
 })
 
 describe('the canary channel', () => {
-  const COMMITS_API = 'https://api.github.com/repos/leclercb/rommix/commits/canary'
-  const RELEASE_API = 'https://api.github.com/repos/leclercb/rommix/releases/tags/canary'
+  const COMMITS_API = 'https://api.github.com/repos/divanikus/rommix-remix/commits/canary'
+  const RELEASE_API = 'https://api.github.com/repos/divanikus/rommix-remix/releases/tags/canary'
 
   /**
    * A canary run: the flag set, and a build that knows which commit it is.

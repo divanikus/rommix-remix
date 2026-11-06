@@ -6,7 +6,9 @@ import { log, logSession } from './log.ts'
 import { ensureRoot } from './root.ts'
 import { startNativeGamepads } from './input/native-gamepad.ts'
 import { configureInputProbe } from './input/probe.ts'
+import { configureRemix } from './remix.ts'
 
+configureRemix(app)
 configureInputProbe(app)
 
 /** RomMix main process bootstrap. */

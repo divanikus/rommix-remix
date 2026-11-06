@@ -16,7 +16,7 @@ import { inputProbeEnabled } from './input/probe.ts'
  *
  *   1. the ROMMIX_HOME environment variable
  *   2. a one-line pointer file in the platform's default config location
- *   3. ~/rommix
+ *   3. ~/rommix-remix
  *
  * The pointer is deliberately tiny and outside the root, so a root on a
  * removable disk that is not mounted degrades to "cannot find it" rather than
@@ -25,7 +25,7 @@ import { inputProbeEnabled } from './input/probe.ts'
 
 // Lowercase: it sits beside the user's own directories in $HOME, where the
 // convention for an application's folder is lowercase.
-const DEFAULT_DIR_NAME = 'rommix'
+const DEFAULT_DIR_NAME = 'rommix-remix'
 
 /**
  * The pointer file's own location, which cannot itself be configurable.
@@ -33,7 +33,7 @@ const DEFAULT_DIR_NAME = 'rommix'
  * and before the userData path has been redirected at the root.
  */
 function pointerPath(): string {
-  return join(xdgConfigHome(), inputProbeEnabled() ? 'rommix-input-probe' : 'rommix', 'root')
+  return join(xdgConfigHome(), inputProbeEnabled() ? 'rommix-input-probe' : 'rommix-remix', 'root')
 }
 
 export function defaultRoot(): string {
