@@ -27,7 +27,10 @@ const ACTIONS: Record<string, Action> = {
   START: 'menu',
   Y: 'search',
   LB: 'tabLeft',
-  RB: 'tabRight'
+  RB: 'tabRight',
+  SELECT: 'header',
+  LT: 'letterPrevious',
+  RT: 'letterNext'
 }
 
 describe('what the hint bar promises', () => {
@@ -38,7 +41,10 @@ describe('what the hint bar promises', () => {
     for (const button of ['X', 'START', 'Y', 'LB', 'RB']) {
       const label = keyboardLabel(button, t)
       assert.ok(label, `${button} should have a label`)
-      const key = label.replace(/^Shift\+/, '')
+      const key = label
+        .replace(/^Shift\+/, '')
+        .replace('PgUp', 'PageUp')
+        .replace('PgDn', 'PageDown')
       assert.notEqual(
         intentOf(key, label.startsWith('Shift+')),
         null,
@@ -50,7 +56,10 @@ describe('what the hint bar promises', () => {
   test('and it does the thing the button it stands for does', () => {
     for (const [button, action] of Object.entries(ACTIONS)) {
       const label = keyboardLabel(button, t) as string
-      const key = label.replace(/^Shift\+/, '')
+      const key = label
+        .replace(/^Shift\+/, '')
+        .replace('PgUp', 'PageUp')
+        .replace('PgDn', 'PageDown')
       assert.deepEqual(
         intentOf(key, label.startsWith('Shift+')),
         { action },
@@ -67,7 +76,7 @@ describe('what the hint bar promises', () => {
   })
 
   test('a button the keyboard has no key for says so rather than guessing', () => {
-    assert.equal(keyboardLabel('LT', t), undefined)
+    assert.equal(keyboardLabel('R3', t), undefined)
   })
 })
 

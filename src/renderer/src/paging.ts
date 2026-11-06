@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { hasMorePages, type RommRom, type RomQuery } from '@shared/types'
+import { hasMorePages, type RommRom, type RomQuery, type RommRomPage } from '@shared/types'
 
 /**
  * A grid that fills as it is walked down: one page of covers at a time, the
@@ -50,6 +50,8 @@ export interface RomPages {
 }
 
 export interface PagedRoms {
+  /** Optional focus-driven lookahead in addition to the scrolling sentinel. */
+  loadMore: () => void
   /** Every page fetched so far, in the order they came. */
   roms: RommRom[]
   /** What the server counted, or null where it did not say. */
@@ -76,6 +78,8 @@ export function useRomPages(
   query: RomQuery,
   {
     pageSize,
+    initialPage,
+    fetchPage,
     initialCount = 0,
     enabled = true,
     forgetOnStandDown = false,
@@ -104,13 +108,16 @@ export function useRomPages(
      */
     forgetOnStandDown?: boolean
     pageSize: number
+    /** Optional route-owned first-page metadata; matching query only. */
+    initialPage?: RommRomPage
+    fetchPage?: (query: RomQuery) => Promise<RommRomPage>
     /**
      * How many to ask for in the first request, where that is more than a page.
      *
      * For a grid drawn again on the way back to it: the card the player left
      * can be pages down, and walking the pages in one at a time would leave the
      * highlight with nowhere to land until they had all arrived. Spent by the
-     * first request that goes out; a query changed after that starts at one
+     * first accepted response; a query changed after that starts at one
      * page like any other.
      */
     initialCount?: number
@@ -124,11 +131,13 @@ export function useRomPages(
     onError: (message: string | null) => void
   }
 ): RomPages {
-  const [roms, setRoms] = useState<RommRom[]>([])
-  const [total, setTotal] = useState<number | null>(0)
+  const [roms, setRoms] = useState<RommRom[]>(() => (enabled ? (initialPage?.items ?? []) : []))
+  const [total, setTotal] = useState<number | null>(() =>
+    enabled && initialPage ? initialPage.total : 0
+  )
   /** Whether the last page came back full. See `hasMorePages`. */
-  const [more, setMore] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [more, setMore] = useState(() => !!enabled && !!initialPage && hasMorePages(initialPage))
+  const [loading, setLoading] = useState(!initialPage)
   const [settled, setSettled] = useState(false)
   // Synchronous guard: `loading` lands a render too late to stop the sentinel
   // firing again while one request is already out.
@@ -142,8 +151,9 @@ export function useRomPages(
    * disowns whatever is still out.
    */
   const run = useRef(0)
-  /** See `initialCount`. Zero once the first request has gone. */
+  /** Preserve restoration depth when StrictMode restarts an in-flight request. */
   const firstCount = useRef(initialCount)
+  const firstQuery = useRef(JSON.stringify(query))
 
   /**
    * The same query, with an identity that only changes when the query does.
@@ -192,11 +202,12 @@ export function useRomPages(
       const mine = ++run.current
       setLoading(true)
       onError(null)
+      if (JSON.stringify(asked) !== firstQuery.current) firstCount.current = 0
       const limit = offset === 0 ? Math.max(pageSize, firstCount.current) : pageSize
-      firstCount.current = 0
       try {
-        const page = await window.rommix.library.roms({ ...asked, limit, offset })
+        const page = await (fetchPage ?? window.rommix.library.roms)({ ...asked, limit, offset })
         if (mine !== run.current) return
+        firstCount.current = 0
         setTotal(page.total)
         setMore(hasMorePages(page))
         setRoms((current) => (offset === 0 ? page.items : [...current, ...page.items]))
@@ -213,7 +224,7 @@ export function useRomPages(
         }
       }
     },
-    [asked, enabled, forgetOnStandDown, onError, pageSize]
+    [asked, enabled, forgetOnStandDown, onError, pageSize, fetchPage]
   )
 
   // Back to the first page whenever the query changes.
@@ -242,9 +253,13 @@ export function usePagedRoms(
   query: RomQuery,
   {
     enabled = true,
+    initialPage,
+    fetchPage,
     initialCount,
     onError
   }: {
+    initialPage?: RommRomPage
+    fetchPage?: (query: RomQuery) => Promise<RommRomPage>
     /** See `useRomPages`. */
     enabled?: boolean
     /** See `useRomPages`. */
@@ -256,6 +271,8 @@ export function usePagedRoms(
   const sentinel = useRef<HTMLDivElement | null>(null)
   const { roms, total, more, loading, loadMore } = useRomPages(query, {
     pageSize: PAGE_SIZE,
+    initialPage,
+    fetchPage,
     initialCount,
     enabled,
     onError
@@ -278,5 +295,5 @@ export function usePagedRoms(
     return () => observer.disconnect()
   }, [loadMore, roms.length, more])
 
-  return { roms, total, more, loading, sentinel }
+  return { roms, total, more, loading, sentinel, loadMore }
 }

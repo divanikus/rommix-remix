@@ -111,6 +111,45 @@ describe('re-describing where you are', () => {
 })
 
 describe('going back', () => {
+  test('utility pages return to their origin, including a filtered game list', () => {
+    const origin: Route = {
+      name: 'library',
+      view: { scope: 'downloaded', search: 'sonic', platformId: 7, romId: 42, held: 180 }
+    }
+    for (const name of ['settings', 'bios', 'emulators', 'downloads'] as const) {
+      const history: Route[] = [home, origin, game(42)]
+      assert.deepEqual(popRoute(pushRoute(history, { name })), history)
+      assert.deepEqual(popRoute(pushRoute([origin], { name })), [origin])
+    }
+  })
+
+  test('utility peers share one Back step and root navigation still resets the path', () => {
+    const settings: Route = { name: 'settings' }
+    const history = pushRoute(pushRoute([library], settings), { name: 'bios' })
+    assert.deepEqual(popRoute(history), [library])
+    assert.deepEqual(pushRoute(history, settings), [library, settings])
+    assert.deepEqual(pushRoute(history, home), [home])
+  })
+
+  test('repeated utility cycling preserves the exact library origin and game children', () => {
+    const origin: Route = {
+      name: 'library',
+      view: { scope: 'all', platformId: 7, romId: 42, search: 'sonic', held: 180 }
+    }
+    let history: readonly Route[] = [origin]
+    for (let lap = 0; lap < 3; lap++) {
+      for (const name of ['settings', 'emulators', 'bios', 'downloads'] as const) {
+        history = pushRoute(history, { name })
+        assert.deepEqual(popRoute(history), [origin])
+        assert.deepEqual(popRoute(pushRoute(history, game(42))), history)
+      }
+    }
+    assert.deepEqual(pushRoute(history, { name: 'settings', open: 'theme' }), [
+      origin,
+      { name: 'settings', open: 'theme' }
+    ])
+  })
+
   test('one step at a time', () => {
     assert.deepEqual(popRoute([home, game(1), collection(2)]), [home, game(1)])
   })

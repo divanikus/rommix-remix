@@ -8,9 +8,62 @@ import { installDom } from '../test/dom.ts'
 // Types are erased, so importing those above costs nothing at run time.
 const window = installDom()
 
-const { act, useEffect } = await import('react')
+const { act, useEffect, useState, StrictMode } = await import('react')
 const { createRoot } = await import('react-dom/client')
 const { FocusProvider, useFocusable, useFocusContext } = await import('./focus.tsx')
+
+test('declining a contextual action falls through only within the current modal layer', () => {
+  const calls: string[] = []
+  let release = (): void => undefined
+  let allow = false
+  function Actions(): null {
+    const { onAction, claimLayer } = useFocusContext()
+    useEffect(() => {
+      const disposers = [
+        onAction(
+          'tabRight',
+          () => {
+            calls.push('library')
+          },
+          0
+        ),
+        onAction(
+          'tabRight',
+          () => {
+            if (!allow) return false
+            calls.push('details')
+          },
+          0
+        ),
+        onAction('tabRight', () => false, 1)
+      ]
+      release = claimLayer(1)
+      return () => {
+        release()
+        disposers.forEach((dispose) => dispose())
+      }
+    }, [onAction, claimLayer])
+    return null
+  }
+  mount(
+    <FocusProvider>
+      <Actions />
+    </FocusProvider>
+  )
+  const press = (): void => {
+    act(() => {
+      window.dispatchEvent(new window.KeyboardEvent('keydown', { key: 'Tab' }))
+    })
+  }
+  press()
+  assert.deepEqual(calls, [], 'A modal must not forward actions to the background')
+  act(() => release())
+  press()
+  assert.deepEqual(calls, ['library'])
+  allow = true
+  press()
+  assert.deepEqual(calls, ['library', 'details'])
+})
 
 /**
  * What a directional press costs.
@@ -93,6 +146,77 @@ function harness(): {
 }
 
 describe('moving the highlight', () => {
+  test('explicit navigation survives late autofocus, but not deliberate travel or modals', () => {
+    let engine: ReturnType<typeof useFocusContext>
+    let arrive: () => void = () => undefined
+    function Arrival(): JSX.Element {
+      const [ready, setReady] = useState(false)
+      const context = useFocusContext()
+      useEffect(() => {
+        engine = context
+        arrive = () => setReady(true)
+      }, [context])
+      const { ref, props } = useFocusable({ id: 'late', autoFocus: ready })
+      return <button ref={ref as Ref<HTMLButtonElement>} data-name="late" {...props} />
+    }
+    const host = mount(
+      <StrictMode>
+        <FocusProvider>
+          <Card name="header" onDraw={() => undefined} />
+          <Card name="content" onDraw={() => undefined} />
+          <Arrival />
+        </FocusProvider>
+      </StrictMode>
+    )
+    const focused = (): string | null | undefined =>
+      host.querySelector('[data-focused="true"]')?.getAttribute('data-name')
+    act(() => engine.retainFocus('header'))
+    act(arrive)
+    assert.equal(focused(), 'header')
+    act(() => engine.setInitialFocus('content'))
+    assert.equal(focused(), 'header')
+    act(() => engine.setFocus('content'))
+    assert.equal(focused(), 'content')
+    act(() => engine.setInitialFocus('late'))
+    assert.equal(focused(), 'late')
+    let release = (): void => undefined
+    act(() => {
+      release = engine.claimLayer(1)
+    })
+    act(() => engine.setInitialFocus('header'))
+    assert.notEqual(focused(), 'header', 'background arrival must not steal modal input')
+    act(release)
+  })
+
+  test('arrival autofocus survives StrictMode without stealing focus on re-enable', () => {
+    const { take, focus } = harness()
+    let enable: (value: boolean) => void = () => undefined
+    function Choice({ id, autoFocus = false }: { id: string; autoFocus?: boolean }): JSX.Element {
+      const [enabled, setEnabled] = useState(true)
+      useEffect(() => {
+        if (autoFocus) enable = setEnabled
+      }, [autoFocus])
+      const { ref, props } = useFocusable({ id, autoFocus, enabled })
+      return <button ref={ref as Ref<HTMLButtonElement>} data-name={id} {...props} />
+    }
+    const host = mount(
+      <StrictMode>
+        <FocusProvider>
+          <Driver take={take} />
+          <Choice id="first" />
+          <Choice id="selected" autoFocus />
+        </FocusProvider>
+      </StrictMode>
+    )
+    const focused = (): string | null | undefined =>
+      host.querySelector('[data-focused="true"]')?.getAttribute('data-name')
+    assert.equal(focused(), 'selected')
+    focus('first')
+    act(() => enable(false))
+    act(() => enable(true))
+    assert.equal(focused(), 'first')
+  })
+
   test('wakes the two cards it moves between and no others', () => {
     const { drawn, take, onDraw, focus } = harness()
     const names = Array.from({ length: 40 }, (_, index) => `card-${index}`)

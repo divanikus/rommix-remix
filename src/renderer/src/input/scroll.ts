@@ -75,6 +75,12 @@ function scrollParentOf(element: HTMLElement): HTMLElement | null {
   return scrollParentsOf(element).vertical
 }
 
+/** Nested focus zones can share one scroller (library toolbar and games). */
+export function shareScrollParent(first: HTMLElement, second: HTMLElement): boolean {
+  const parent = scrollParentOf(first)
+  return parent !== null && parent === scrollParentOf(second)
+}
+
 /**
  * Bring the card its own shelf is hiding into view.
  *
@@ -108,6 +114,18 @@ function revealAcross(element: HTMLElement, shelf: HTMLElement | null): void {
 export function revealElement(element: HTMLElement): void {
   // One walk for both axes, this being the caller that wants both.
   const { vertical: scroller, horizontal: shelf } = scrollParentsOf(element)
+  if (scroller && element.closest('[data-focus-collection]')) {
+    // Repeated focus moves must finish before the next input. Restarting a
+    // smooth animation every 90 ms lets selection run several rows off screen.
+    const card = element.getBoundingClientRect()
+    const view = scroller.getBoundingClientRect()
+    const style = getComputedStyle(scroller)
+    const top = view.top + (parseFloat(style.scrollPaddingTop) || 12)
+    const bottom = view.bottom - (parseFloat(style.scrollPaddingBottom) || 12)
+    const delta = card.top < top ? card.top - top : card.bottom > bottom ? card.bottom - bottom : 0
+    scroller.scrollTo({ top: scroller.scrollTop + delta, behavior: 'instant' })
+    return
+  }
   revealAcross(element, shelf)
 
   if (scroller) {

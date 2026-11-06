@@ -45,11 +45,15 @@ type GameTab =
  */
 export function GameScreen({
   romId,
-  fromVersions = false
+  fromVersions = false,
+  embedded = false,
+  onVersion
 }: {
   romId: number
   /** Opened from another dump's versions list. See `Route`. */
   fromVersions?: boolean
+  embedded?: boolean
+  onVersion?: (id: number) => void
 }): JSX.Element {
   const { t, formatBytes } = useI18n()
   const {
@@ -293,13 +297,14 @@ export function GameScreen({
    * a second while the first is running is never what was meant.
    */
   const working = syncing || launching || copying
+  const screenClass = embedded ? 'game-panel' : 'content game-screen'
 
   if (error) {
     return (
-      <div className="content">
+      <div className={screenClass}>
         <div className="notice notice--error">{error}</div>
         <div className="btn-row">
-          <FocusButton icon="back" onSelect={goBack} autoFocus>
+          <FocusButton icon="back" onSelect={goBack} autoFocus={!embedded}>
             {t('action.back')}
           </FocusButton>
         </div>
@@ -309,7 +314,7 @@ export function GameScreen({
 
   if (!rom) {
     return (
-      <div className="content">
+      <div className={screenClass}>
         <Spinner />
       </div>
     )
@@ -450,7 +455,7 @@ export function GameScreen({
   )
 
   return (
-    <div className="content">
+    <div className={screenClass}>
       <GameHero rom={rom} entry={entry} system={system} status={status}>
         {entry ? (
           <FocusButton
@@ -459,7 +464,7 @@ export function GameScreen({
             variant="primary"
             onSelect={() => void startPlay()}
             disabled={working || running}
-            autoFocus={!focusTabs}
+            autoFocus={!embedded && !focusTabs}
           >
             {running ? t('game.running') : t('game.play')}
           </FocusButton>
@@ -472,7 +477,7 @@ export function GameScreen({
             {t('action.installing')}
           </FocusButton>
         ) : active ? (
-          stopButtons(!focusTabs)
+          stopButtons(!embedded && !focusTabs)
         ) : (
           <FocusButton
             icon="download"
@@ -480,7 +485,7 @@ export function GameScreen({
             variant="primary"
             onSelect={() => (noEmulator ? setAskingEmulator(true) : void startDownload())}
             disabled={working}
-            autoFocus={!focusTabs}
+            autoFocus={!embedded && !focusTabs}
           >
             {/* The same button either way: what the player wants is the game,
                 and whether that means starting or finishing a transfer is not
@@ -728,6 +733,7 @@ export function GameScreen({
           is under them rather than as four buttons floating above the page. */}
       <div className="panel">
         <Tabs<GameTab>
+          actionScope={embedded ? '.library-detail' : undefined}
           active={activeTab}
           onChange={setTab}
           autoFocus={focusTabs}
@@ -802,7 +808,11 @@ export function GameScreen({
               rom={rom}
               siblings={versions}
               installedIds={installedIds}
-              onOpen={(id) => navigate({ name: 'game', romId: id, fromVersions: true })}
+              onOpen={(id) =>
+                onVersion
+                  ? onVersion(id)
+                  : navigate({ name: 'game', romId: id, fromVersions: true })
+              }
             />
           ) : null}
         </div>
@@ -888,14 +898,16 @@ export function GameScreen({
         />
       ) : null}
 
-      <Hints
-        items={[
-          { key: 'A', label: entry ? t('game.play') : t('action.download') },
-          { key: 'LB', label: t('action.previousTab') },
-          { key: 'RB', label: t('action.nextTab') },
-          { key: 'B', label: t('action.back') }
-        ]}
-      />
+      {!embedded ? (
+        <Hints
+          items={[
+            { key: 'A', label: entry ? t('game.play') : t('action.download') },
+            { key: 'LB', label: t('action.previousTab') },
+            { key: 'RB', label: t('action.nextTab') },
+            { key: 'B', label: t('action.back') }
+          ]}
+        />
+      ) : null}
     </div>
   )
 }

@@ -23,7 +23,9 @@ import { fileNameOf } from '@shared/gamefiles'
 export interface GameTile {
   romId: number
   title: string
+  sortTitle?: string
   coverPath: string | null
+  screenshotPath?: string
   platformName: string
   /** RomM's platform slug when it is known; the ES-DE system otherwise. */
   platformSlug: string
@@ -80,7 +82,9 @@ export function tileFromRom(rom: RommRom, grouped = false): GameTile {
   return {
     romId: rom.id,
     title: rom.name ?? rom.fs_name,
+    ...(rom.name_sort_key?.trim() ? { sortTitle: rom.name_sort_key } : {}),
     coverPath: rom.path_cover_small ?? rom.path_cover_large,
+    ...(rom.merged_screenshots?.[0] ? { screenshotPath: rom.merged_screenshots[0] } : {}),
     platformName: rom.platform_display_name,
     platformSlug: rom.platform_slug,
     group: group.length > 1 ? group : undefined

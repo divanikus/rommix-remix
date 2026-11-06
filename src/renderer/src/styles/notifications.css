@@ -61,3 +61,11 @@
   flex: 0 0 auto;
   object-fit: contain;
 }
+
+/* Discovery is information, not a green completion banner. */
+.toast.notice--info {
+  background: var(--bg-raised);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  box-shadow: 0 8px 24px #0004;
+}

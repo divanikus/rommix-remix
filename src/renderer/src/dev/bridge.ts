@@ -777,6 +777,20 @@ const bridge: RomMixBridge = {
       }
       return later(counts)
     },
+    randomRom: () => later(ROMS[Math.floor(Math.random() * ROMS.length)] ?? null),
+    anniversaries: (day: string, offset = 0) => {
+      const [year, month, date] = day.split('-').map(Number)
+      const items = ROMS.slice(0, 3).map((r, i) => ({
+        ...r,
+        metadatum: { ...r.metadatum, first_release_date: Date.UTC(year - 20 - i, month - 1, date) }
+      }))
+      return later({
+        items: items.slice(offset, offset + 24),
+        total: items.length,
+        limit: 24,
+        offset
+      })
+    },
     roms: (query: RomQuery) => {
       const term = query.search_term?.toLowerCase() ?? ''
       const matched = ROMS.filter((rom) => {

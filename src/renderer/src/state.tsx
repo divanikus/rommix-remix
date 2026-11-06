@@ -42,7 +42,7 @@ export type {
 export interface Toast {
   id: number
   message: string
-  tone: 'ok' | 'error' | 'warn'
+  tone: 'ok' | 'error' | 'warn' | 'info'
   /**
    * What the notification is about, when it is about a game. Every toast
    * concerning one shows the same shape — cover, title, then what happened —
@@ -653,12 +653,12 @@ export function AppProvider({ children }: { children: ReactNode }): JSX.Element 
       const count = entries.length
       if (count === 1) {
         const entry = entries[0]
-        notify(i18n.t('toast.adoptedOne'), 'ok', {
+        notify(i18n.t('toast.adoptedOne'), 'info', {
           title: entry.name || fileNameOf(entry.path),
           coverPath: entry.coverPath
         })
       } else {
-        notify(i18n.t('toast.adoptedMany', { count }))
+        notify(i18n.t('toast.adoptedMany', { count }), 'info')
       }
     })
   }, [notify, i18n])

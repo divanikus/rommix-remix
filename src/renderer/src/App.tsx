@@ -1,25 +1,20 @@
-import {
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-  type JSX,
-  type Ref
-} from 'react'
+import { useCallback, useEffect, useState, type JSX, type Ref } from 'react'
 import { isInProgress } from '@shared/types'
-import { Logo, QuitOverlay } from './components'
+import { FocusButton, Logo, Overlay } from './components'
 import {
   FocusZone,
   useAction,
   useFocusable,
   useFocusContext,
-  useSuspendGamepad
+  useSuspendGamepad,
+  useKeyLabel
 } from './input/focus'
 import { Icon, type IconName } from './icons'
 import { useApp, useDownloads, useI18n, type Route } from './state'
+import { readPresentation } from './library-presentation'
+import { isUtilityRoute } from './history'
+import { UtilityNavigation, UTILITY_ITEMS } from './components/UtilityNavigation'
 import { BiosScreen } from './screens/Bios'
-
 import { GameScreen } from './screens/Game'
 import { CollectionScreen } from './screens/Collections/CollectionScreen'
 import { CollectionsScreen } from './screens/Collections'
@@ -29,354 +24,240 @@ import { InstallEmulatorScreen } from './screens/Wizards/InstallEmulator'
 import { SetupScreen } from './screens/Wizards/Setup'
 import { HomeScreen } from './screens/Home'
 import { LibraryScreen } from './screens/Library'
+import { SystemsScreen } from './screens/Systems'
 import { SettingsScreen } from './screens/Settings'
 import { RunningOverlay } from './RunningOverlay'
 import { ThemesNotice } from './ThemesNotice'
 import { Toasts } from './Toasts'
 
-/**
- * How much of the bar is drawn, in the order its parts are given up: the menu's
- * labels first, then the server line, then the wordmark beside the mark.
- *
- * Measured rather than declared at a width, because the menu's seven labels are
- * a different length in every language — French runs to half again English's.
- * One media query would have to serve all four catalogues, and there is no
- * width that both keeps the labels wherever they fit and drops them before they
- * run over the brand and the server line. See `useBarFit`.
- */
-const BAR_FITS = ['full', 'compact', 'tight', 'bare'] as const
-
-/**
- * What RomM serves for an account that uploaded no picture.
- *
- * Its own default rather than one of RomMix's: the same face the user is shown
- * beside their name in RomM's web interface, so the two name the same account
- * in the same way.
- */
-const DEFAULT_AVATAR = 'assets/default/user.svg'
-
-/**
- * The account's picture, in a slot of its own beside the two lines.
- *
- * Big enough to be a face across a room, which is more than a line of this bar
- * is tall — so it stands beside both lines rather than inside one, where it
- * would push the name's row apart from the server's and leave the picture all
- * but touching the mark below it.
- *
- * The same box holds the plain mark when even the default cannot be drawn — a
- * server old enough not to ship it, an asset that answers 404 — so the bar is
- * laid out the same either way. Not a state to report: this block is only
- * drawn while the server is answering, so a picture that fails is one file
- * missing rather than a session in trouble.
- */
-function Avatar({ path }: { path: string }): JSX.Element {
-  const url = window.rommix.system.assetUrl(path || DEFAULT_AVATAR)
-  const [failed, setFailed] = useState(false)
-
-  // Signing in as somebody else reuses this element, and their picture is not
-  // the one that failed.
-  useEffect(() => setFailed(false), [url])
-
-  if (!url || failed) {
-    return (
-      <span className="topbar__avatar topbar__avatar--blank">
-        <Icon name="user" size={20} />
-      </span>
-    )
-  }
-  return <img className="topbar__avatar" src={url} alt="" onError={() => setFailed(true)} />
-}
-
-/**
- * Whether the bar's three blocks stand side by side without running into one
- * another.
- *
- * The brand and the status flank the menu as equal tracks, so what each costs is
- * the wider of the two. The status is measured a row at a time: it is a column
- * of right-aligned rows, and a row too wide for its track spills to the left,
- * where `scrollWidth` on the column sees nothing.
- */
-function barFits(header: HTMLElement): boolean {
-  const style = getComputedStyle(header)
-  const room = header.clientWidth - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight)
-  const widthOf = (selector: string): number => header.querySelector(selector)?.scrollWidth ?? 0
-  // The picture stands beside the lines rather than in one of them, so it costs
-  // its own width on top of whichever line is the wider — and nothing at all on
-  // a bar that is not signed in, which has no picture to draw.
-  const account = header.querySelector('.topbar__account')
-  const beside = account
-    ? widthOf('.topbar__avatar') + (parseFloat(getComputedStyle(account).columnGap) || 0)
-    : 0
-  const side = Math.max(
-    widthOf('.topbar__brand'),
-    widthOf('.topbar__user') + beside,
-    widthOf('.topbar__host') + beside
-  )
-  return widthOf('.topbar__nav') + 2 * (side + parseFloat(style.columnGap)) <= room
-}
-
-/**
- * Give up as little of the bar as the window makes necessary.
- *
- * Re-measured on a resize and on any change to what the bar holds — the
- * language, the count on Downloads, the section that goes when the server does
- * — since each of those changes the answer and only the first is a resize.
- */
-function useBarFit(drawn: boolean): Ref<HTMLElement | null> {
-  const ref = useRef<HTMLElement | null>(null)
-
-  // `drawn` is what brings the bar into reach: the setup screen has none, so
-  // on the pass that ran while it was up there was nothing to measure.
-  useLayoutEffect(() => {
-    const header = ref.current
-    if (!header) return
-
-    const fit = (): void => {
-      for (const level of BAR_FITS) {
-        header.dataset.fit = level
-        if (barFits(header)) return
-      }
-    }
-
-    fit()
-    const resized = new ResizeObserver(fit)
-    resized.observe(header)
-    // Attributes are deliberately not watched: focus moves along this bar with
-    // every press, and none of that changes how wide anything is.
-    const changed = new MutationObserver(fit)
-    changed.observe(header, { childList: true, subtree: true, characterData: true })
-    return () => {
-      resized.disconnect()
-      changed.disconnect()
-    }
-  }, [drawn])
-
-  return ref
-}
-
-/** App shell: navigation bar, the current screen, and global overlays. */
+/** Library-first shell. Utility routes remain available in the account/tools menu. */
 export function App(): JSX.Element {
   const { t } = useI18n()
-  const {
-    route,
-    goBack,
-    canGoBack,
-    navigate,
-    offline,
-    runningRomId,
-    runningEmulator,
-    status,
-    update
-  } = useApp()
-  const { enterZone } = useFocusContext()
-  const [confirmingQuit, setConfirmingQuit] = useState(false)
-  const barRef = useBarFit(route.name !== 'setup')
-
-  /**
-   * B / Escape, and what it means once there is nothing above.
-   *
-   * Going up is the whole of it while something is: a game hangs off the
-   * section it was opened from, a collection's contents off Collections. On a
-   * section itself nothing is, and a button that does nothing is a button the
-   * player assumes is broken — so it climbs instead, the way every console does
-   * it: out of the page to the menu, and from the menu out of RomMix. Quitting
-   * is asked rather than done, because the same press arrives there by
-   * accident.
-   *
-   * Three presses from anywhere, then, and never more: what `navigate` keeps is
-   * the path to the current screen and not the screens visited on the way.
-   */
+  const { route, goBack, canGoBack, navigate, offline, runningRomId, runningEmulator } = useApp()
+  const { enterZone, retainFocus } = useFocusContext()
+  const keyLabel = useKeyLabel()
+  const inPlatform = route.name === 'library' && route.view?.platformId !== undefined
+  const inUtility = isUtilityRoute(route)
+  const [toolsOpen, setToolsOpen] = useState(false)
+  useEffect(() => {
+    document.documentElement.dataset.coverSize = readPresentation(localStorage).coverSize
+  }, [])
   const back = useCallback((): void => {
+    retainFocus(null)
+    if (route.name === 'library' && route.view?.platformId !== undefined)
+      return navigate({ name: 'systems', platformId: route.view.platformId })
     if (canGoBack) return goBack()
-    if (enterZone('nav')) return
-    setConfirmingQuit(true)
-  }, [canGoBack, goBack, enterZone])
-
-  // Everywhere except the two wizards, which walk a player through a sequence
-  // of pages: setup, which has neither a history nor a menu bar to climb into,
-  // and the install flow, where B is a page back until there are no pages left.
-  // Both bind it themselves, and a handler registered on a screen cannot shadow
-  // one registered here — see `useAction`.
+    if (isUtilityRoute(route)) return navigate({ name: 'home' })
+    setToolsOpen(true)
+  }, [route, canGoBack, goBack, navigate, retainFocus])
   useAction('back', back, route.name !== 'setup' && route.name !== 'install-emulator')
-
-  // X / Start opens Settings: on a console this button is the menu, and
-  // Settings is where every switch in RomMix lives.
-  useAction('menu', () => navigate({ name: 'settings' }), route.name !== 'settings')
-
-  // Whatever is in front of RomMix — a game, or an emulator opened on its own
-  // to change a setting in — owns the pad. Here rather than inside the overlay
-  // so it holds for the whole session, including the moment before the overlay
-  // has mounted.
+  useAction(
+    'header',
+    () => {
+      if (!enterZone('nav'))
+        enterZone(
+          route.name === 'systems'
+            ? 'systems-list'
+            : route.name === 'collections'
+              ? 'collections-list'
+              : 'content'
+        )
+    },
+    route.name !== 'library' && route.name !== 'collection' && route.name !== 'setup'
+  )
+  const cycleSection = (delta: -1 | 1): boolean => {
+    // Platform/detail/modal shoulders retain their own visible context.
+    if (inPlatform) return false
+    const tabs: Route[] = [
+      { name: 'home' },
+      { name: 'systems' },
+      ...(!offline ? [{ name: 'collections' } as Route] : []),
+      { name: 'library' }
+    ]
+    const active = route.name === 'collection' ? 'collections' : route.name
+    const index = tabs.findIndex((tab) => tab.name === active)
+    if (index < 0) return false
+    const target = tabs[(index + delta + tabs.length) % tabs.length]
+    retainFocus('nav-' + target.name)
+    navigate(target)
+    return true
+  }
+  useAction('tabLeft', () => cycleSection(-1))
+  useAction('tabRight', () => cycleSection(1))
+  useAction('menu', () => setToolsOpen(true), route.name !== 'setup')
   const covered = runningRomId !== null || runningEmulator !== null
   useSuspendGamepad(covered)
-
-  if (route.name === 'setup') {
+  if (route.name === 'setup')
     return (
-      <div className="app" data-screen={route.name}>
+      <div className="app" data-screen="setup">
         <SetupScreen />
         {covered ? <RunningOverlay /> : null}
         <Toasts />
       </div>
     )
-  }
-
-  /**
-   * The new version, on the menu item that leads to it.
-   *
-   * The toast that announced it is gone in seconds, and a machine that checked
-   * while nobody was watching never showed one. This is the part that stays: the version
-   * number itself rather than a count, because "Settings 1" says there is
-   * something and not what.
-   */
-  const updateBadge =
-    update && update.latest && update.state !== 'idle' && update.state !== 'checking'
-      ? update.latest
-      : undefined
-
   return (
-    <div className="app" data-screen={route.name}>
-      <FocusZone id="nav">
-        {/* The mark on the left, the menu across the middle, who you are on the
-            right: the same three slots RomM's own bar has. The brand and the
-            status flank the menu as equal tracks so the menu is centred on the
-            screen rather than on whatever is left over beside them. */}
-        <header className="topbar" ref={barRef}>
-          <div className="topbar__brand">
-            <Logo className="topbar__logo" />
-            <div className="topbar__wordmark">
-              Rom<span>Mix</span>
+    <div className="app" data-screen={route.name} data-utility={inUtility}>
+      {inUtility ? (
+        <UtilityNavigation route={route} onBack={back} onMenu={() => setToolsOpen(true)} />
+      ) : !inPlatform && route.name !== 'game' ? (
+        <FocusZone id="nav">
+          <header className="topbar library-topbar app-header">
+            <div className="topbar__brand">
+              <Logo className="topbar__logo" />
             </div>
-          </div>
-
-          <nav className="topbar__nav">
-            <NavItem
-              icon="home"
-              label={t('nav.home')}
-              route={{ name: 'home' }}
-              active={route.name === 'home'}
-            />
-            <NavItem
-              icon="library"
-              label={t('nav.library')}
-              route={{ name: 'library' }}
-              active={route.name === 'library'}
-            />
-            {/* The one section with no local half at all: a collection is a
-                list the server keeps, and there is nothing of it on this disk
-                to show instead. Every other screen narrows to what is here. */}
-            {offline ? null : (
-              <NavItem
-                icon="collection"
-                label={t('nav.collections')}
-                route={{ name: 'collections' }}
-                active={route.name === 'collections' || route.name === 'collection'}
-              />
-            )}
-            <DownloadsNavItem active={route.name === 'downloads'} />
-            <NavItem
-              icon="bios"
-              label={t('nav.bios')}
-              route={{ name: 'bios' }}
-              active={route.name === 'bios'}
-            />
-            <NavItem
-              icon="emulator"
-              label={t('nav.emulators')}
-              route={{ name: 'emulators' }}
-              active={route.name === 'emulators'}
-            />
-            <NavItem
-              icon="settings"
-              label={t('nav.settings')}
-              route={{ name: 'settings' }}
-              active={route.name === 'settings'}
-              badge={updateBadge}
-            />
-          </nav>
-
-          {/* The mark sits after the text rather than before it, because this
-              block is right-aligned: leading icons would leave the two glyphs
-              in a ragged column against the words, while trailing ones line up
-              against the edge the whole bar ends on. */}
-          <div className="topbar__status">
-            {status?.connected ? (
-              <div className="topbar__account">
-                {/* Neither line carries a mark of its own here: the picture
-                    beside them says whose account this is, and a second mark
-                    against it only crowds the corner. The states below keep
-                    theirs, having no picture to be identified by. */}
-                <div className="topbar__lines">
-                  <span className="topbar__user">
-                    <span>{status.user?.username}</span>
-                  </span>
-                  <span className="topbar__host">
-                    <span>{hostOf(status.baseUrl)}</span>
-                  </span>
-                </div>
-                <Avatar path={status.user?.avatar_path ?? ''} />
-              </div>
-            ) : offline ? (
-              /* The server it cannot reach is still worth naming: this is the
-                 one place that says which machine is missing, and "offline" on
-                 its own reads as a setting somebody turned on. */
-              <>
-                <span className="topbar__user">
-                  <span>{t('app.offline')}</span>
-                  <Icon name="warn" size={15} />
-                </span>
-                <span className="topbar__host">
-                  <span>{hostOf(status?.baseUrl ?? null)}</span>
-                  <Icon name="server" size={15} />
-                </span>
-              </>
-            ) : (
-              <span className="topbar__host">
-                <span>{t('app.notConnected')}</span>
-                <Icon name="warn" size={15} />
+            <nav className="topbar__nav" aria-label={t('library.navigation')}>
+              <span className="nav-bumper hint__key" aria-hidden="true">
+                {keyLabel('LB')}
               </span>
-            )}
-          </div>
-        </header>
-      </FocusZone>
-
+              <NavItem
+                icon="home"
+                label={t('nav.home')}
+                route={{ name: 'home' }}
+                active={route.name === 'home'}
+              />
+              <NavItem
+                icon="library"
+                label={t('library.systems')}
+                route={{ name: 'systems' }}
+                active={
+                  route.name === 'systems' ||
+                  (route.name === 'library' && route.view?.platformId !== undefined)
+                }
+              />
+              {!offline ? (
+                <NavItem
+                  icon="collection"
+                  label={t('nav.collections')}
+                  route={{ name: 'collections' }}
+                  active={route.name === 'collections' || route.name === 'collection'}
+                />
+              ) : null}
+              <NavItem
+                icon="search"
+                label={t('action.search')}
+                route={{ name: 'library' }}
+                active={route.name === 'library' && route.view?.platformId === undefined}
+              />
+              <span className="nav-bumper hint__key" aria-hidden="true">
+                {keyLabel('RB')}
+              </span>
+            </nav>
+            <div className="topbar__utilities">
+              {offline ? (
+                <span className="topbar__offline" title={t('app.offline')}>
+                  <Icon name="warn" size={18} />
+                </span>
+              ) : null}
+              <DownloadsNavItem active={route.name === 'downloads'} />
+              <NavItem
+                icon="user"
+                label={t('action.menu')}
+                route={{ name: 'settings' }}
+                onSelect={() => setToolsOpen(true)}
+                active={toolsOpen || ['settings', 'bios', 'emulators'].includes(route.name)}
+                compact
+              />
+            </div>
+          </header>
+        </FocusZone>
+      ) : null}
       <FocusZone id="content">
         <Screen route={route} />
       </FocusZone>
-
-      {confirmingQuit ? <QuitOverlay onCancel={() => setConfirmingQuit(false)} /> : null}
-
-      {/* Not while something is in front of RomMix: an emulator has the screen
-          and the pad, and a dialog nobody can answer would be waiting behind
-          it. See `ThemesNotice`. */}
-      {covered ? null : <ThemesNotice />}
-
-      {covered ? <RunningOverlay /> : null}
+      {toolsOpen ? <ToolsMenu onClose={() => setToolsOpen(false)} /> : null}
+      {covered ? <RunningOverlay /> : <ThemesNotice />}
       <Toasts />
     </div>
   )
 }
 
-/**
- * The menu item that counts what is being fetched.
- *
- * Its own component so that the queue is read here and nowhere above: a
- * transfer reports progress several times a second, and the bar is drawn beside
- * whatever screen the player is on. See `DownloadsContext`.
- */
+function ToolsMenu({ onClose }: { onClose: () => void }): JSX.Element {
+  const { t } = useI18n()
+  const [confirmingQuit, setConfirmingQuit] = useState(false)
+  const cancelQuit = (): void => setConfirmingQuit(false)
+  return (
+    <Overlay
+      title={t(confirmingQuit ? 'app.quitTitle' : 'action.menu')}
+      onDismiss={confirmingQuit ? cancelQuit : onClose}
+      compact
+      sheer
+    >
+      {confirmingQuit ? (
+        <MenuQuitActions onCancel={cancelQuit} />
+      ) : (
+        <ToolsMenuActions onClose={onClose} onQuit={() => setConfirmingQuit(true)} />
+      )}
+    </Overlay>
+  )
+}
+
+function MenuQuitActions({ onCancel }: { onCancel: () => void }): JSX.Element {
+  const { t } = useI18n()
+  useAction('menu', onCancel)
+  return (
+    <div className="tools-menu">
+      <FocusButton icon="back" variant="ghost" action="cancel-quit" autoFocus onSelect={onCancel}>
+        {t('app.stay')}
+      </FocusButton>
+      <FocusButton
+        icon="quit"
+        variant="danger"
+        action="confirm-quit"
+        onSelect={() => void window.rommix.system.quit()}
+      >
+        {t('app.quitRomMix')}
+      </FocusButton>
+    </div>
+  )
+}
+
+function ToolsMenuActions({
+  onClose,
+  onQuit
+}: {
+  onClose: () => void
+  onQuit: () => void
+}): JSX.Element {
+  const { t } = useI18n()
+  const { navigate } = useApp()
+  useAction('menu', onClose)
+  const go = (route: Route): void => {
+    onClose()
+    navigate(route)
+  }
+  return (
+    <div className="tools-menu">
+      {UTILITY_ITEMS.map((item, index) => (
+        <FocusButton
+          key={item.name}
+          icon={item.icon}
+          variant="ghost"
+          action={`open-${item.name}`}
+          autoFocus={index === 0}
+          onSelect={() => go({ name: item.name })}
+        >
+          {t(item.label)}
+        </FocusButton>
+      ))}
+      <hr />
+      <FocusButton icon="quit" variant="ghost" action="menu-quit" onSelect={onQuit}>
+        {t('app.quitRomMix')}
+      </FocusButton>
+    </div>
+  )
+}
+
 function DownloadsNavItem({ active }: { active: boolean }): JSX.Element {
   const { t } = useI18n()
-  const downloads = useDownloads()
-  // Deliberately not the stopped rows: a badge is about work in flight, and one
-  // that counted a paused transfer would never go out. See `isInProgress`.
-  const busy = downloads.filter((item) => isInProgress(item.state)).length
-
+  const busy = useDownloads().filter((item) => isInProgress(item.state)).length
   return (
     <NavItem
       icon="downloads"
       label={t('nav.downloads')}
       route={{ name: 'downloads' }}
       active={active}
-      badge={busy > 0 ? busy : undefined}
+      badge={busy || undefined}
+      compact
     />
   )
 }
@@ -385,6 +266,8 @@ function Screen({ route }: { route: Route }): JSX.Element {
   switch (route.name) {
     case 'home':
       return <HomeScreen view={route.view} />
+    case 'systems':
+      return <SystemsScreen selected={route.platformId} />
     case 'library':
       return <LibraryScreen view={route.view} />
     case 'game':
@@ -422,43 +305,44 @@ function NavItem({
   label,
   route,
   active,
-  badge
+  badge,
+  compact = false,
+  onSelect
 }: {
   icon: IconName
   label: string
   route: Route
   active: boolean
-  /** A count, as Downloads has, or a short word — the new version on Settings. */
-  badge?: number | string
+  badge?: number
+  compact?: boolean
+  onSelect?: () => void
 }): JSX.Element {
   const { navigate } = useApp()
-  const { ref, props } = useFocusable({ onSelect: () => navigate(route), actionLabel: label })
-
+  const { retainFocus } = useFocusContext()
+  const { ref, props } = useFocusable({
+    id: 'nav-' + route.name,
+    onSelect:
+      onSelect ??
+      (() => {
+        retainFocus(route.name === 'downloads' ? 'utility-downloads' : 'nav-' + route.name)
+        navigate(route)
+      }),
+    actionLabel: label
+  })
   return (
-    <div
-      ref={ref as Ref<HTMLDivElement>}
+    <button
+      ref={ref as Ref<HTMLButtonElement>}
       className="nav-item"
       data-active={active}
       data-route={route.name}
+      data-compact={compact}
       aria-label={label}
       title={label}
       {...props}
     >
       <Icon name={icon} size={20} />
-      {/* Hidden where the bar has no room for seven of them — see `useBarFit`.
-          The title on the row is what is left to name it there. */}
-      <span className="nav-item__label">{label}</span>
+      {!compact ? <span className="nav-item__label">{label}</span> : null}
       {badge ? <span className="nav-item__badge">{badge}</span> : null}
-    </div>
+    </button>
   )
-}
-
-/** Just the hostname, so the bar does not show a full URL. */
-function hostOf(url: string | null): string {
-  if (!url) return ''
-  try {
-    return new URL(url).host
-  } catch {
-    return url
-  }
 }

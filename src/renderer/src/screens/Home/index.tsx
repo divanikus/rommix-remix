@@ -1,25 +1,25 @@
-import { type JSX, type Ref, useMemo, useState } from 'react'
+import { ContinueCard } from './ContinueCard'
+import { HomeWidgets } from './HomeWidgets'
+import { type JSX, useMemo, useState, useCallback } from 'react'
 import type { RommRom, RomQuery } from '@shared/types'
 import {
   ArtBackdrop,
-  CoverArt,
   FocusButton,
   GameRow,
   Hints,
-  PlatformIcon,
   Spinner,
   romToOpen,
   tileFromInstalled,
   tileFromRom,
   type GameTile
 } from '../../components'
-import { Icon } from '../../icons'
-import { useAction, useFocusable, useKeyLabel } from '../../input/focus'
+import { useAction } from '../../input/focus'
+import { useHomeGroups, CollectionShelf } from './LibraryShelves'
 import { useRomPages } from '../../paging'
 import { useApp, useI18n, type HomeView } from '../../state'
 
 /**
- * The landing screen: a hero for the highlighted game and a few shelves,
+ * The landing screen: screenshot and cover shelves, collection previews and widgets,
  * mirroring how RomM's own home page groups a library.
  */
 
@@ -72,6 +72,19 @@ const READY_TO_PLAY_SHELF = 30
 export function HomeScreen({ view }: { view?: HomeView }): JSX.Element {
   const { t } = useI18n()
   const { installed, installedIds, navigate, revise, canGoBack, offline } = useApp()
+  const groups = useHomeGroups(offline)
+  const [activeArt, setActiveArt] = useState<GameTile | null>(null)
+  const highlightArt = useCallback(
+    (tile: GameTile) =>
+      setActiveArt((previous) =>
+        previous?.romId === tile.romId &&
+        previous?.coverPath === tile.coverPath &&
+        previous?.screenshotPath === tile.screenshotPath
+          ? previous
+          : tile
+      ),
+    []
+  )
 
   /**
    * The games on this device, newest install first.
@@ -136,34 +149,29 @@ export function HomeScreen({ view }: { view?: HomeView }): JSX.Element {
     )
   }
 
-  // The hero is simply the head of the first shelf that has anything: the game
-  // you last played, or failing that the newest in the library. Labelled,
-  // because an unexplained game at the top of the screen invites the question.
-  const highlight = continuePlaying.items[0] ?? recentlyAdded.items[0] ?? null
-  const highlightReason = continuePlaying.items[0]
-    ? t('home.continuePlaying')
-    : t('home.recentlyAdded')
-  // The copy on this disk where a grouped tile stands for several — see
-  // `romToOpen`. The shelves built from the download index are one ROM each and
-  // answer themselves.
-  //
-  // The card goes onto this screen's own step first, so B off the game lands
-  // back on it. See `HomeView`.
-  const open = (shelf: string, tile: GameTile): void => {
-    revise({ name: 'home', view: { shelf, romId: tile.romId } })
+  const open = (shelf: string, tile: GameTile, discoveryOffset?: number): void => {
+    revise({ name: 'home', view: { shelf, romId: tile.romId, discoveryOffset } })
     navigate({ name: 'game', romId: romToOpen(tile, installedIds) })
   }
   /**
    * The card on `shelf` that a return lands on, if any.
    *
-   * The hero autofocuses as well, and is drawn first: its claim is the
-   * fallback, overridden by the card's where that card is still on its shelf.
+   * Restore only the recorded card; fresh visits start on the first game shelf.
    */
   const focusOn = (shelf: string): number | undefined =>
     view?.shelf === shelf ? view.romId : undefined
 
   return (
-    <div className="content">
+    <div className="content home-screen">
+      <div className="home-ambience">
+        <ArtBackdrop
+          paths={[
+            activeArt?.screenshotPath,
+            activeArt?.coverPath,
+            continuePlaying.items[0]?.merged_screenshots?.[0]
+          ]}
+        />
+      </div>
       {offline ? <div className="notice notice--warn">{t('app.offlineNotice')}</div> : null}
 
       {/* Above the shelves rather than instead of them: "Ready to play" is
@@ -188,23 +196,26 @@ export function HomeScreen({ view }: { view?: HomeView }): JSX.Element {
         </div>
       ) : null}
 
-      {highlight ? (
-        <Hero
-          rom={highlight}
-          reason={highlightReason}
-          // Through `open`, like every tile below it. The hero can be drawn from
-          // the grouped `recentlyAdded` shelf, so it stands for the same cover as
-          // the first tile — and `tiles.ts` states the rule both are held to: the
-          // version a tile says is downloaded is the version pressing it opens.
-          onSelect={() => open('hero', tileFromRom(highlight))}
-        />
-      ) : null}
+      <div className="home-featured">
+        {continuePlaying.items[0] ? (
+          <ContinueCard
+            key={continuePlaying.items[0].id}
+            rom={continuePlaying.items[0]}
+            autoFocus={!view || view.shelf === 'hero'}
+            onSelect={() => open('hero', tileFromRom(continuePlaying.items[0]))}
+          />
+        ) : null}
+        <HomeWidgets open={open} view={view} />
+      </div>
 
       <GameRow
         title={t('home.continuePlaying')}
         shelf="continue"
+        landscape
+        autoFocus={false}
         tiles={continuePlaying.items.map((rom) => tileFromRom(rom))}
         installedIds={installedIds}
+        onHighlight={highlightArt}
         onSelect={(tile) => open('continue', tile)}
         focusRomId={focusOn('continue')}
         onEndReached={continuePlaying.loadMore}
@@ -214,8 +225,10 @@ export function HomeScreen({ view }: { view?: HomeView }): JSX.Element {
       <GameRow
         title={t('home.readyToPlay')}
         shelf="ready"
+        autoFocus={!view && !continuePlaying.items.length}
         tiles={readyToPlay}
         installedIds={installedIds}
+        onHighlight={highlightArt}
         onSelect={(tile) => open('ready', tile)}
         focusRomId={focusOn('ready')}
       />
@@ -224,6 +237,7 @@ export function HomeScreen({ view }: { view?: HomeView }): JSX.Element {
         shelf="favourites"
         tiles={favourites.items.map((rom) => tileFromRom(rom, true))}
         installedIds={installedIds}
+        onHighlight={highlightArt}
         onSelect={(tile) => open('favourites', tile)}
         focusRomId={focusOn('favourites')}
         onEndReached={favourites.loadMore}
@@ -233,10 +247,13 @@ export function HomeScreen({ view }: { view?: HomeView }): JSX.Element {
         shelf="recent"
         tiles={recentlyAdded.items.map((rom) => tileFromRom(rom, true))}
         installedIds={installedIds}
+        onHighlight={highlightArt}
         onSelect={(tile) => open('recent', tile)}
         focusRomId={focusOn('recent')}
         onEndReached={recentlyAdded.loadMore}
       />
+
+      <CollectionShelf title={t('collections.mine')} collections={groups.own} view={view} />
 
       {continuePlaying.items.length === 0 &&
       recentlyAdded.items.length === 0 &&
@@ -254,64 +271,6 @@ export function HomeScreen({ view }: { view?: HomeView }): JSX.Element {
           { key: 'B', label: canGoBack ? t('action.back') : t('action.menu') }
         ]}
       />
-    </div>
-  )
-}
-
-/**
- * The featured game. Focusable: it is the first thing on the screen.
- *
- * Drawn over its own artwork, the same wash the game screen uses, so the first
- * thing RomMix shows is coloured by the game it is offering rather than by the
- * page it is drawn on.
- */
-function Hero({
-  rom,
-  reason,
-  onSelect
-}: {
-  rom: RommRom
-  reason: string
-  onSelect: () => void
-}): JSX.Element {
-  const { ref, props } = useFocusable({ onSelect, autoFocus: true })
-  const { t } = useI18n()
-  const keyLabel = useKeyLabel()
-  const title = rom.name ?? rom.fs_name
-  const year = rom.metadatum.first_release_date
-    ? new Date(rom.metadatum.first_release_date).getFullYear()
-    : null
-
-  return (
-    <div ref={ref as Ref<HTMLDivElement>} className="hero" {...props}>
-      <ArtBackdrop
-        paths={[rom.merged_screenshots?.[0], rom.path_cover_large, rom.path_cover_small]}
-      />
-      <div className="hero__art">
-        <CoverArt path={rom.path_cover_large ?? rom.path_cover_small} name={title} />
-      </div>
-      <div className="hero__text">
-        <div className="hero__reason">{reason}</div>
-        <h1 className="hero__title">{title}</h1>
-        <div className="hero__meta">
-          <span className="chip chip--icon">
-            <PlatformIcon slug={rom.platform_slug} size={20} label={rom.platform_display_name} />
-            {rom.platform_display_name}
-          </span>
-          {/* The same two facts the game's own banner leads with, marked the
-              same way — this is the same question asked one screen earlier.
-              What kind of game it is was three more chips here and is said
-              better by the summary underneath. See `GameHero`. */}
-          {year ? (
-            <span className="chip chip--icon">
-              <Icon name="time" size={14} />
-              {year}
-            </span>
-          ) : null}
-        </div>
-        {rom.summary ? <p className="hero__summary">{rom.summary}</p> : null}
-        <div className="hero__hint">{t('home.pressToOpen', { key: keyLabel('A') })}</div>
-      </div>
     </div>
   )
 }

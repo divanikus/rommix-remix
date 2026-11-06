@@ -15,7 +15,7 @@ import {
 import { measure, rectOf, SAME_STEP_PX, type Measure, type Rect } from './geometry'
 import { gamepadPresent, useGamepad } from './gamepad'
 import { keyboardLabel, useKeyboard } from './keyboard'
-import { revealElement, scrollToEnd } from './scroll'
+import { revealElement, scrollToEnd, shareScrollParent } from './scroll'
 import { playCue } from './sound'
 import { useI18n } from '../state'
 import type { Action, Direction, InputKind } from './types'
@@ -68,9 +68,15 @@ interface FocusContextValue {
    * of them are drawing a ring. Subscribed to instead, a press wakes only the
    * element losing the highlight and the one taking it.
    */
+  getFocusedElement(): HTMLElement | undefined
   isFocused(id: string): boolean
   subscribeFocus(listener: () => void): () => void
+  subscribeMove(listener: (direction: Direction, element: HTMLElement) => void): () => void
   setFocus(id: string): void
+  /** Keep an explicitly activated navigation item through content arrival. */
+  retainFocus(id: string | null): void
+  /** Arrival defaults yield to a retained navigation item and to modal layers. */
+  setInitialFocus(id: string): void
   move(direction: Direction): void
   /**
    * Send focus into a zone by name, as `move` cannot: a button that says "go to
@@ -84,8 +90,8 @@ interface FocusContextValue {
    */
   enterZone(zone: string): boolean
   activate(): void
-  /** Subscribe to a non-directional action. Returns an unsubscribe function. */
-  onAction(action: Action, handler: () => void, layer: number): () => void
+  /** Return false to try an earlier handler on the same layer; never leaks past modals. */
+  onAction(action: Action, handler: () => void | boolean, layer: number): () => void
   /** Called by the focused element to say what it does. See `useFocusedAction`. */
   reportAction(label: string | null): void
   /** See `useSuspendGamepad`. */
@@ -250,7 +256,9 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
     return () => window.removeEventListener('mousemove', moved)
   }, [])
 
-  const actionHandlers = useRef(new Map<Action, { handler: () => void; layer: number }[]>())
+  const actionHandlers = useRef(
+    new Map<Action, { handler: () => void | boolean; layer: number }[]>()
+  )
   /**
    * Which element has the highlight — a ref and a list of listeners rather
    * than React state.
@@ -261,7 +269,18 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
    * `FocusContextValue.isFocused`.
    */
   const focusedRef = useRef<string | null>(null)
+  const retainedFocus = useRef<string | null>(null)
   const focusListeners = useRef(new Set<() => void>())
+  const moveListeners = useRef(new Set<(direction: Direction, element: HTMLElement) => void>())
+  const subscribeMove = useCallback(
+    (listener: (direction: Direction, element: HTMLElement) => void): (() => void) => {
+      moveListeners.current.add(listener)
+      return () => {
+        moveListeners.current.delete(listener)
+      }
+    },
+    []
+  )
 
   /**
    * Move the highlight and tell whoever is listening.
@@ -287,6 +306,10 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
     }
   }, [])
 
+  const getFocusedElement = useCallback(
+    () => entries.current.get(focusedRef.current ?? '')?.element,
+    []
+  )
   const isFocused = useCallback((id: string): boolean => focusedRef.current === id, [])
   // Highest layer with anything on it: whatever is topmost owns the input.
   const layerRef = useRef(0)
@@ -349,6 +372,7 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
     (id: string): void => {
       const entry = entries.current.get(id)
       if (!entry) return
+      if (id !== retainedFocus.current) retainedFocus.current = null
       /**
        * The highlight and the caret are one thing, and this is where they are
        * kept that way.
@@ -384,10 +408,32 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
 
   const setFocus = useCallback(
     (id: string): void => {
+      if (focusedRef.current === id) return
       anchor.current = null
       applyFocus(id)
     },
     [applyFocus]
+  )
+
+  const retainFocus = useCallback(
+    (id: string | null): void => {
+      if (id) setFocus(id)
+      retainedFocus.current = id
+    },
+    [setFocus]
+  )
+
+  const setInitialFocus = useCallback(
+    (id: string): void => {
+      const target = entries.current.get(id)
+      if (!target || target.layer < layerRef.current) return
+      const retained = entries.current.get(retainedFocus.current ?? '')
+      // A header may be replaced by another header (e.g. the Downloads shortcut).
+      if (retainedFocus.current && !retained && target.layer === 0) return
+      if (retained?.id === focusedRef.current && retained.layer === target.layer) return
+      setFocus(id)
+    },
+    [setFocus]
   )
 
   /** See `enterZone` on the context. */
@@ -483,6 +529,7 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
     (entry: FocusableEntry): (() => void) => {
       entries.current.set(entry.id, entry)
       nearby.observe(entry.element)
+      if (retainedFocus.current === entry.id && entry.layer >= layerRef.current) setFocus(entry.id)
       settleLayer()
       return () => {
         entries.current.delete(entry.id)
@@ -491,7 +538,7 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
         settleLayer()
       }
     },
-    [settleLayer, nearby, onScreen]
+    [settleLayer, nearby, onScreen, setFocus]
   )
 
   const move = useCallback(
@@ -526,6 +573,7 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
       }
 
       const from = rectFor(current.element)
+      const collection = current.element.closest('[data-focus-collection]')
       const vertical = direction === 'down' || direction === 'up'
       // A vertical run keeps the column it started in; anything else starts a
       // new line of travel from where focus is now.
@@ -569,6 +617,8 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
          * still carries the highlight on from the last button of a row.
          */
         const straight = vertical ? [] : measured.filter((entry) => entry.at.inLine)
+        // A grid edge is a stop, not a diagonal shortcut into another row.
+        if (collection && !vertical && straight.length === 0) return null
         const field = straight.length > 0 ? straight : measured
         const closest = Math.min(...field.map((entry) => entry.at.gap))
 
@@ -594,7 +644,11 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
        * observer has not reported on yet is reached. See `onScreen`.
        */
       const pick = (pool: FocusableEntry[]): string | null =>
-        nearest(pool.filter((entry) => onScreen.current.has(entry.element))) ?? nearest(pool)
+        // The observer can lag behind rapid scrolls. Within an ordered grid,
+        // an older visible row must never beat the actual adjacent item.
+        collection
+          ? nearest(pool)
+          : (nearest(pool.filter((entry) => onScreen.current.has(entry.element))) ?? nearest(pool))
 
       /**
        * Where a press that arrives in a group from outside every group lands.
@@ -650,8 +704,14 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
        * which item you left it on, the page remembers the game you were looking
        * at — falling back to whatever lies that way if you have never been there.
        */
+      const destination =
+        direction === 'down'
+          ? current.element.closest<HTMLElement>('[data-focus-down]')?.dataset.focusDown
+          : undefined
       const cross = (): string | null => {
-        const outside = candidates.filter((entry) => entry.zone !== current.zone)
+        const outside = candidates.filter(
+          (entry) => entry.zone !== current.zone && (!destination || entry.zone === destination)
+        )
         const crossing = pick(outside)
         if (!crossing) return null
         const zone = entries.current.get(crossing)?.zone
@@ -663,7 +723,11 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
 
       // Within the zone first, always: a zone is left only once there is
       // genuinely nothing further to reach inside it.
-      const inZone = candidates.filter((entry) => entry.zone === current.zone)
+      const inZone = candidates.filter((entry) =>
+        collection
+          ? entry.element.closest('[data-focus-collection]') === collection
+          : entry.zone === current.zone
+      )
       let target = pick(inZone)
 
       // Up and down are the one way across, the menu being a row above the page.
@@ -671,19 +735,33 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
       // there is nothing that way except whatever the page happens to have in
       // its left-hand column, which is not somewhere anyone asked to go.
       if (!target && vertical) {
+        // Reaching the loaded end of a collection waits for its next page.
+        // It must not send focus into toolbar/detail controls below or beside it.
+        if (collection && direction === 'down') return
         // Nothing left to focus that way, but the page may still have something
         // to show: the last press before the edge reveals the rest of it. That
         // is also what keeps the bar out of the way — the page is left for it
         // only from the very top, never from the middle of a list that still
         // scrolls.
-        if (scrollToEnd(current.element, direction)) return
         target = cross()
+        if (destination && !target) return
+        const next = target ? entries.current.get(target) : undefined
+        // Toolbar and games are different zones in the SAME scroll container.
+        // Scrolling to its end here would hide the still-focused toolbar and
+        // skip every game. Crossing their boundary is the next focus move.
+        if (
+          (!next || !shareScrollParent(current.element, next.element)) &&
+          scrollToEnd(current.element, direction)
+        )
+          return
       }
 
       if (!target) return
 
       const arrived = landing(target)
       applyFocus(arrived)
+      const element = entries.current.get(arrived)?.element
+      if (element) for (const listener of moveListeners.current) listener(direction, element)
       // Only where a press actually moved: every return above is a press that
       // found nothing, and a click for those would say the opposite.
       playCue('move')
@@ -692,7 +770,10 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
       // entering a group at its own head: the column the run was travelling
       // down is not the one focus is in any more, and carrying it further would
       // aim the next press back at where the run started.
-      if (!vertical || arrived !== target) anchor.current = null
+      // A ragged collection row can clamp focus to a different column. The next
+      // press must start at that visible card, not jump back to an invisible
+      // column remembered before the alphabet heading. Shelves keep their anchor.
+      if (collection || !vertical || arrived !== target) anchor.current = null
     },
     [applyFocus, setFocus, visibleEntries, onScreen]
   )
@@ -707,7 +788,7 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
   }, [])
 
   const onAction = useCallback(
-    (action: Action, handler: () => void, layer: number): (() => void) => {
+    (action: Action, handler: () => void | boolean, layer: number): (() => void) => {
       const list = actionHandlers.current.get(action) ?? []
       const record = { handler, layer }
       list.push(record)
@@ -721,16 +802,15 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
     []
   )
 
-  /** Run the most recently registered handler on the active layer. */
+  /** Run the most recent accepting handler on the active layer. */
   const fireAction = useCallback((action: Action): void => {
     const list = actionHandlers.current.get(action) ?? []
     const onLayer = list.filter((h) => h.layer === layerRef.current)
-    const target = onLayer.length > 0 ? onLayer[onLayer.length - 1] : undefined
-    if (!target) return
-    // Leaving has its own cue; the rest — the menu, the search box, a tab — are
-    // the interface moving, which is what the move cue says.
-    playCue(action === 'back' ? 'back' : 'move')
-    target.handler()
+    for (const target of onLayer.toReversed()) {
+      if (target.handler() === false) continue
+      playCue(action === 'back' ? 'back' : 'move')
+      break
+    }
   }, [])
 
   // Starts as whatever is plugged in, then follows whatever is actually used.
@@ -790,8 +870,12 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
       register,
       claimLayer,
       isFocused,
+      getFocusedElement,
       subscribeFocus,
+      subscribeMove,
       setFocus,
+      retainFocus,
+      setInitialFocus,
       move,
       enterZone,
       activate,
@@ -804,13 +888,17 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
       claimLayer,
       isFocused,
       subscribeFocus,
+      subscribeMove,
       setFocus,
+      retainFocus,
+      setInitialFocus,
       move,
       enterZone,
       activate,
       onAction,
       reportAction,
-      setInputSuspended
+      setInputSuspended,
+      getFocusedElement
     ]
   )
 
@@ -921,7 +1009,8 @@ export function useFocusable(options: {
   id?: string
 }): UseFocusableResult {
   const { onSelect, enabled = true, autoFocus = false, actionLabel } = options
-  const { register, isFocused, subscribeFocus, setFocus, reportAction } = useFocusContext()
+  const { register, isFocused, subscribeFocus, setFocus, setInitialFocus, reportAction } =
+    useFocusContext()
   const layer = useContext(LayerContext)
   const zone = useContext(ZoneContext)
   const group = useContext(GroupContext)
@@ -957,11 +1046,19 @@ export function useFocusable(options: {
    * instead of repeating what was just pressed.
    */
   const claimed = useRef(false)
+  // A remounted effect tree (React StrictMode) must restore arrival focus too.
+  // Keep this separate from enabled/autoFocus changes: those must not reclaim it.
+  useEffect(
+    () => () => {
+      claimed.current = false
+    },
+    []
+  )
   useEffect(() => {
     if (claimed.current || !autoFocus || !enabled) return
     claimed.current = true
-    setFocus(id)
-  }, [autoFocus, enabled, id, setFocus])
+    setInitialFocus(id)
+  }, [autoFocus, enabled, id, setInitialFocus])
 
   /**
    * Subscribed to rather than read off a context value.
@@ -1045,7 +1142,7 @@ export function useSuspendGamepad(suspended: boolean): void {
 }
 
 /** Register a handler for a controller action while the component is mounted. */
-export function useAction(action: Action, handler: () => void, enabled = true): void {
+export function useAction(action: Action, handler: () => void | boolean, enabled = true): void {
   const { onAction } = useFocusContext()
   const layer = useContext(LayerContext)
   const handlerRef = useRef(handler)

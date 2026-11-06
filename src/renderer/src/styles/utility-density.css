@@ -1,0 +1,80 @@
+/* Upstream's 1080px design canvas is 5/6 of our 900px library canvas at 4K.
+   Bring utility content closer to that density without changing the user's
+   zoom, the shared header/footer, or focus/scroll coordinates with CSS zoom. */
+.app[data-utility='true'] {
+  --utility-base-type-scale: var(--type-scale);
+  --utility-type-scale: calc(var(--type-scale) * 5 / 6);
+}
+.app[data-utility='true'] > .content {
+  --type-scale: var(--utility-type-scale);
+  font-size: calc(17px * var(--type-scale));
+}
+.app[data-utility='true'] .hints {
+  --type-scale: var(--utility-base-type-scale);
+}
+.app[data-utility='true'] > .content {
+  .btn {
+    padding: 10px 22px;
+    gap: 8px;
+  }
+  .btn > svg {
+    width: 18px;
+    height: 18px;
+  }
+  .btn-row {
+    gap: 10px;
+    margin-block: 18px;
+  }
+  .setting {
+    padding-block: 11px;
+    gap: 16px;
+  }
+  .panel {
+    margin-top: 22px;
+  }
+  .panel__body {
+    padding: 3px 18px 15px;
+  }
+  .tab {
+    padding: 8px 13px;
+    gap: 7px;
+  }
+  .section-title {
+    margin: 25px 0 12px;
+  }
+  .field {
+    margin-bottom: 15px;
+  }
+  .field__input {
+    padding: 11px 13px;
+  }
+  .segmented__option {
+    padding: 8px 16px;
+    gap: 7px;
+  }
+  .notice {
+    padding: 12px 15px;
+    margin-block: 13px;
+  }
+  .group__header {
+    padding: 10px 13px;
+    gap: 10px;
+  }
+  .group__body {
+    padding: 10px;
+  }
+  .emulator {
+    padding: 12px 13px;
+    gap: 13px;
+    margin-bottom: 8px;
+  }
+  .bios__item {
+    padding: 10px 13px;
+    gap: 16px;
+    margin-bottom: 7px;
+  }
+  .download {
+    padding: 13px 17px;
+    margin-bottom: 10px;
+  }
+}

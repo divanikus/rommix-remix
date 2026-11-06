@@ -1,420 +1,655 @@
-import { type JSX, useCallback, useEffect, useMemo, useState, type Ref } from 'react'
-import { resolveSystem } from '@config/systems'
-import type { RommPlatform } from '@shared/types'
+import { BrowseChoices } from '../../components/BrowseChoices'
 import {
+  Fragment,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+  useState,
+  type JSX,
+  type Ref
+} from 'react'
+import { resolveSystem } from '@config/systems'
+import type { RommPlatform, RommRom, RomQuery } from '@shared/types'
+import {
+  CoverArt,
   GameCard,
   Hints,
   PageTitle,
-  PlatformIcon,
-  SegmentedControl,
   Spinner,
   TextField,
   romToOpen,
   tileFromInstalled,
   tileFromRom,
   tileInstalled,
-  titleOf
+  titleOf,
+  type GameTile
 } from '../../components'
-import { useAction, useFocusable, useFocusContext, useKeyLabel } from '../../input/focus'
-import { usePagedRoms } from '../../paging'
+import { FocusZone, useAction, useFocusable, useFocusContext } from '../../input/focus'
+import { PAGE_SIZE, usePagedRoms } from '../../paging'
 import { useApp, useI18n, type LibraryView } from '../../state'
+import {
+  readPresentation,
+  writePresentation,
+  type CoverSize,
+  type LibraryLayout
+} from '../../library-presentation'
+import { LetterGlimpse } from '../../components/LetterGlimpse'
+import { titleLetter } from '../../library-letter'
+import { Icon } from '../../icons'
 
-/** The search box's name in the focus registry, for the shortcut that jumps to it. */
+import { useLetterJump } from '../../use-letter-jump'
+import { PlatformCarousel, PLATFORM_ANCHOR } from '../../components/PlatformCarousel'
+import { createLibraryPageCache } from '../../library-page-cache'
+
 const SEARCH_FIELD = 'library-search'
-
-/**
- * Which games the grid is drawn from.
- *
- * `downloaded` is not the same query with a flag on it: what is on this device
- * is local knowledge the server does not have, so it cannot be asked for in a
- * page of results. Filtering the server's pages by it instead would leave the
- * grid showing the handful of downloaded games that happened to fall in the
- * first page, and the endless scroll fetching page after page to find more.
- * So that scope is answered from the installed index, which is complete, small
- * and already in hand.
- */
 type Scope = LibraryView['scope']
+interface CollectionSource {
+  id: number | string
+  title: string
+}
+type Browse = Pick<LibraryView, 'search' | 'scope' | 'layout'> & { sortDir: 'asc' | 'desc' }
+function platformQuery(
+  platformId: number | undefined,
+  search: string,
+  sortDir: 'asc' | 'desc',
+  collectionId?: number | string
+): RomQuery {
+  return {
+    ...(typeof collectionId === 'number'
+      ? { collection_id: collectionId }
+      : typeof collectionId === 'string'
+        ? { virtual_collection_id: collectionId }
+        : {}),
+    search_term: search.trim() || undefined,
+    platform_ids: platformId !== undefined ? [platformId] : undefined,
+    group_by_meta_id: true,
+    order_by: 'name',
+    order_dir: sortDir
+  }
+}
 
-/**
- * The full library browser: search, filter by platform, and an endless grid.
- *
- * Paging is driven by a sentinel below the grid rather than a "Load more"
- * button. That works on a controller as well as a mouse because moving focus
- * calls scrollIntoView, so navigating towards the bottom row scrolls the
- * sentinel into view and fetches the next page before the user arrives —
- * there is nothing to aim at and press.
- */
-export function LibraryScreen({ view }: { view?: LibraryView }): JSX.Element {
-  const { t } = useI18n()
-  const { installed, installedIds, navigate, offline, revise, settings } = useApp()
-  const keyLabel = useKeyLabel()
-
-  /**
-   * Away from the server there is one scope, and it is not a choice.
-   *
-   * The downloaded scope is already answered from the installed index rather
-   * than from a query — see `Scope` — so the screen keeps its search, its
-   * platform filter and its grid, and loses only the half that was never here.
-   * Held as the user's own choice underneath, so coming back into range puts
-   * the whole library back rather than leaving them on a filter they never set.
-   */
-  const [chosenScope, setScope] = useState<Scope>(view?.scope ?? 'all')
-  const scope: Scope = offline ? 'downloaded' : chosenScope
-  const [platforms, setPlatforms] = useState<RommPlatform[]>([])
-  /**
-   * What the search term leaves on each platform, as the server counted it.
-   *
-   * Null until there is a term to count, and a platform is absent from it
-   * while its count is on the wire — see `countFor`, which is where a chip
-   * with no number to show decides what to draw instead.
-   */
-  const [searchCounts, setSearchCounts] = useState<Record<number, number> | null>(null)
-  const [selectedPlatform, setSelectedPlatform] = useState<number | undefined>(view?.platformId)
-  const [search, setSearch] = useState(view?.search ?? '')
-  /**
-   * The card a return lands on, until a filter is touched.
-   *
-   * Dropped then rather than left to match: a card filtered out and back in is
-   * mounted afresh, and would take the highlight off the search box mid-word.
-   */
-  const [returnTo, setReturnTo] = useState(view?.romId)
-  const refilter =
-    <T,>(set: (value: T) => void) =>
-    (value: T): void => {
-      setReturnTo(undefined)
-      set(value)
-    }
-  /**
-   * Seeded from the route as well, so a return lands on the filtered grid.
-   *
-   * Starting this empty would ask the server for the whole library first and
-   * narrow it a moment later — the unfiltered grid drawn over the screen the
-   * player pressed B to get back to.
-   */
-  const [debouncedSearch, setDebouncedSearch] = useState(view?.search ?? '')
-  const [error, setError] = useState<string | null>(null)
-  /**
-   * The server's half of the grid.
-   *
-   * Nothing is asked for while the grid is showing what is downloaded, which
-   * is answered from the installed index — see `Scope`. Nor before the first
-   * connection answer: the grid is about to narrow to this device, and a
-   * request sent in the meantime comes back as a fetch error over a screen
-   * that has nothing to fetch. The spinner it already shows is the honest
-   * state until then.
-   */
-  const { roms, total, more, loading, sentinel } = usePagedRoms(
-    {
-      search_term: debouncedSearch || undefined,
-      platform_ids: selectedPlatform ? [selectedPlatform] : undefined,
-      // One tile per game rather than one per dump. A library with the USA, the
-      // European and the revised copy of everything is three grids of the same
-      // games, and the count under the title is a number nobody recognises as
-      // their collection. Which versions there are is on the game's own page.
-      group_by_meta_id: true
-    },
-    {
-      enabled: offline === false && scope === 'all',
-      initialCount: view?.held,
-      onError: setError
-    }
+/** One query and selection shared by the grid and the full-width table. */
+export function LibraryScreen({
+  view,
+  collection
+}: {
+  view?: LibraryView
+  collection?: CollectionSource
+}): JSX.Element {
+  const { offline, installed, settings, revise } = useApp()
+  const { setFocus } = useFocusContext()
+  const [cache] = useState(() =>
+    createLibraryPageCache((query) => window.rommix.library.roms(query), PAGE_SIZE)
   )
-
-  /**
-   * The platforms, which the server's last list stands in for while it is away.
-   * See `library:platforms`.
-   *
-   * Asked again when the connection changes, and not before it is known. A
-   * device that starts out of range with nothing saved has no filter to draw
-   * and an error to explain why; without this it would keep both after RomM
-   * came back, since the only other thing that clears the error is a fetch the
-   * downloaded scope never makes.
-   */
+  const [browse, setBrowse] = useState<Browse>(() => ({
+    scope: view?.scope ?? 'all',
+    search: view?.search ?? '',
+    layout: view?.layout ?? readPresentation(localStorage).layout,
+    sortDir: readPresentation(localStorage).sortDir
+  }))
+  const [fromCarousel, setFromCarousel] = useState(false)
+  const reportBrowse = useCallback((next: Browse) => setBrowse(next), [])
+  const [platforms, setPlatforms] = useState<RommPlatform[]>([])
+  const [platformError, setPlatformError] = useState<string | null>(null)
   useEffect(() => {
-    if (offline === null) return
+    if (offline === null || collection) return
+    let current = true
     void window.rommix.library
       .platforms()
-      .then((list) => {
-        setPlatforms(list.filter((p) => p.rom_count > 0))
-        setError(null)
+      .then((items) => {
+        if (current) {
+          setPlatforms(items)
+          setPlatformError(null)
+        }
       })
-      .catch((cause: Error) => setError(cause.message))
-  }, [offline])
+      .catch((cause: Error) => {
+        if (current) setPlatformError(cause.message)
+      })
+    return () => {
+      current = false
+    }
+  }, [offline, collection])
+  const siblings = useMemo(
+    () =>
+      platforms
+        .filter((platform) => {
+          if (!offline) return platform.rom_count > 0
+          const system = resolveSystem(platform.slug, platform.fs_slug, settings?.systemOverrides)
+          return !!system && installed.some((entry) => entry.system === system)
+        })
+        .sort((a, b) => a.display_name.localeCompare(b.display_name)),
+    [platforms, offline, installed, settings?.systemOverrides]
+  )
+  const canCycle = view?.platformId !== undefined && siblings.length > 1
+  const cycle = (delta: -1 | 1): void => {
+    const index = siblings.findIndex((p) => p.id === view?.platformId)
+    if (index < 0 || !canCycle) return
+    // Park before React unregisters any games/toolbar controls. This node survives.
+    setFocus(PLATFORM_ANCHOR)
+    setFromCarousel(true)
+    revise({
+      name: 'library',
+      view: {
+        platformId: siblings[(index + delta + siblings.length) % siblings.length].id,
+        scope: browse.scope,
+        search: browse.search,
+        layout: browse.layout
+      }
+    })
+  }
+  useEffect(() => {
+    if (offline !== false || browse.scope !== 'all') {
+      cache.clear()
+      return
+    }
+    const index = siblings.findIndex((p) => p.id === view?.platformId)
+    if (index < 0 || siblings.length < 2) return
+    // Warm only adjacent first-page metadata, never covers or game downloads.
+    const timer = setTimeout(() => {
+      for (const delta of [-1, 1]) {
+        const platform = siblings[(index + delta + siblings.length) % siblings.length]
+        void cache
+          .read({
+            ...platformQuery(platform.id, browse.search, browse.sortDir),
+            limit: PAGE_SIZE,
+            offset: 0
+          })
+          .catch(() => undefined)
+      }
+    }, 180)
+    return () => clearTimeout(timer)
+  }, [cache, siblings, view?.platformId, browse.scope, browse.search, browse.sortDir, offline])
+  return (
+    <div className="library-shell">
+      {view?.platformId !== undefined ? (
+        <PlatformCarousel platforms={siblings} selected={view.platformId} onStep={cycle} />
+      ) : null}
+      <LibraryContent
+        key={collection ? `${typeof collection.id}:${collection.id}` : (view?.platformId ?? 'all')}
+        collection={collection}
+        view={view}
+        platforms={platforms}
+        platformError={platformError}
+        cache={cache}
+        onBrowse={reportBrowse}
+        onCycle={cycle}
+        canCycle={canCycle}
+        fromCarousel={fromCarousel}
+      />
+    </div>
+  )
+}
 
-  // Debounce so typing a title does not fire a request per keystroke.
+function LibraryContent({
+  view,
+  platforms,
+  platformError,
+  cache,
+  onBrowse,
+  onCycle,
+  canCycle,
+  fromCarousel,
+  collection
+}: {
+  view?: LibraryView
+  platforms: RommPlatform[]
+  platformError: string | null
+  cache: ReturnType<typeof createLibraryPageCache>
+  onBrowse: (view: Browse) => void
+  onCycle: (delta: -1 | 1) => void
+  canCycle: boolean
+  fromCarousel: boolean
+  collection?: CollectionSource
+}): JSX.Element {
+  const { t } = useI18n()
+  const { installed, installedIds, navigate, offline, revise, settings } = useApp()
+  const { setFocus, setInitialFocus, activate, enterZone, subscribeMove, getFocusedElement } =
+    useFocusContext()
+  // Arrival belongs to the route, not to each card mounted by a view/filter change.
+  const arrival = useRef(!view?.focusSearch)
+  const [presentation, setPresentation] = useState(() => ({
+    ...readPresentation(localStorage),
+    ...(view?.layout ? { layout: view.layout } : {})
+  }))
+  const [chosenScope, setScope] = useState<Scope>(view?.scope ?? 'all')
+  const scope = offline ? 'downloaded' : chosenScope
+  const selectedPlatform = view?.platformId
+  const isSearch = !collection && selectedPlatform === undefined
+  const [search, setSearch] = useState(view?.search ?? '')
+  const [debouncedSearch, setDebouncedSearch] = useState(search)
+  const searchReady = !isSearch || (search.trim().length >= 2 && debouncedSearch.trim().length >= 2)
+  const [selected, setSelected] = useState(view?.romId)
+  const [version, setVersion] = useState(view?.versionId)
+  const [error, setError] = useState<string | null>(null)
+  const [members, setMembers] = useState<Set<number> | null>(null)
+  const collectionId = collection?.id
+  useEffect(() => {
+    let current = true
+    setMembers(null)
+    if (collectionId !== undefined && scope === 'downloaded') {
+      const request =
+        typeof collectionId === 'string'
+          ? window.rommix.library.virtualCollections()
+          : window.rommix.library.collections()
+      void request
+        .then((items) => {
+          if (current) setMembers(new Set(items.find((c) => c.id === collectionId)?.rom_ids ?? []))
+        })
+        .catch((cause: Error) => {
+          if (current) setError(cause.message)
+        })
+    }
+    return () => {
+      current = false
+    }
+  }, [collectionId, scope])
+  const query = platformQuery(
+    selectedPlatform,
+    debouncedSearch,
+    presentation.sortDir,
+    collection?.id
+  )
+  const { roms, total, more, loading, sentinel, loadMore } = usePagedRoms(query, {
+    enabled: offline === false && scope === 'all' && searchReady,
+    initialCount: view?.held,
+    onError: setError,
+    initialPage: cache.peek({ ...query, offset: 0, limit: Math.max(PAGE_SIZE, view?.held ?? 0) }),
+    fetchPage: cache.read
+  })
+  useEffect(
+    () =>
+      onBrowse({
+        scope: chosenScope,
+        search,
+        layout: presentation.layout,
+        sortDir: presentation.sortDir
+      }),
+    [onBrowse, chosenScope, search, presentation.layout, presentation.sortDir]
+  )
+  useEffect(() => {
+    writePresentation(localStorage, presentation)
+    document.documentElement.dataset.coverSize = presentation.coverSize
+  }, [presentation])
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search), 350)
     return () => window.clearTimeout(timer)
   }, [search])
-
-  /**
-   * Count the search term against each platform on offer.
-   *
-   * `rom_count` is the platform entire, so a search left every chip promising
-   * games the grid it opens does not hold. Only the server can say otherwise —
-   * see `romCounts` — and it is asked for the debounced term, alongside the
-   * grid's own request rather than once per keystroke.
-   */
   useEffect(() => {
-    if (offline !== false || scope !== 'all' || !debouncedSearch || platforms.length === 0) {
-      setSearchCounts(null)
-      return
+    if (view?.focusSearch) {
+      setFocus(SEARCH_FIELD)
+      activate()
     }
-    let listening = true
-    void window.rommix.library
-      .platformCounts(
-        platforms.map((platform) => platform.id),
-        debouncedSearch
-      )
-      .then((counts) => {
-        if (listening) setSearchCounts(counts)
-      })
-      // Nothing worth saying that the grid's own failure does not already say.
-      .catch(() => {
-        if (listening) setSearchCounts(null)
-      })
-    return () => {
-      listening = false
-    }
-  }, [offline, scope, debouncedSearch, platforms])
-
-  /**
-   * Y jumps to the search box, as the hint bar advertises.
-   *
-   * Both halves, in the order pressing A on the field does them. The ring is
-   * drawn from `[data-focused]` and nothing else, so reaching past the registry
-   * to call `.focus()` on the box put the letters in it and left the highlight
-   * on whatever was focused before — and the two ways into one field must not
-   * disagree. `setFocus` moves the highlight; `activate` runs the field's own
-   * `onSelect`, which is what takes the caret.
-   */
-  const { setFocus, activate } = useFocusContext()
+  }, [view?.focusSearch, setFocus, activate])
   useAction('search', () => {
     setFocus(SEARCH_FIELD)
     activate()
   })
 
-  const chosen = useMemo(
-    () => platforms.find((p) => p.id === selectedPlatform),
-    [platforms, selectedPlatform]
-  )
-  const platformName = chosen?.display_name
-
-  /**
-   * The downloaded games, narrowed by whatever the two filters above say.
-   *
-   * Matched on the ES-DE system rather than the platform: the index records
-   * which folder a game was installed into, not the RomM platform it came
-   * from, and `resolveSystem` is the same rule that decided that folder.
-   */
+  const chosen = platforms.find((p) => p.id === selectedPlatform)
   const downloaded = useMemo(() => {
-    if (scope !== 'downloaded') return []
+    if (scope !== 'downloaded' || (collection && !members)) return []
     const system = chosen
       ? resolveSystem(chosen.slug, chosen.fs_slug, settings?.systemOverrides)
       : null
-    // A platform RomMix cannot place has no folder to have downloaded into, so
-    // the honest answer for it is none rather than every game on the device.
-    if (chosen && !system) return []
+    // An unresolved selected platform must never show all local games.
+    if (selectedPlatform !== undefined && !system) return []
     const term = search.trim().toLowerCase()
     return installed
-      .filter((entry) => (system ? entry.system === system : true))
-      .filter((entry) => (term ? titleOf(entry).toLowerCase().includes(term) : true))
-      .sort((a, b) => titleOf(a).localeCompare(titleOf(b)))
-  }, [scope, installed, chosen, search, settings?.systemOverrides])
-
-  /**
-   * How many downloaded games each ES-DE system holds under the search term.
-   * Keyed by system for the reason `downloaded` matches on one.
-   */
-  const downloadedCounts = useMemo(() => {
-    const counts = new Map<string, number>()
-    if (scope !== 'downloaded') return counts
-    const term = search.trim().toLowerCase()
-    for (const entry of installed) {
-      if (term && !titleOf(entry).toLowerCase().includes(term)) continue
-      counts.set(entry.system, (counts.get(entry.system) ?? 0) + 1)
-    }
-    return counts
-  }, [scope, installed, search])
-
-  /**
-   * The number on a platform's chip: how many games pressing it would draw.
-   *
-   * Undefined where the filters in force have no count to give yet, which is a
-   * chip drawn without one rather than a chip claiming a number it no longer
-   * stands for.
-   */
-  const countFor = useCallback(
-    (platform: RommPlatform): number | undefined => {
-      if (scope === 'downloaded') {
-        const system = resolveSystem(platform.slug, platform.fs_slug, settings?.systemOverrides)
-        // A platform RomMix cannot place has no folder to have downloaded
-        // into — the same answer `downloaded` gives for it.
-        return system ? (downloadedCounts.get(system) ?? 0) : 0
-      }
-      if (!debouncedSearch) return platform.rom_count
-      return searchCounts?.[platform.id]
-    },
-    [scope, downloadedCounts, settings?.systemOverrides, debouncedSearch, searchCounts]
-  )
-
+      .filter((entry) => !system || entry.system === system)
+      .filter((entry) => !collection || members?.has(entry.romId))
+      .filter((entry) => !term || titleOf(entry).toLowerCase().includes(term))
+      .sort(
+        (a, b) => titleOf(a).localeCompare(titleOf(b)) * (presentation.sortDir === 'desc' ? -1 : 1)
+      )
+  }, [
+    scope,
+    chosen,
+    selectedPlatform,
+    search,
+    installed,
+    settings?.systemOverrides,
+    presentation.sortDir,
+    collection,
+    members
+  ])
   const tiles = useMemo(
     () =>
-      scope === 'downloaded'
-        ? downloaded.map(tileFromInstalled)
-        : roms.map((rom) => tileFromRom(rom, true)),
-    [scope, downloaded, roms]
+      !searchReady
+        ? []
+        : scope === 'downloaded'
+          ? downloaded.map(tileFromInstalled)
+          : roms.map((rom) => tileFromRom(rom, true)),
+    [scope, downloaded, roms, searchReady]
   )
-  // What the server counted, or what is actually here when it counted
-  // nothing — which is the whole of it once there are no more pages.
+  const rowMetadata = useMemo(() => new Map(roms.map((rom) => [rom.id, rom])), [roms])
+  const localSizes = useMemo(
+    () => new Map(installed.map((entry) => [entry.romId, entry.sizeBytes])),
+    [installed]
+  )
+  useEffect(
+    () =>
+      subscribeMove(() => {
+        arrival.current = false
+      }),
+    [subscribeMove]
+  )
+  useEffect(() => {
+    if (!arrival.current || !tiles.length) return
+    let cancelled = false
+    // Wait for new cards' registration effects, including StrictMode replay.
+    // Their transient first-item repair must not replace route restoration.
+    queueMicrotask(() => {
+      if (cancelled || !arrival.current) return
+      if (fromCarousel && getFocusedElement()?.dataset.platformSlot !== 'current') {
+        arrival.current = false
+        return
+      }
+      arrival.current = false
+      const target = tiles.find((tile) => tile.romId === view?.romId) ?? tiles[0]
+      setSelected(target.romId)
+      if (view?.romId !== target.romId) setVersion(undefined)
+      setInitialFocus(`library-game-${target.romId}`)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [tiles, view?.romId, setInitialFocus, fromCarousel, getFocusedElement])
+  useEffect(() => {
+    if (scope !== 'all' || !more || loading) return
+    const index = tiles.findIndex((tile) => tile.romId === selected)
+    // Keep one page of metadata ahead of focus, rather than wait until the last
+    // row meets a pixel sentinel. Covers/ROMs are not downloaded by this request.
+    if (index >= 0 && tiles.length - index <= PAGE_SIZE) loadMore()
+  }, [scope, more, loading, tiles, selected, loadMore])
+  const {
+    flash,
+    pending,
+    cancel: cancelJump
+  } = useLetterJump({
+    tiles,
+    selected,
+    more: scope === 'all' && more,
+    loading,
+    error,
+    loadMore
+  })
+  useAction('header', () => {
+    arrival.current = false
+    cancelJump()
+    if (!enterZone(selectedPlatform !== undefined ? 'library-platforms' : 'nav'))
+      enterZone('library-list')
+  })
+  const cycle = (delta: -1 | 1): boolean => {
+    if (!canCycle) return false
+    cancelJump()
+    onCycle(delta)
+    return true
+  }
+  useAction('tabLeft', () => cycle(-1))
+  useAction('tabRight', () => cycle(1))
+  const current = tiles.find((tile) => tile.romId === selected) ?? tiles[0]
   const count = scope === 'downloaded' ? tiles.length : (total ?? roms.length)
-  // Only the server scope has anything to wait for — and until the connection
-  // has answered, every scope does: which one this screen is showing is not
-  // settled yet.
-  const busy = (loading && scope === 'all') || offline === null
-
+  const busy =
+    (loading && scope === 'all') ||
+    offline === null ||
+    (!!collection && scope === 'downloaded' && !members && !error)
+  const resetSelection = (): void => {
+    arrival.current = false
+    cancelJump()
+    setSelected(undefined)
+    setVersion(undefined)
+  }
+  const highlight = (tile: GameTile): void => {
+    if (arrival.current) return
+    if (tile.romId !== selected) {
+      setSelected(tile.romId)
+      setVersion(undefined)
+    }
+  }
+  const open = (tile: GameTile): void => {
+    const romId =
+      tile.romId === selected && version !== undefined ? version : romToOpen(tile, installedIds)
+    revise({
+      ...(collection
+        ? { name: 'collection' as const, collectionId: collection.id, title: collection.title }
+        : { name: 'library' as const }),
+      view: {
+        scope: chosenScope,
+        search,
+        platformId: selectedPlatform,
+        romId: tile.romId,
+        versionId: romId,
+        held: tiles.length,
+        layout: presentation.layout
+      }
+    })
+    navigate({ name: 'game', romId })
+  }
   return (
-    <div className="content">
-      <PageTitle icon="library">{t('library.title')}</PageTitle>
-      <p className="page-subtitle">
-        {count === 0
-          ? // "Browse everything on your server" is not what this screen is
-            // while the server is away, and the grid below says the rest.
-            t(offline ? 'library.noneDownloaded' : 'library.browseAll')
-          : platformName
-            ? t('library.countOnPlatform', { count, platform: platformName })
-            : t('library.count', { count })}
-      </p>
-
-      {/* One block, in the order the questions narrow: which library, then a
-          title, then which platform of it. */}
-      {/* Above the filters, because it explains what they are filtering: with
-          the server away this screen is the downloaded games and the scope
-          control has gone with it. */}
-      {offline ? <div className="notice notice--warn">{t('app.offlineNotice')}</div> : null}
-
-      <div className="filters">
-        {offline ? null : (
-          <div className="filter">
-            <span className="filter__label">{t('library.scopeLabel')}</span>
-            <SegmentedControl<Scope>
-              value={scope}
-              onChange={refilter(setScope)}
-              options={[
-                { value: 'all', label: t('library.scopeAll') },
-                { value: 'downloaded', label: t('library.scopeDownloaded') }
-              ]}
-            />
-          </div>
-        )}
-
+    <div
+      className="content library-screen"
+      data-layout={presentation.layout}
+      data-selected-rom={current?.romId}
+    >
+      <div className="library-heading">
         <div>
-          <TextField
-            focusId={SEARCH_FIELD}
-            label={t('library.searchLabel')}
-            value={search}
-            onChange={refilter(setSearch)}
-            placeholder={t('library.searchPlaceholder')}
-            hint={t('library.searchHint', { key: keyLabel('Y') })}
-          />
+          {selectedPlatform === undefined ? (
+            <PageTitle>
+              {collection?.title ?? t(isSearch ? 'action.search' : 'library.title')}
+            </PageTitle>
+          ) : null}
+          {searchReady ? <p className="page-subtitle">{t('library.count', { count })}</p> : null}
         </div>
-
-        <div className="filter">
-          <span className="filter__label">{t('library.platformLabel')}</span>
-          <div className="segmented">
-            <PlatformChip
-              id="all"
-              label={t('library.allPlatforms')}
-              active={selectedPlatform === undefined}
-              onSelect={() => refilter(setSelectedPlatform)(undefined)}
-            />
-            {platforms.map((platform) => {
-              const matching = countFor(platform)
-              // A platform the other filters have emptied is not a filter worth
-              // offering — the rule the list itself is built with. The chosen
-              // one stays whatever it holds, or there is no way back out of it.
-              if (matching === 0 && platform.id !== selectedPlatform) return null
-              return (
-                <PlatformChip
-                  key={platform.id}
-                  id={String(platform.id)}
-                  label={
-                    matching === undefined
-                      ? platform.display_name
-                      : t('library.platformChip', {
-                          name: platform.display_name,
-                          count: matching
-                        })
-                  }
-                  icon={
-                    <PlatformIcon slug={platform.slug} size={20} label={platform.display_name} />
-                  }
-                  active={platform.id === selectedPlatform}
-                  onSelect={() => refilter(setSelectedPlatform)(platform.id)}
+      </div>
+      {offline ? <div className="notice notice--warn">{t('app.offlineNotice')}</div> : null}
+      <div className="library-toolbar" data-focus-down="library-list">
+        <TextField
+          focusId={SEARCH_FIELD}
+          field="library-search"
+          label={t('library.searchLabel')}
+          value={search}
+          onChange={(value) => {
+            resetSelection()
+            setSearch(value)
+          }}
+          placeholder={t('library.searchPlaceholder')}
+        />
+        {searchReady ? (
+          <>
+            {!offline ? (
+              <div className="library-control">
+                <span>{t('library.scopeLabel')}</span>
+                <BrowseChoices<Scope>
+                  value={scope}
+                  onChange={(value) => {
+                    resetSelection()
+                    setScope(value)
+                  }}
+                  options={[
+                    { value: 'all', label: t('library.scopeAll') },
+                    { value: 'downloaded', label: t('library.scopeDownloaded') }
+                  ]}
                 />
-              )
-            })}
-          </div>
-        </div>
+              </div>
+            ) : null}
+            <div className="library-control" data-control="grouping">
+              <span>{t('library.grouping')}</span>
+              <BrowseChoices
+                value={presentation.groupBy}
+                onChange={(groupBy: 'none' | 'letter') => {
+                  arrival.current = false
+                  cancelJump()
+                  setPresentation((p) => ({ ...p, groupBy }))
+                }}
+                options={[
+                  { value: 'none', label: t('library.ungrouped') },
+                  { value: 'letter', label: 'ABC' }
+                ]}
+              />
+            </div>
+            <div className="library-control" data-control="sort">
+              <span>{t('library.order')}</span>
+              <BrowseChoices
+                value={presentation.sortDir}
+                onChange={(sortDir: 'asc' | 'desc') => {
+                  resetSelection()
+                  setPresentation((p) => ({ ...p, sortDir }))
+                }}
+                options={[
+                  { value: 'asc', label: 'A–Z' },
+                  { value: 'desc', label: 'Z–A' }
+                ]}
+              />
+            </div>
+            <div className="library-control" data-control="layout">
+              <span>{t('library.view')}</span>
+              <BrowseChoices<LibraryLayout>
+                value={presentation.layout}
+                onChange={(layout) => {
+                  arrival.current = false
+                  cancelJump()
+                  setPresentation((p) => ({ ...p, layout }))
+                }}
+                options={[
+                  {
+                    value: 'grid',
+                    label: t('library.grid'),
+                    mark: <Icon name="library" size={19} />
+                  },
+                  { value: 'list', label: t('library.list'), mark: <Icon name="sort" size={19} /> }
+                ]}
+              />
+            </div>
+            {presentation.layout === 'grid' ? (
+              <div className="library-control" data-control="cover-size">
+                <span>{t('library.coverSize')}</span>
+                <BrowseChoices<CoverSize>
+                  value={presentation.coverSize}
+                  onChange={(coverSize) => {
+                    arrival.current = false
+                    cancelJump()
+                    setPresentation((p) => ({ ...p, coverSize }))
+                  }}
+                  options={[
+                    { value: 'small', label: t('library.small') },
+                    { value: 'medium', label: t('library.medium') },
+                    { value: 'large', label: t('library.large') }
+                  ]}
+                />
+              </div>
+            ) : null}
+          </>
+        ) : null}
       </div>
-
+      {!searchReady ? <div className="search-prompt">{t('library.searchPrompt')}</div> : null}
       {error ? <div className="notice notice--error">{error}</div> : null}
-
-      <div className="grid">
-        {tiles.map((tile) => (
-          <GameCard
-            key={tile.romId}
-            tile={tile}
-            installed={tileInstalled(tile, installedIds)}
-            onSelect={() => {
-              // What was filtered for, and the card pressed, go onto this
-              // screen's own step first, so B off the game comes back to the
-              // grid it was picked out of with the highlight where it was.
-              // Written here rather than as the filters change, which would
-              // redraw the shell around a screen for a keystroke in it.
-              revise({
-                name: 'library',
-                view: {
-                  scope: chosenScope,
-                  search,
-                  platformId: selectedPlatform,
-                  romId: tile.romId,
-                  held: tiles.length
-                }
-              })
-              navigate({ name: 'game', romId: romToOpen(tile, installedIds) })
-            }}
-            showPlatform={selectedPlatform === undefined}
-            autoFocus={tile.romId === returnTo}
-          />
-        ))}
-      </div>
-
-      {/* Sits directly below the grid: crossing it is what pulls the next page. */}
-      <div ref={sentinel} aria-hidden="true" />
-
-      {busy ? <Spinner /> : null}
-
-      {/* A scope with nothing in it at all is not a search that found nothing,
-          and on a fresh install the downloaded grid is the empty one. */}
-      {!busy && tiles.length === 0 && !error ? (
-        <div className="empty">
-          {scope === 'downloaded' && !search && selectedPlatform === undefined
-            ? t('library.noneDownloaded')
-            : t('library.noMatches')}
+      {platformError ? <div className="notice notice--error">{platformError}</div> : null}
+      {searchReady ? (
+        <div className="library-layout">
+          <FocusZone id="library-list">
+            <div
+              className={presentation.layout === 'grid' ? 'grid library-grid' : 'library-rows'}
+              data-focus-collection={presentation.layout}
+            >
+              {presentation.layout === 'list' && tiles.length > 0 ? (
+                <div className="library-table-header" aria-hidden="true">
+                  <span>
+                    {t('library.columnGame')} {presentation.sortDir === 'asc' ? '↑' : '↓'}
+                  </span>
+                  <span data-column="size">{t('library.columnSize')}</span>
+                  <span data-column="added">{t('library.columnAdded')}</span>
+                  <span data-column="released">{t('details.released')}</span>
+                  <span data-column="rating">{t('library.columnRating')}</span>
+                  <span data-column="duration">{t('details.toBeat')}</span>
+                  <span data-column="languages">{t('details.languages')}</span>
+                  <span data-column="regions">{t('details.regions')}</span>
+                </div>
+              ) : null}
+              {tiles.map((tile, index) => (
+                <Fragment key={tile.romId}>
+                  {presentation.groupBy === 'letter' &&
+                  (index === 0 ||
+                    titleLetter(tiles[index - 1].sortTitle ?? tiles[index - 1].title) !==
+                      titleLetter(tile.sortTitle ?? tile.title)) ? (
+                    <h2 className="library-letter-heading">
+                      {titleLetter(tile.sortTitle ?? tile.title)}
+                    </h2>
+                  ) : null}
+                  {presentation.layout === 'grid' ? (
+                    <GameCard
+                      key={tile.romId}
+                      tile={tile}
+                      focusId={`library-game-${tile.romId}`}
+                      installed={tileInstalled(tile, installedIds)}
+                      onSelect={() => open(tile)}
+                      onHighlight={() => highlight(tile)}
+                      showPlatform={selectedPlatform === undefined}
+                    />
+                  ) : (
+                    <LibraryRow
+                      key={tile.romId}
+                      tile={tile}
+                      installed={tileInstalled(tile, installedIds)}
+                      rom={scope === 'all' ? rowMetadata.get(tile.romId) : undefined}
+                      localBytes={scope === 'downloaded' ? localSizes.get(tile.romId) : undefined}
+                      selected={current?.romId === tile.romId}
+                      onHighlight={() => highlight(tile)}
+                      onSelect={() => open(tile)}
+                    />
+                  )}
+                </Fragment>
+              ))}
+              <div ref={sentinel} className="library-sentinel" aria-hidden="true" />
+              {busy && !tiles.length ? (
+                <div className="library-loading" role="status">
+                  <Spinner />
+                </div>
+              ) : busy ? (
+                <Spinner />
+              ) : null}
+              {!busy && !tiles.length && !error ? (
+                <div className="empty">
+                  {t(
+                    scope === 'downloaded' && !search
+                      ? 'library.noneDownloaded'
+                      : 'library.noMatches'
+                  )}
+                </div>
+              ) : null}
+              {!busy && scope === 'all' && !!tiles.length && !more ? (
+                <p className="library-end">{t('library.thatIsAll', { count })}</p>
+              ) : null}
+            </div>
+          </FocusZone>
         </div>
       ) : null}
-
-      {!busy && scope === 'all' && roms.length > 0 && !more ? (
-        <div className="empty" style={{ padding: '28px 0' }}>
-          {t('library.thatIsAll', { count })}
+      <LetterGlimpse flash={flash} />
+      {pending ? (
+        <div className="library-jump-status" role="status">
+          {t('library.loadingLetter')}
         </div>
       ) : null}
-
       <Hints
         items={[
-          { key: 'A', label: t('action.open') },
+          {
+            key: 'A',
+            label: t('action.open')
+          },
           { key: 'Y', label: t('action.search') },
+          { key: 'SELECT', label: t('library.headerReturn') },
+          ...(searchReady
+            ? [
+                { key: 'LT', label: t('library.previousLetter') },
+                { key: 'RT', label: t('library.nextLetter') }
+              ]
+            : []),
+          ...(canCycle
+            ? [
+                { key: 'LB', label: t('library.previousPlatform') },
+                { key: 'RB', label: t('library.nextPlatform') }
+              ]
+            : []),
           { key: 'B', label: t('action.back') }
         ]}
       />
@@ -422,30 +657,106 @@ export function LibraryScreen({ view }: { view?: LibraryView }): JSX.Element {
   )
 }
 
-function PlatformChip({
-  id,
-  label,
-  icon,
-  active,
+function LibraryRow({
+  tile,
+  installed,
+  rom,
+  localBytes,
+  selected,
+  onHighlight,
   onSelect
 }: {
-  id: string
-  label: string
-  icon?: JSX.Element
-  active: boolean
+  tile: GameTile
+  installed: boolean
+  rom?: RommRom
+  localBytes?: number
+  selected: boolean
+  onHighlight: () => void
   onSelect: () => void
 }): JSX.Element {
-  const { ref, props } = useFocusable({ onSelect })
+  const { t, formatBytes, formatDate, formatDuration } = useI18n()
+  const { isFocused } = useFocusContext()
+  const focusId = `library-game-${tile.romId}`
+  const { ref, props, focused } = useFocusable({
+    id: focusId,
+    onSelect,
+    actionLabel: t('action.open')
+  })
+  useEffect(() => {
+    // Registration may briefly repair focus before the selected row's autofocus
+    // runs. Only the current focus may update selection after that commit.
+    if (focused && isFocused(focusId)) onHighlight()
+  }, [focused, focusId, isFocused, onHighlight])
+  const released = rom?.metadatum.first_release_date
+  const bytes = rom?.fs_size_bytes ?? localBytes
+  const rating = rom?.metadatum.average_rating
   return (
     <button
       ref={ref as Ref<HTMLButtonElement>}
-      className="segmented__option segmented__option--icon"
-      data-platform={id}
-      data-active={active}
+      className="library-row"
+      data-rom={tile.romId}
+      data-focus-label={tile.sortTitle ?? tile.title}
+      data-selected={selected}
+      aria-pressed={selected}
       {...props}
     >
-      {icon}
-      {label}
+      <span className="library-row__game">
+        <CoverArt path={tile.coverPath} name={tile.title} />
+        <span className="library-row__identity">
+          <span className="library-row__title">
+            <strong title={tile.title}>{tile.title}</strong>
+            {tile.group ? (
+              <span
+                className="library-row__badge"
+                title={t('library.versions', { count: tile.group.length })}
+              >
+                <Icon name="roms" size={14} />
+                {tile.group.length}
+              </span>
+            ) : null}
+          </span>
+          {rom?.fs_name ? (
+            <small className="library-row__filename" title={rom.fs_name}>
+              {rom.fs_name}
+            </small>
+          ) : null}
+          <small className="library-row__meta">
+            {tile.platformName}
+            {installed ? (
+              <span className="library-row__badge">
+                <Icon name="download" size={13} />
+                {t('library.downloadedMark')}
+              </span>
+            ) : null}
+          </small>
+        </span>
+      </span>
+      <span data-column="size">{bytes === undefined ? '—' : formatBytes(bytes)}</span>
+      <span data-column="added">{rom?.created_at ? (formatDate(rom.created_at) ?? '—') : '—'}</span>
+      <span data-column="released">{released ? (formatDate(released) ?? '—') : '—'}</span>
+      <span data-column="rating">
+        {typeof rating === 'number' && rating > 0 ? rating.toFixed(1) : '—'}
+      </span>
+      <span data-column="duration">
+        {formatDuration(rom?.hltb_metadata?.main_story ?? 0) ?? '—'}
+      </span>
+      <span data-column="languages">
+        <TableTags values={rom?.languages ?? []} />
+      </span>
+      <span data-column="regions">
+        <TableTags values={rom?.regions ?? []} />
+      </span>
     </button>
+  )
+}
+
+function TableTags({ values }: { values: string[] }): JSX.Element {
+  return (
+    <span className="library-row__tags" title={values.join(', ')}>
+      {values.length
+        ? values.slice(0, 2).map((value, index) => <span key={`${value}-${index}`}>{value}</span>)
+        : '—'}
+      {values.length > 2 ? <span>+{values.length - 2}</span> : null}
+    </span>
   )
 }

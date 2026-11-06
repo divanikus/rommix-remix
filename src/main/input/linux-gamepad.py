@@ -17,10 +17,10 @@ import time
 
 BUTTONS = {
     0x130: 0, 0x131: 1, 0x133: 2, 0x134: 3,
-    0x136: 4, 0x137: 5, 0x13A: 8, 0x13B: 9, 0x13C: 16,
+    0x136: 4, 0x137: 5, 0x138: 6, 0x139: 7, 0x13A: 8, 0x13B: 9, 0x13C: 16,
     0x220: 12, 0x221: 13, 0x222: 14, 0x223: 15,
 }
-AXES = (0, 1, 0x10, 0x11)
+AXES = (0, 1, 2, 5, 0x10, 0x11)
 
 
 def capability_bits(text, word_bits=struct.calcsize('L') * 8):
@@ -57,6 +57,11 @@ def read_pad(fd, index, name, ioctl, vendor=0):
         except OSError as error:
             if error.errno != errno.EINVAL:
                 raise
+    # ABS_Z / ABS_RZ on xpad, Steam virtual Xbox and hid-playstation.
+    # A missing axis is not a held trigger; digital triggers work independently.
+    for code, button in ((2, 6), (5, 7)):
+        if code in axes:
+            buttons[button] |= normalize(axes[code]) > 0
     for code, negative, positive in ((0x10, 14, 15), (0x11, 12, 13)):
         if code in axes:
             buttons[negative] |= axes[code][0] < 0

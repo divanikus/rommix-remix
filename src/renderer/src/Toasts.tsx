@@ -24,12 +24,16 @@ export function Toasts(): JSX.Element {
       {toasts.map((toast) => (
         <div
           key={toast.id}
+          role={toast.tone === 'error' ? 'alert' : 'status'}
+          data-tone={toast.tone}
           className={`notice toast ${
             toast.tone === 'error'
               ? 'notice--error'
               : toast.tone === 'warn'
                 ? 'notice--warn'
-                : 'notice--ok'
+                : toast.tone === 'info'
+                  ? 'notice--info'
+                  : 'notice--ok'
           }`}
         >
           {toast.title ? (

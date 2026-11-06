@@ -111,6 +111,24 @@ test('quitting a game with A held never relaunches it; release rearms activation
   assert.deepEqual(h.actions, ['activate'])
 })
 
+test('triggers and header shortcut wait for release after gameplay or Steam overlay', () => {
+  for (const mode of ['game', 'overlay']) {
+    const h = harness()
+    h.tick()
+    if (mode === 'game') h.suspend(true)
+    else h.focus(false)
+    h.tick([6, 7, 8])
+    h.suspend(false)
+    h.focus(true)
+    h.tick([6, 7, 8])
+    assert.deepEqual(h.actions, [])
+    h.tick()
+    h.tick([6, 7, 8])
+    assert.deepEqual(h.actions, ['header', 'letterPrevious', 'letterNext'])
+    cleanup()
+  }
+})
+
 test('the final overlay press arriving only on the first focused frame is swallowed', () => {
   const h = harness()
   h.focus(false)

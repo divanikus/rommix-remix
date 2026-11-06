@@ -190,6 +190,8 @@ export interface RomMixBridge {
      */
     platformCounts(platformIds: number[], search: string): Promise<Record<number, number>>
     roms(query: RomQuery): Promise<RommRomPage>
+    randomRom(): Promise<RommRom | null>
+    anniversaries(day: string, offset?: number): Promise<RommRomPage | null>
     rom(id: number): Promise<RommRom>
     /**
      * Seconds this game has been played, added up over every session RomM

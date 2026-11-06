@@ -1,6 +1,11 @@
 import type { JSX } from 'react'
 import {
   ArrowDown,
+  ArrowDownWideNarrow,
+  ArrowUpWideNarrow,
+  List,
+  Dice5,
+  CalendarDays,
   ArrowLeft,
   ArrowUp,
   Ban,
@@ -42,6 +47,7 @@ import {
   Lock,
   LogOut,
   Maximize,
+  Menu,
   MonitorCog,
   Moon,
   Package,
@@ -84,6 +90,7 @@ import {
  * flatpak, on a television.
  */
 export const ICONS = {
+  menu: Menu,
   play: Play,
   download: Download,
   cancel: Ban,
@@ -97,6 +104,12 @@ export const ICONS = {
   restart: RotateCcw,
   install: Download,
   sort: ListOrdered,
+  grid: LayoutGrid,
+  list: List,
+  ascending: ArrowDownWideNarrow,
+  descending: ArrowUpWideNarrow,
+  random: Dice5,
+  anniversary: CalendarDays,
   group: Layers,
   expand: ChevronRight,
   collapse: ChevronDown,

@@ -27,6 +27,9 @@ export type SettingsTarget = 'theme'
  * begins with the whole library — see `SECTIONS`.
  */
 export interface LibraryView {
+  layout?: 'grid' | 'list'
+  versionId?: number
+  focusSearch?: boolean
   /** The route's copy of `Scope`, which is where what it means is written. */
   scope: 'all' | 'downloaded'
   search: string
@@ -48,9 +51,9 @@ export interface LibraryView {
 
 /**
  * What a collection's grid was showing when a game was opened from it.
- * The same two fields as `LibraryView`, for the same reasons.
+ * It shares the library's filters, layout, exact selection and loaded depth.
  */
-export type CollectionView = Required<Pick<LibraryView, 'romId' | 'held'>>
+export type CollectionView = LibraryView
 
 /**
  * Which collection was opened from the Collections screen, and which of its
@@ -58,9 +61,11 @@ export type CollectionView = Required<Pick<LibraryView, 'romId' | 'held'>>
  * travel with it.
  */
 export interface CollectionsView {
-  collectionId: number | string
+  collectionId?: number | string
   openMine: boolean
   openDerived: boolean
+  search?: string
+  shown?: number
 }
 
 /**
@@ -71,9 +76,11 @@ export interface CollectionsView {
  * which is the same idea for the grid.
  */
 export interface HomeView {
-  /** As `GameRow.shelf` names it, or `hero` for the featured game. */
+  /** As `GameRow.shelf` names it, or `pick` for the installed-game widget. */
   shelf: string
-  romId: number
+  discoveryOffset?: number
+  romId?: number
+  collectionId?: number | string
 }
 
 export type Route =
@@ -82,6 +89,7 @@ export type Route =
    */
   | { name: 'setup' }
   | { name: 'home'; view?: HomeView }
+  | { name: 'systems'; platformId?: number }
   | { name: 'library'; view?: LibraryView }
   /**
    * One game. `fromVersions` says it was opened from another dump's versions
@@ -140,15 +148,12 @@ export type Route =
  * evening. Everything not named here is something looked at inside a place: a
  * game, a collection's contents.
  */
-const SECTIONS: readonly Route['name'][] = [
-  'home',
-  'library',
-  'collections',
-  'downloads',
-  'bios',
-  'emulators',
-  'settings'
-]
+const SECTIONS: readonly Route['name'][] = ['home', 'systems', 'library', 'collections']
+
+/** Utility pages keep the place they were opened from underneath them. */
+export function isUtilityRoute(route: Route): boolean {
+  return ['downloads', 'bios', 'emulators', 'settings'].includes(route.name)
+}
 
 /**
  * The screens with no local half, and so nothing to show while RomM is away.
@@ -192,9 +197,21 @@ export function pushRoute(history: readonly Route[], next: Route): readonly Rout
    * that did nothing. `popRoute` and `prunedForOffline` both keep identity for
    * this reason.
    */
+  if (
+    next.name === 'library' &&
+    next.view?.platformId !== undefined &&
+    history[0]?.name === 'systems'
+  ) {
+    return [history[0], next]
+  }
   if (SECTIONS.includes(next.name)) {
     return history.length === 1 && sameRoute(history[0], next) ? history : [next]
   }
+  // Utility pages are peers in one mode: cycling or choosing another from the
+  // menu keeps a single Back step to the library/game that opened the mode.
+  const current = history.at(-1)
+  if (current && isUtilityRoute(current) && isUtilityRoute(next))
+    return [...history.slice(0, -1), next]
   const at = history.findIndex((step) => sameRoute(step, next))
   if (at < 0) return [...history, next]
   /**
@@ -225,7 +242,15 @@ export function pushRoute(history: readonly Route[], next: Route): readonly Rout
 export function reviseRoute(history: readonly Route[], next: Route): readonly Route[] {
   const top = history[history.length - 1]
   if (!top || !sameRoute(top, next)) return history
-  return [...history.slice(0, -1), next]
+  const parents = history.slice(0, -1)
+  if (
+    next.name === 'library' &&
+    next.view?.platformId !== undefined &&
+    parents.at(-1)?.name === 'systems'
+  ) {
+    parents[parents.length - 1] = { name: 'systems', platformId: next.view.platformId }
+  }
+  return [...parents, next]
 }
 
 /**

@@ -95,7 +95,7 @@ const UNMAPPED = { START: 7, GUIDE: 8, HAT_X: 6, HAT_Y: 7 } as const
 const AXIS_DEADZONE = 0.55
 
 /** The controls the UI reads, before deciding what any of them means. */
-type Control = Direction | 'a' | 'b' | 'x' | 'y' | 'lb' | 'rb' | 'start'
+type Control = Direction | 'a' | 'b' | 'x' | 'y' | 'lb' | 'rb' | 'lt' | 'rt' | 'select' | 'start'
 
 /**
  * Every connected pad, read as one.
@@ -193,6 +193,9 @@ export function readPads(
       ['y', button(BUTTON.Y)],
       ['lb', button(BUTTON.LB)],
       ['rb', button(BUTTON.RB)],
+      ['lt', mapped && button(6)],
+      ['rt', mapped && button(7)],
+      ['select', mapped && button(8)],
       ['start', button(BUTTON.START) || (!mapped && button(UNMAPPED.START))]
     ]
     for (const [control, down] of pressed) if (down) buttons.add(control)
@@ -282,7 +285,8 @@ export function useGamepad(
       pressed: boolean,
       byButton: boolean,
       rawFire: () => void,
-      repeats: boolean
+      repeats: boolean,
+      interval = REPEAT_INTERVAL_MS
     ): void => {
       // Reported here rather than at each call site, and only for a button: the
       // poll runs sixty times a second whether or not anything is held, and a
@@ -310,7 +314,7 @@ export function useGamepad(
       }
       if (!repeats) return
       if (now - state.since < REPEAT_DELAY_MS) return
-      if (now - state.last < REPEAT_INTERVAL_MS) return
+      if (now - state.last < interval) return
       state.last = now
       fire()
     }
@@ -418,6 +422,9 @@ export function useGamepad(
       press('lb', () => actionRef.current('tabLeft'))
       press('rb', () => actionRef.current('tabRight'))
       press('start', () => actionRef.current('menu'))
+      press('select', () => actionRef.current('header'))
+      edge('lt', buttons.has('lt'), true, () => actionRef.current('letterPrevious'), true, 250)
+      edge('rt', buttons.has('rt'), true, () => actionRef.current('letterNext'), true, 250)
 
       frame = requestAnimationFrame(poll)
     }

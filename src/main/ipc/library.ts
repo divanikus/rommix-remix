@@ -45,6 +45,10 @@ export function registerLibraryIpc(rommix: RomMixApp, handle: Handle): void {
   handle('library:platformCounts', (platformIds: number[], search: string) =>
     client.romCounts(platformIds, search)
   )
+  handle('library:randomRom', () => client.randomRom())
+  handle('library:anniversaries', (day: string, offset?: number) =>
+    client.anniversaries(day, offset)
+  )
   handle('library:collections', () => client.collections())
   handle('library:virtualCollections', () => client.virtualCollections())
   /**

@@ -48,6 +48,7 @@ export function Overlay({
   title,
   icon,
   sheer = false,
+  compact = false,
   onDismiss,
   children
 }: {
@@ -70,6 +71,8 @@ export function Overlay({
    * where hiding the page hides the answer, so it asks for less of it.
    */
   sheer?: boolean
+  /** A short navigation menu, rather than a file/detail dialog. */
+  compact?: boolean
   /**
    * What B does — the way out, and every panel wants one.
    *
@@ -95,7 +98,7 @@ export function Overlay({
    */
   const headingId = `overlay-title-${title.replace(/\W+/g, '-').toLowerCase()}`
   return (
-    <div className={sheer ? 'overlay overlay--sheer' : 'overlay'}>
+    <div className={`overlay${sheer ? ' overlay--sheer' : ''}${compact ? ' overlay--menu' : ''}`}>
       <div className="overlay__panel" role="dialog" aria-modal="true" aria-labelledby={headingId}>
         <h2 className="overlay__title" id={headingId}>
           {icon ? <Icon name={icon} size={22} /> : null}
@@ -234,9 +237,21 @@ function QuitActions({ onCancel }: { onCancel: () => void }): JSX.Element {
  */
 export function Hints({ items }: { items: { key: string; label: string }[] }): JSX.Element {
   const { t } = useI18n()
-  const { update } = useApp()
+  const { update, route, canGoBack } = useApp()
   const keyLabel = useKeyLabel()
   const focusedAction = useFocusedAction()
+  const rootMenu =
+    !canGoBack &&
+    (route.name === 'home' ||
+      route.name === 'systems' ||
+      route.name === 'collections' ||
+      (route.name === 'library' && route.view?.platformId === undefined))
+  const hints = items.map((item) =>
+    item.key === 'B' && rootMenu ? { ...item, label: t('action.menu') } : item
+  )
+  // Start is an app-wide menu action after setup, including utility pages.
+  if (route.name !== 'setup' && !hints.some((item) => item.key === 'Start'))
+    hints.push({ key: 'Start', label: t('action.menu') })
 
   return (
     <div className="hints">
@@ -266,7 +281,7 @@ export function Hints({ items }: { items: { key: string; label: string }[] }): J
           </span>
         )}
       </span>
-      {items.map((item) => (
+      {hints.map((item) => (
         <span key={item.key + item.label}>
           <span className="hint__key">{keyLabel(item.key)}</span>
           {/* A is whatever is focused, when it has said what it does: the

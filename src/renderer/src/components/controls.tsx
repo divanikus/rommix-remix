@@ -1,4 +1,4 @@
-import { useEffect, useRef, type JSX, type ReactNode, type Ref } from 'react'
+import { useEffect, useId, useRef, type JSX, type ReactNode, type Ref } from 'react'
 import {
   LANGUAGE_NAMES,
   LOCALES,
@@ -7,7 +7,7 @@ import {
 } from '@shared/i18n'
 import { Flag } from './art'
 import type { RomStorage } from '@shared/types'
-import { useAction, useFocusable } from '../input/focus'
+import { useAction, useFocusable, useFocusContext, useKeyLabel } from '../input/focus'
 import { Icon, type IconName } from '../icons'
 import { useI18n } from '../state'
 
@@ -204,9 +204,11 @@ export function TextField({
 export function SegmentedControl<T extends string>({
   options,
   value,
-  onChange
+  onChange,
+  iconsOnly = false
 }: {
   options: SegmentedOptions<T>
+  iconsOnly?: boolean
   value: T
   onChange: (value: T) => void
 }): JSX.Element {
@@ -218,6 +220,7 @@ export function SegmentedControl<T extends string>({
           id={option.value}
           label={option.label}
           mark={option.mark}
+          iconsOnly={iconsOnly}
           active={option.value === value}
           onSelect={() => onChange(option.value)}
         />
@@ -244,26 +247,30 @@ function SegmentedOption({
   id,
   label,
   mark,
+  iconsOnly,
   active,
   onSelect
 }: {
   id: string
   label: string
   mark?: ReactNode
+  iconsOnly: boolean
   active: boolean
   onSelect: () => void
 }): JSX.Element {
-  const { ref, props } = useFocusable({ onSelect })
+  const { ref, props } = useFocusable({ onSelect, actionLabel: label })
   return (
     <button
       ref={ref as Ref<HTMLButtonElement>}
       className="segmented__option"
+      aria-label={label}
+      title={label}
       data-option={id}
       data-active={active}
       {...props}
     >
       {mark}
-      {label}
+      <span className={iconsOnly && mark ? 'visually-hidden' : undefined}>{label}</span>
     </button>
   )
 }
@@ -277,11 +284,19 @@ function SegmentedOption({
  * puts this, and the hint bar says so.
  */
 export function Tabs<T extends string>({
+  bumperHints = false,
+  navigation = 'shoulders',
+  actionScope,
   tabs,
   active,
   onChange,
   autoFocus = false
 }: {
+  bumperHints?: boolean
+  /** Utility shoulders switch sections; triggers switch their internal tabs. */
+  navigation?: 'shoulders' | 'triggers'
+  /** Embedded tabs only own shoulder actions while focus is in this region. */
+  actionScope?: string
   /** `badge` is a count, as the Saves tab has, or a short word — a version. */
   tabs: { id: T; label: string; icon?: IconName; badge?: number | string }[]
   active: T
@@ -296,21 +311,33 @@ export function Tabs<T extends string>({
    */
   autoFocus?: boolean
 }): JSX.Element {
-  const step = (delta: number): void => {
+  const { getFocusedElement, setFocus } = useFocusContext()
+  const focusPrefix = useId()
+  const keyLabel = useKeyLabel()
+  const step = (delta: number): void | boolean => {
+    if (actionScope && !getFocusedElement()?.closest(actionScope)) return false
     const index = tabs.findIndex((tab) => tab.id === active)
     if (index < 0) return
-    onChange(tabs[(index + delta + tabs.length) % tabs.length].id)
+    const next = tabs[(index + delta + tabs.length) % tabs.length].id
+    onChange(next)
+    if (navigation === 'triggers') setFocus(`${focusPrefix}-${next}`)
   }
 
-  useAction('tabLeft', () => step(-1))
-  useAction('tabRight', () => step(1))
+  useAction(navigation === 'triggers' ? 'letterPrevious' : 'tabLeft', () => step(-1))
+  useAction(navigation === 'triggers' ? 'letterNext' : 'tabRight', () => step(1))
 
   return (
-    <div className="tabs">
+    <div className={`tabs${navigation === 'triggers' ? ' tabs--utility' : ''}`}>
+      {bumperHints ? (
+        <span className="tabs__bumper hint__key" aria-hidden="true">
+          {keyLabel(navigation === 'triggers' ? 'LT' : 'LB')}
+        </span>
+      ) : null}
       {tabs.map((tab) => (
         <TabButton
           key={tab.id}
           id={tab.id}
+          focusId={`${focusPrefix}-${tab.id}`}
           label={tab.label}
           icon={tab.icon}
           badge={tab.badge}
@@ -319,12 +346,18 @@ export function Tabs<T extends string>({
           onSelect={() => onChange(tab.id)}
         />
       ))}
+      {bumperHints ? (
+        <span className="tabs__bumper hint__key" aria-hidden="true">
+          {keyLabel(navigation === 'triggers' ? 'RT' : 'RB')}
+        </span>
+      ) : null}
     </div>
   )
 }
 
 function TabButton({
   id,
+  focusId,
   label,
   icon,
   badge,
@@ -333,6 +366,7 @@ function TabButton({
   onSelect
 }: {
   id: string
+  focusId: string
   label: string
   icon?: IconName
   badge?: number | string
@@ -340,7 +374,7 @@ function TabButton({
   autoFocus?: boolean
   onSelect: () => void
 }): JSX.Element {
-  const { ref, props } = useFocusable({ onSelect, autoFocus })
+  const { ref, props } = useFocusable({ id: focusId, onSelect, autoFocus })
   return (
     <button
       ref={ref as Ref<HTMLButtonElement>}

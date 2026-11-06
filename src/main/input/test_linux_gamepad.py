@@ -12,6 +12,19 @@ spec.loader.exec_module(gamepad)
 
 
 class Snapshots(unittest.TestCase):
+    def test_analog_triggers_rest_released_and_press_on_signed_or_unsigned_ranges(self):
+        for minimum, maximum in ((0, 255), (-32768, 32767)):
+            state = gamepad.read_pad(7, 0, 'fixture', self.ioctl(axes={
+                2: (minimum, minimum, maximum), 5: (maximum, minimum, maximum)}))
+            self.assertEqual(state['buttons'][6:8], [False, True])
+            state = gamepad.read_pad(7, 0, 'fixture', self.ioctl(axes={
+                2: (maximum, minimum, maximum), 5: (minimum, minimum, maximum)}))
+            self.assertEqual(state['buttons'][6:8], [True, False])
+
+    def test_digital_triggers_and_select_without_analog_axes(self):
+        state = gamepad.read_pad(7, 0, 'fixture', self.ioctl(keys=(0x138, 0x139, 0x13A)))
+        self.assertEqual([i for i, down in enumerate(state['buttons']) if down], [6, 7, 8])
+
     def ioctl(self, keys=(), axes=None):
         bits = sum(1 << key for key in keys)
         def query(fd, request, buffer):

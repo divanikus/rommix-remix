@@ -3,7 +3,8 @@
 export type Direction = 'up' | 'down' | 'left' | 'right'
 
 /** Buttons the UI reacts to, named by intent rather than by index. */
-export type Action = 'back' | 'menu' | 'search' | 'tabLeft' | 'tabRight'
+export type Action =
+  'back' | 'menu' | 'search' | 'tabLeft' | 'tabRight' | 'letterPrevious' | 'letterNext' | 'header'
 
 /**
  * What the player is driving the UI with right now.

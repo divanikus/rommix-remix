@@ -222,18 +222,8 @@ export function UpdatePanel(): JSX.Element {
           </FocusButton>
         ) : null}
 
-        {/* Under Steam the same intention is a quit: Steam brings RomMix back,
-            and it is the only thing that can. */}
-        {state === 'ready' && update?.restartBlocked ? (
-          <FocusButton
-            icon="quit"
-            variant="danger"
-            onSelect={() => void window.rommix.system.quit()}
-          >
-            {t('app.quitRomMix')}
-          </FocusButton>
-        ) : null}
-
+        {/* Under Steam the ready notice explains the next launch; exiting uses
+            the shared app menu instead of a second Quit action in Settings. */}
         {/* The way out for a copy RomMix cannot replace — and, on a machine with
             no browser to open into, at least the address to type. */}
         {update?.url && update.blockedReason ? (

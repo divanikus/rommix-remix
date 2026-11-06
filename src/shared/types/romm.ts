@@ -174,6 +174,10 @@ export interface RommRaAchievement {
 
 /** GET /api/platforms (`PlatformSchema`). */
 export interface RommPlatform {
+  /** Optional server metadata; absent fields stay unclassified. */
+  family_name?: string | null
+  category?: string | null
+  generation?: number | null
   id: number
   slug: string
   fs_slug: string
@@ -297,6 +301,8 @@ export interface RommSiblingRom {
 
 /** GET /api/roms items (`SimpleRomSchema`) and GET /api/roms/{id} (`DetailedRomSchema`). */
 export interface RommRom {
+  /** Optional on older servers; authoritative alphabetical order key. */
+  name_sort_key?: string | null
   id: number
   name: string | null
   slug: string | null

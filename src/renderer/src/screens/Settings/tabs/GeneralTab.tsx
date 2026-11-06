@@ -15,14 +15,11 @@ import {
 import { useApp, useI18n, type SettingsTarget } from '../../../state'
 
 /**
- * The account, the size of the interface, and the two things done to RomMix
- * itself.
+ * The account and interface preferences.
  *
  * The tab someone lands on, so it holds what is asked most and read most: who
  * you are signed in as, and how large — and in which language — this is drawn.
- * Fullscreen and Quit are here because they are one press each and belong
- * nowhere else; the thank-you is here because a settings page is where somebody
- * who likes the thing looks.
+ * Fullscreen is an interface setting; Quit lives in the shared app menu.
  */
 
 /**
@@ -141,9 +138,6 @@ export function GeneralTab({ open }: { open?: SettingsTarget }): JSX.Element {
           onSelect={() => void window.rommix.system.toggleFullscreen()}
         >
           {t('settings.toggleFullscreen')}
-        </FocusButton>
-        <FocusButton icon="quit" variant="danger" onSelect={() => void window.rommix.system.quit()}>
-          {t('app.quitRomMix')}
         </FocusButton>
       </div>
 

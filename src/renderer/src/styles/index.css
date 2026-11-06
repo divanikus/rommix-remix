@@ -40,3 +40,12 @@
  * `themes/index.css`.
  */
 @import './themes/index.css';
+@import './library.css';
+@import './lounge.css';
+
+@import './browse-correction.css';
+
+@import './navigation-refinement.css';
+@import './utility-navigation.css';
+@import './utility-density.css';
+@import './utility-sections.css';

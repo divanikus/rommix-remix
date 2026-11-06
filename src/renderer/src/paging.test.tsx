@@ -10,7 +10,7 @@ import { installDom } from './test/dom.ts'
 // See `focus.test.tsx`.
 const window = installDom()
 
-const { act, useEffect, useState } = await import('react')
+const { act, useEffect, useState, StrictMode } = await import('react')
 const { createRoot } = await import('react-dom/client')
 const { useRomPages } = await import('./paging.ts')
 
@@ -105,6 +105,7 @@ interface Props {
   enabled: boolean | null
   forget: boolean
   initialCount?: number
+  initialPage?: RommRomPage
 }
 
 /** A mounted grid, and the handles a test drives it by. */
@@ -120,7 +121,7 @@ interface Screen {
 }
 
 /** Mount one grid on the query it is about. */
-function open(props: Partial<Props> = {}): Screen {
+function open(props: Partial<Props> = {}, strict = false): Screen {
   const calls = serve()
   const errors: (string | null)[] = []
   let latest: RomPages | null = null
@@ -133,10 +134,11 @@ function open(props: Partial<Props> = {}): Screen {
     errors.push(message)
   }
 
-  function Grid({ query, enabled, forget, initialCount }: Props): null {
+  function Grid({ query, enabled, forget, initialCount, initialPage }: Props): null {
     const pages = useRomPages(query, {
       pageSize: PAGE,
       initialCount,
+      initialPage,
       enabled,
       forgetOnStandDown: forget,
       onError
@@ -156,7 +158,8 @@ function open(props: Partial<Props> = {}): Screen {
       // answers `enabled` can carry and not an absent one.
       enabled: 'enabled' in props ? (props.enabled ?? null) : true,
       forget: props.forget ?? false,
-      initialCount: props.initialCount
+      initialCount: props.initialCount,
+      initialPage: props.initialPage
     })
     useEffect(() => {
       again = setCurrent
@@ -168,7 +171,17 @@ function open(props: Partial<Props> = {}): Screen {
   window.document.body.appendChild(host)
   const root = createRoot(host as unknown as HTMLElement)
   roots.push(root)
-  act(() => root.render(<Screenful />))
+  act(() =>
+    root.render(
+      strict ? (
+        <StrictMode>
+          <Screenful />
+        </StrictMode>
+      ) : (
+        <Screenful />
+      )
+    )
+  )
 
   return {
     calls,
@@ -187,6 +200,24 @@ function held(screen: Screen): number[] {
 }
 
 describe('paging a query', () => {
+  test('a prefetched first page paints immediately and still follows the current query', async () => {
+    const initialPage = {
+      items: [{ id: 1 }, { id: 2 }],
+      total: 5,
+      limit: PAGE,
+      offset: 0
+    } as RommRomPage
+    const screen = open({ query: { platform_ids: [1] }, initialPage }, true)
+    assert.deepEqual(held(screen), [1, 2])
+    await screen.calls.at(-1)?.answer([1, 2], 5)
+    await press(() => screen.pages().loadMore())
+    assert.equal(screen.calls.at(-1)?.query.offset, 2)
+    await screen.calls.at(-1)?.answer([3, 4], 5)
+    assert.deepEqual(held(screen), [1, 2, 3, 4])
+    await screen.redraw({ query: { platform_ids: [2] } })
+    await screen.calls.at(-1)?.answer([10], 1)
+    assert.deepEqual(held(screen), [10])
+  })
   test('asks for the first page of the query it was given', async () => {
     const screen = open({ query: { search_term: 'cave', platform_ids: [1] } })
 
@@ -277,6 +308,25 @@ describe('a grid drawn again on the way back to it', () => {
 
     assert.deepEqual(held(screen), [1, 2, 3, 4, 5])
     assert.equal(screen.pages().more, true)
+  })
+
+  test('restores loaded depth when StrictMode replaces the first in-flight request', async () => {
+    const screen = open({ initialCount: 5 }, true)
+    assert.equal(screen.calls.length, 2)
+    assert.deepEqual(
+      screen.calls.map((call) => call.query.limit),
+      [5, 5]
+    )
+    await screen.calls[0].answer([99])
+    assert.deepEqual(held(screen), [])
+    await screen.calls[1].answer([1, 2, 3, 4, 5])
+    assert.deepEqual(held(screen), [1, 2, 3, 4, 5])
+  })
+
+  test('a different query abandons restoration depth even before the first answer', async () => {
+    const screen = open({ initialCount: 5 })
+    await screen.redraw({ query: { search_term: 'new filter' } })
+    assert.equal(screen.calls[1].query.limit, PAGE)
   })
 
   test('and pages on from there one page at a time', async () => {

@@ -26,6 +26,12 @@ function pad(
 }
 
 describe('reading every pad', () => {
+  test('standard triggers and Select are distinct from Start; raw legacy slots are not guessed', () => {
+    assert.deepEqual([...readPads([pad(0, [6, 7, 8])], null).buttons], ['lt', 'rt', 'select'])
+    const legacy = readPads([pad(0, [6, 7, 8], [0, 0], '')], null)
+    assert.deepEqual([...legacy.buttons], ['start'])
+    assert.equal(legacy.guide, true)
+  })
   test('a press on a pad past the first slot is seen', () => {
     // Chromium numbers pads by when they arrived, so the one being used can
     // be in any slot.

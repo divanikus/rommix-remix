@@ -1,3 +1,4 @@
+import { uiScaleFor } from './ui-scale.ts'
 import { BrowserWindow, protocol, screen, shell } from 'electron'
 import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
@@ -35,21 +36,6 @@ export const IMAGE_SCHEME = 'rommix-img'
 export function isAssetPath(path: string): boolean {
   const rooted = path.startsWith('/') ? path : `/${path}`
   return rooted.startsWith('/assets/') && !rooted.includes('..')
-}
-
-/**
- * The screen the interface is drawn for: 1080p, the resolution a living-room
- * layout has been designed around for fifteen years.
- */
-const DESIGN_HEIGHT = 1080
-
-/** Never smaller than drawn, and never past the point where a shelf holds one game. */
-const MIN_SCALE = 1
-const MAX_SCALE = 3
-
-/** To the nearest quarter, so a 1440p panel lands on a round 1.25 rather than 1.333…. */
-function quantize(scale: number): number {
-  return Math.min(MAX_SCALE, Math.max(MIN_SCALE, Math.round(scale * 4) / 4))
 }
 
 /**
@@ -533,6 +519,9 @@ export class RomMixApp {
     const rescale = (): void => this.applyUiScale()
     screen.on('display-metrics-changed', rescale)
     window.on('moved', rescale)
+    window.on('resize', rescale)
+    window.on('enter-full-screen', rescale)
+    window.on('leave-full-screen', rescale)
     window.on('closed', () => screen.removeListener('display-metrics-changed', rescale))
 
     // Keep navigation inside the app; open real links in the user's browser.
@@ -653,26 +642,10 @@ export class RomMixApp {
     this.window.webContents.setZoomFactor(this.uiScale())
   }
 
-  /**
-   * The factor to render at: the user's, or the one the screen asks for.
-   *
-   * The automatic answer is the panel's height over the height the interface
-   * was drawn for — 2 on a 4K television, which puts every element back at the
-   * physical size it has at 1080p, which is the size it was designed to be read
-   * at from a sofa.
-   *
-   * `display.size` is already in device-independent pixels, so a desktop whose
-   * compositor scales for itself — 3840x2160 at 200%, reported as 1920x1080 —
-   * asks for nothing here, and is not scaled twice. The case this exists for is
-   * the opposite one, and the common one on a television: no compositor scaling
-   * at all, 3840x2160 handed over whole.
-   */
+  /** Content dimensions are DIP; explicit user scaling still wins. */
   private uiScale(): number {
-    const chosen = this.store.settings.uiScale
-    if (chosen > 0) return quantize(chosen)
-    if (!this.window || this.window.isDestroyed()) return MIN_SCALE
-    const display = screen.getDisplayMatching(this.window.getBounds())
-    return quantize(display.size.height / DESIGN_HEIGHT)
+    if (!this.window || this.window.isDestroyed()) return 1
+    return uiScaleFor(this.window.getContentSize()[1], this.store.settings.uiScale)
   }
 
   toggleFullscreen(): boolean {

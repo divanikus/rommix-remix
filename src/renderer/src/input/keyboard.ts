@@ -26,6 +26,12 @@ export function keyboardLabel(key: string, t: I18n['t']): string | undefined {
       return 'M'
     case 'Y':
       return '/'
+    case 'SELECT':
+      return 'Home'
+    case 'LT':
+      return 'PgUp'
+    case 'RT':
+      return 'PgDn'
     case 'LB':
       return 'Shift+Tab'
     case 'RB':
@@ -68,6 +74,12 @@ export function intentOf(
     case 'Escape':
     case 'Backspace':
       return { action: 'back' }
+    case 'Home':
+      return { action: 'header' }
+    case 'PageUp':
+      return { action: 'letterPrevious' }
+    case 'PageDown':
+      return { action: 'letterNext' }
     case 'Tab':
       return { action: shiftKey ? 'tabLeft' : 'tabRight' }
     case '/':

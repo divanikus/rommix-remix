@@ -14,8 +14,7 @@ import { GamesTab, GeneralTab, SystemTab } from './tabs'
  *
  * The split is by subject, and the subjects are the questions people actually
  * arrive with: who am I signed in as, what happens to my saves, and is this
- * installation healthy. LB/RB move between them, as everywhere else in RomMix
- * that has tabs.
+ * installation healthy. LT/RT move between them; LB/RB switch utility sections.
  *
  * What runs a game is not here at all — see `EmulatorsScreen`. It installs
  * software and decides which program a platform is handed to, which is not a
@@ -85,45 +84,46 @@ export function SettingsScreen({ open }: { open?: SettingsTarget }): JSX.Element
   }
 
   return (
-    <div className="content">
+    <div className="content settings-screen">
       <PageTitle icon="settings">{t('nav.settings')}</PageTitle>
 
-      <div className="panel">
-        <Tabs<SettingsTab>
-          active={tab}
-          onChange={changeTab}
-          tabs={[
-            { id: 'general', label: t('settings.tabGeneral'), icon: 'preferences' },
-            { id: 'games', label: t('settings.tabGames'), icon: 'roms' },
-            {
-              id: 'system',
-              label: t('settings.tabSystem'),
-              icon: 'system',
-              // The new version, on the tab that can do something about it. The
-              // menu already carries this mark; without it here, arriving in
-              // Settings loses the trail one step short of the panel.
-              badge:
-                update && update.latest && update.state !== 'idle' && update.state !== 'checking'
-                  ? update.latest
-                  : undefined
-            }
-          ]}
-        />
+      <Tabs<SettingsTab>
+        bumperHints
+        navigation="triggers"
+        autoFocus
+        active={tab}
+        onChange={changeTab}
+        tabs={[
+          { id: 'general', label: t('settings.tabGeneral'), icon: 'preferences' },
+          { id: 'games', label: t('settings.tabGames'), icon: 'roms' },
+          {
+            id: 'system',
+            label: t('settings.tabSystem'),
+            icon: 'system',
+            // The new version, on the tab that can do something about it. The
+            // menu already carries this mark; without it here, arriving in
+            // Settings loses the trail one step short of the panel.
+            badge:
+              update && update.latest && update.state !== 'idle' && update.state !== 'checking'
+                ? update.latest
+                : undefined
+          }
+        ]}
+      />
 
-        <div className="panel__body">
-          {tab === 'general' ? <GeneralTab open={arrival} /> : null}
-          {tab === 'games' ? <GamesTab root={root} /> : null}
-          {tab === 'system' ? (
-            <SystemTab diagnostics={diagnostics} root={root} onRecheck={refreshDiagnostics} />
-          ) : null}
-        </div>
+      <div className="settings-body">
+        {tab === 'general' ? <GeneralTab open={arrival} /> : null}
+        {tab === 'games' ? <GamesTab root={root} /> : null}
+        {tab === 'system' ? (
+          <SystemTab diagnostics={diagnostics} root={root} onRecheck={refreshDiagnostics} />
+        ) : null}
       </div>
 
       <Hints
         items={[
           { key: 'A', label: t('action.select') },
-          { key: 'LB', label: t('action.previousTab') },
-          { key: 'RB', label: t('action.nextTab') },
+          { key: 'LT', label: t('action.previousTab') },
+          { key: 'RT', label: t('action.nextTab') },
           { key: 'B', label: t('action.back') }
         ]}
       />

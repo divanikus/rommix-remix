@@ -28,6 +28,7 @@ import type {
   RommUser,
   RomQuery
 } from '@shared/types'
+import { anniversaryDay, isAnniversary } from '../../shared/anniversary.ts'
 import { log } from '../log.ts'
 import { t } from '../i18n.ts'
 import type { Store } from '../store.ts'
@@ -706,6 +707,55 @@ export class RommClient {
     })
     if (!res.ok) throw await this.toError(res)
     return (await res.json()) as RommCollection
+  }
+
+  /** Full-server random selection, with auth kept in the main process. */
+  randomRom(): Promise<RommRom | null> {
+    return this.json('/api/roms/random')
+  }
+
+  private anniversaryCapability: { base: string; expires: number; value: Promise<boolean> } | null =
+    null
+  async anniversaries(day: string, offset = 0): Promise<RommRomPage | null> {
+    const date = anniversaryDay(day)
+    if (!date) return { items: [], total: 0, limit: 24, offset: 0 }
+    if (!Number.isInteger(offset) || offset < 0 || offset > 100000)
+      throw new Error(t('error.anniversaryOffset'))
+    // Older servers ignore unknown query parameters. Check capability before
+    // asking so an ordinary library page can never masquerade as anniversaries.
+    const base = this.baseUrl
+    if (
+      !this.anniversaryCapability ||
+      this.anniversaryCapability.base !== base ||
+      this.anniversaryCapability.expires < Date.now()
+    ) {
+      const value = this.json<{
+        paths?: Record<string, { get?: { parameters?: { name?: string }[] } }>
+      }>('/openapi.json').then((schema) => {
+        const params = schema.paths?.['/api/roms']?.get?.parameters ?? []
+        return ['released_days', 'released_before_year'].every((name) =>
+          params.some((p) => p.name === name)
+        )
+      })
+      this.anniversaryCapability = { base, expires: Date.now() + 300000, value }
+      void value.catch(() => {
+        if (this.anniversaryCapability?.value === value) this.anniversaryCapability = null
+      })
+    }
+    if (!(await this.anniversaryCapability.value)) return null
+    const params = new URLSearchParams({
+      released_days: date.month + '-' + date.date,
+      released_before_year: String(date.year),
+      order_by: 'first_release_date',
+      order_dir: 'asc',
+      limit: '24',
+      offset: String(offset),
+      with_files: 'true'
+    })
+    const page = await this.json<RommRomPage>('/api/roms?' + params)
+    if (page.items.some((rom) => !isAnniversary(rom.metadatum?.first_release_date, day)))
+      throw new Error(t('error.anniversaryResults'))
+    return page
   }
 
   roms(query: RomQuery = {}): Promise<RommRomPage> {

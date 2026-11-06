@@ -129,6 +129,10 @@ export function GameHero({
           </div>
           {rom.summary ? <Summary text={rom.summary} /> : null}
 
+          <div className="game-version">
+            <span>{t('game.tabVersions')}</span>
+            <strong>{rom.fs_name}</strong>
+          </div>
           <div className="btn-row">{children}</div>
         </div>
       </div>

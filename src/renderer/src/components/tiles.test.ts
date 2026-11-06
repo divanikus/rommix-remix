@@ -144,3 +144,11 @@ describe('a tile built from the download index instead', () => {
     assert.equal(tile.system, 'genesis')
   })
 })
+
+test('server sort keys drive letters without changing visible titles or guessing articles', () => {
+  const r = { ...rom(1), name: 'The Adventure', name_sort_key: 'adventure' }
+  assert.equal(tileFromRom(r).title, 'The Adventure')
+  assert.equal(tileFromRom(r).sortTitle, 'adventure')
+  assert.equal(tileFromRom({ ...r, name_sort_key: null }).sortTitle, undefined)
+  assert.equal(tileFromRom({ ...r, name_sort_key: 'the adventure' }).sortTitle, 'the adventure')
+})

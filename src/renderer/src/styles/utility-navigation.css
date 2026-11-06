@@ -1,0 +1,132 @@
+/* Root, utility and platform navigation share one frame across routes/themes. */
+.app-header {
+  height: 58px;
+  min-height: 58px;
+  max-height: 58px;
+  flex: 0 0 58px;
+  padding-block: 5px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+/* Keep section buttons on one baseline as focus moves through the header. */
+.app-header .nav-item[data-focused='true'] {
+  transform: none;
+}
+/* Match the library's icon-only menu, overriding generic icon-button padding. */
+.utility-topbar > .btn[data-action='utility-menu'] {
+  min-height: 34px;
+  padding: 7px;
+  border-radius: 100px;
+  border-color: transparent;
+  background: var(--surface);
+  color: var(--text-dim);
+}
+.utility-topbar > .btn[data-action='utility-menu'] > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.utility-topbar > .btn[data-action='utility-menu'][data-focused='true'] {
+  background: var(--surface-strong);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+}
+/* Short, aligned menu rows follow Ludo's compact account menu composition. */
+.overlay--menu .overlay__panel {
+  width: min(320px, 90vw);
+  padding: 0 12px;
+  max-height: 82vh;
+  scroll-padding: 64px 0 16px;
+}
+.overlay--menu .overlay__title {
+  margin: 0 -12px 6px;
+  padding: 18px 24px 12px;
+  font-size: 20px;
+}
+.overlay--menu .tools-menu {
+  min-width: 0;
+  gap: 4px;
+  margin-bottom: 12px;
+}
+.tools-menu .btn {
+  justify-content: flex-start;
+  width: 100%;
+  min-height: 42px;
+  padding: 10px 12px;
+  gap: 12px;
+  font-size: 15px;
+  border-radius: 8px;
+}
+.tools-menu .btn > svg {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+.tools-menu hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 6px 0;
+}
+.utility-topbar {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 18px;
+  padding-inline: var(--safe-x);
+}
+.utility-topbar h1 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 22px;
+  font-weight: 650;
+}
+.utility-topbar .btn {
+  min-height: 38px;
+  padding: 6px 10px;
+  font-size: 14px;
+}
+.app[data-utility='true'] > .content > .page-title {
+  display: none;
+}
+.app[data-utility='true'] > .content > .panel:first-of-type {
+  margin-top: 0;
+}
+.tabs__bumper {
+  flex-shrink: 0;
+  align-self: center;
+  margin: 0 6px;
+}
+/* One stable shared height while preserving the enlarged featured cover. */
+@media (min-width: 1001px) {
+  .home-featured .continue-card {
+    height: 344px;
+    min-height: 344px;
+    align-self: stretch;
+  }
+  .home-featured .home-widgets {
+    min-height: 344px;
+  }
+  .home-featured .home-widget {
+    height: 166px;
+    flex-basis: 166px;
+    padding: 2px;
+    gap: 0;
+  }
+}
+@media (max-width: 700px) {
+  .utility-topbar {
+    gap: 6px;
+  }
+  .utility-topbar .btn {
+    gap: 6px;
+    padding-inline: 8px;
+  }
+  .utility-topbar h1 {
+    font-size: 18px;
+  }
+  .tabs__bumper {
+    display: none;
+  }
+}

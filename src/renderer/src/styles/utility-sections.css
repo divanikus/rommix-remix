@@ -1,0 +1,62 @@
+/* Show the same complete section strip as the library roots. */
+.utility-topbar {
+  display: grid;
+  grid-template-columns: 132px minmax(0, 1fr) 132px;
+  gap: 12px;
+}
+.utility-topbar > .btn:first-child {
+  justify-self: start;
+}
+.utility-topbar > .btn:last-child {
+  justify-self: end;
+}
+.utility-sections {
+  justify-self: center;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Use the game detail tab treatment, retaining utility spacing and hints. */
+.app[data-utility='true'] .tabs--utility {
+  max-width: 100%;
+  flex-wrap: wrap;
+  margin: 0 0 18px;
+}
+.settings-body > .section-title:first-child {
+  margin-top: 0;
+}
+.settings-body > :last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .utility-topbar {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 6px;
+  }
+  .utility-back-label {
+    display: none;
+  }
+}
+@media (max-width: 700px) {
+  .utility-topbar {
+    padding-inline: 10px;
+    gap: 4px;
+  }
+  .utility-topbar > .btn {
+    min-height: 34px;
+    padding: 6px;
+  }
+  .utility-topbar > .btn .hint__key,
+  .utility-topbar .nav-item svg {
+    display: none;
+  }
+  .utility-topbar .nav-item {
+    min-width: 0;
+    padding-inline: 5px;
+    font-size: 11px;
+  }
+  .utility-topbar .nav-item__label {
+    display: inline;
+  }
+}

@@ -2009,3 +2009,52 @@ describe('what may take as long as it takes', () => {
     }
   })
 })
+
+describe('Home discovery uses server data', () => {
+  test('random pick uses the authenticated server endpoint, not a first-page sample', async () => {
+    const requests = serve(() => Response.json({ id: 991 }))
+    const { store } = fakeStore({ clientToken: 'fixture' })
+    assert.equal((await new RommClient(store).randomRom())?.id, 991)
+    assert.equal(new URL(requests[0].url).pathname, '/api/roms/random')
+    assert.equal(requests[0].headers.get('Authorization'), 'Bearer fixture')
+  })
+  test('anniversary capability is required and unsupported servers never receive ignored filters', async () => {
+    const requests = serve(() =>
+      Response.json({ paths: { '/api/roms': { get: { parameters: [] } } } })
+    )
+    const { store } = fakeStore()
+    assert.equal(await new RommClient(store).anniversaries('2026-11-05'), null)
+    assert.equal(requests.length, 1)
+  })
+  test('anniversary paging sends date filters and refuses unrelated results', async () => {
+    let unrelated = false
+    const requests = serve((sent) =>
+      new URL(sent.url).pathname === '/openapi.json'
+        ? Response.json({
+            paths: {
+              '/api/roms': {
+                get: { parameters: [{ name: 'released_days' }, { name: 'released_before_year' }] }
+              }
+            }
+          })
+        : Response.json({
+            items: [
+              { id: 7, metadatum: { first_release_date: Date.UTC(2000, 10, unrelated ? 6 : 5) } }
+            ],
+            total: 25,
+            limit: 24,
+            offset: 24
+          })
+    )
+    const { store } = fakeStore()
+    const client = new RommClient(store)
+    assert.equal((await client.anniversaries('2026-11-05', 24))?.items[0].id, 7)
+    const query = new URL(requests[1].url).searchParams
+    assert.equal(query.get('released_days'), '11-5')
+    assert.equal(query.get('released_before_year'), '2026')
+    assert.equal(query.get('offset'), '24')
+    unrelated = true
+    await assert.rejects(client.anniversaries('2026-11-05'), /non-anniversary/)
+    assert.equal(requests.filter((r) => new URL(r.url).pathname === '/openapi.json').length, 1)
+  })
+})
