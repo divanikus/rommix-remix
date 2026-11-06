@@ -89,7 +89,7 @@ Demo: https://leclercb.github.io/rommix/demo/
   | ---------------- | --------------------------------- | --------------------------------------------- |
   | **RetroDECK**    | The NES to the PS3                | ✅ Flatpak                                    |
   | **EmuDeck**      | The NES to the Switch and the 360 | ❌ Its own installer, see [EmuDeck](#emudeck) |
-  | **RetroArch**    | One libretro core per system      | ✅ Flatpak                                    |
+  | **RetroArch**    | Libretro, your core per system    | ✅ Flatpak                                    |
   | **Eden**         | Nintendo Switch                   | ✅ AppImage                                   |
   | **shadPS4**      | PlayStation 4                     | ✅ Flatpak and AppImage                       |
   | **Xenia Canary** | Xbox 360                          | ✅ AppImage                                   |
@@ -267,6 +267,10 @@ one RomMix folder you point every emulator at.
 
 **Games → Save sync.**
 
+- **Sync in-game saves** and **Sync save states** — on by default. Switch one
+  off when another tool syncs it, or when your devices run different versions
+  of a core and cannot load each other's states. Its files are never pulled or
+  pushed, and stay on the game screen, where they can still be deleted.
 - **Download newer saves before playing** — only ever replaces an _older_ local
   save, keeping the last few copies of it under `saves/` in the RomMix folder
   first.

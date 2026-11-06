@@ -564,6 +564,8 @@ const SETTINGS: Settings = {
   enrichEsde: false,
   syncSavesDown: true,
   syncSavesUp: true,
+  syncSaves: true,
+  syncStates: true,
   navigationSounds: true,
   confirmUninstall: true,
   confirmSavePush: true,
@@ -1044,7 +1046,8 @@ const bridge: RomMixBridge = {
                 { id: 'picodrive', label: 'PicoDrive', note: say('demo.variantFaster') }
               ]
             : [{ id: 'default', label: say('demo.variantDefault') }],
-        chosen: null
+        chosen: null,
+        ask: system === 'genesis'
       })
     },
     launch: () => refuse('demo.noEmulator')
