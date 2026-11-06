@@ -1,19 +1,13 @@
+import { LibraryRow } from './LibraryRow'
+import { filterCount, type LibraryFilters } from '@shared/library-filters'
+import { LibraryFilterDialog, LibraryFilterButton } from '../../components/LibraryFilters'
 import { BrowseChoices } from '../../components/BrowseChoices'
-import {
-  Fragment,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-  useState,
-  type JSX,
-  type Ref
-} from 'react'
+import { Fragment, useEffect, useCallback, useMemo, useRef, useState, type JSX } from 'react'
 import { resolveSystem } from '@config/systems'
-import type { RommPlatform, RommRom, RomQuery } from '@shared/types'
+import type { RommPlatform, RomQuery } from '@shared/types'
 import {
-  CoverArt,
   GameCard,
+  FocusButton,
   Hints,
   PageTitle,
   Spinner,
@@ -25,7 +19,7 @@ import {
   titleOf,
   type GameTile
 } from '../../components'
-import { FocusZone, useAction, useFocusable, useFocusContext } from '../../input/focus'
+import { FocusZone, useAction, useFocusContext } from '../../input/focus'
 import { PAGE_SIZE, usePagedRoms } from '../../paging'
 import { useApp, useI18n, type LibraryView } from '../../state'
 import {
@@ -48,12 +42,15 @@ interface CollectionSource {
   id: number | string
   title: string
 }
-type Browse = Pick<LibraryView, 'search' | 'scope' | 'layout'> & { sortDir: 'asc' | 'desc' }
+type Browse = Pick<LibraryView, 'search' | 'scope' | 'layout' | 'filters'> & {
+  sortDir: 'asc' | 'desc'
+}
 function platformQuery(
   platformId: number | undefined,
   search: string,
   sortDir: 'asc' | 'desc',
-  collectionId?: number | string
+  collectionId?: number | string,
+  filters?: LibraryFilters
 ): RomQuery {
   return {
     ...(typeof collectionId === 'number'
@@ -61,6 +58,7 @@ function platformQuery(
       : typeof collectionId === 'string'
         ? { virtual_collection_id: collectionId }
         : {}),
+    filters: filterCount(filters) ? filters : undefined,
     search_term: search.trim() || undefined,
     platform_ids: platformId !== undefined ? [platformId] : undefined,
     group_by_meta_id: true,
@@ -83,6 +81,7 @@ export function LibraryScreen({
     createLibraryPageCache((query) => window.rommix.library.roms(query), PAGE_SIZE)
   )
   const [browse, setBrowse] = useState<Browse>(() => ({
+    filters: view?.filters,
     scope: view?.scope ?? 'all',
     search: view?.search ?? '',
     layout: view?.layout ?? readPresentation(localStorage).layout,
@@ -132,6 +131,7 @@ export function LibraryScreen({
       name: 'library',
       view: {
         platformId: siblings[(index + delta + siblings.length) % siblings.length].id,
+        filters: browse.filters,
         scope: browse.scope,
         search: browse.search,
         layout: browse.layout
@@ -151,7 +151,7 @@ export function LibraryScreen({
         const platform = siblings[(index + delta + siblings.length) % siblings.length]
         void cache
           .read({
-            ...platformQuery(platform.id, browse.search, browse.sortDir),
+            ...platformQuery(platform.id, browse.search, browse.sortDir, undefined, browse.filters),
             limit: PAGE_SIZE,
             offset: 0
           })
@@ -159,7 +159,16 @@ export function LibraryScreen({
       }
     }, 180)
     return () => clearTimeout(timer)
-  }, [cache, siblings, view?.platformId, browse.scope, browse.search, browse.sortDir, offline])
+  }, [
+    cache,
+    siblings,
+    view?.platformId,
+    browse.scope,
+    browse.search,
+    browse.sortDir,
+    browse.filters,
+    offline
+  ])
   return (
     <div className="library-shell">
       {view?.platformId !== undefined ? (
@@ -212,13 +221,19 @@ function LibraryContent({
     ...readPresentation(localStorage),
     ...(view?.layout ? { layout: view.layout } : {})
   }))
+  const [filters, setFilters] = useState<LibraryFilters>(view?.filters ?? {})
+  const [filterOpen, setFilterOpen] = useState(false)
+  const activeFilters = filterCount(filters)
   const [chosenScope, setScope] = useState<Scope>(view?.scope ?? 'all')
   const scope = offline ? 'downloaded' : chosenScope
   const selectedPlatform = view?.platformId
   const isSearch = !collection && selectedPlatform === undefined
   const [search, setSearch] = useState(view?.search ?? '')
   const [debouncedSearch, setDebouncedSearch] = useState(search)
-  const searchReady = !isSearch || (search.trim().length >= 2 && debouncedSearch.trim().length >= 2)
+  const searchReady =
+    !isSearch ||
+    (scope === 'all' && activeFilters > 0) ||
+    (search.trim().length >= 2 && debouncedSearch.trim().length >= 2)
   const [selected, setSelected] = useState(view?.romId)
   const [version, setVersion] = useState(view?.versionId)
   const [error, setError] = useState<string | null>(null)
@@ -248,9 +263,10 @@ function LibraryContent({
     selectedPlatform,
     debouncedSearch,
     presentation.sortDir,
-    collection?.id
+    collection?.id,
+    scope === 'all' ? filters : undefined
   )
-  const { roms, total, more, loading, sentinel, loadMore } = usePagedRoms(query, {
+  const { roms, total, more, loading, sentinel, loadMore, retry } = usePagedRoms(query, {
     enabled: offline === false && scope === 'all' && searchReady,
     initialCount: view?.held,
     onError: setError,
@@ -260,12 +276,13 @@ function LibraryContent({
   useEffect(
     () =>
       onBrowse({
+        filters,
         scope: chosenScope,
         search,
         layout: presentation.layout,
         sortDir: presentation.sortDir
       }),
-    [onBrowse, chosenScope, search, presentation.layout, presentation.sortDir]
+    [onBrowse, chosenScope, search, presentation.layout, presentation.sortDir, filters]
   )
   useEffect(() => {
     writePresentation(localStorage, presentation)
@@ -356,12 +373,12 @@ function LibraryContent({
     }
   }, [tiles, view?.romId, setInitialFocus, fromCarousel, getFocusedElement])
   useEffect(() => {
-    if (scope !== 'all' || !more || loading) return
+    if (scope !== 'all' || !more || loading || error) return
     const index = tiles.findIndex((tile) => tile.romId === selected)
     // Keep one page of metadata ahead of focus, rather than wait until the last
     // row meets a pixel sentinel. Covers/ROMs are not downloaded by this request.
     if (index >= 0 && tiles.length - index <= PAGE_SIZE) loadMore()
-  }, [scope, more, loading, tiles, selected, loadMore])
+  }, [scope, more, loading, error, tiles, selected, loadMore])
   const {
     flash,
     pending,
@@ -415,6 +432,7 @@ function LibraryContent({
         ? { name: 'collection' as const, collectionId: collection.id, title: collection.title }
         : { name: 'library' as const }),
       view: {
+        filters,
         scope: chosenScope,
         search,
         platformId: selectedPlatform,
@@ -432,15 +450,13 @@ function LibraryContent({
       data-layout={presentation.layout}
       data-selected-rom={current?.romId}
     >
-      <div className="library-heading">
-        <div>
-          {selectedPlatform === undefined ? (
-            <PageTitle>
-              {collection?.title ?? t(isSearch ? 'action.search' : 'library.title')}
-            </PageTitle>
-          ) : null}
-          {searchReady ? <p className="page-subtitle">{t('library.count', { count })}</p> : null}
-        </div>
+      <div className="library-heading" title={collection?.title}>
+        {selectedPlatform === undefined ? (
+          <PageTitle>
+            {collection?.title ?? t(isSearch ? 'action.search' : 'library.title')}
+          </PageTitle>
+        ) : null}
+        {searchReady ? <p className="page-subtitle">{t('library.count', { count })}</p> : null}
       </div>
       {offline ? <div className="notice notice--warn">{t('app.offlineNotice')}</div> : null}
       <div className="library-toolbar" data-focus-down="library-list">
@@ -455,6 +471,16 @@ function LibraryContent({
           }}
           placeholder={t('library.searchPlaceholder')}
         />
+        {scope === 'all' && offline === false ? (
+          <LibraryFilterButton
+            count={activeFilters}
+            onSelect={() => {
+              arrival.current = false
+              cancelJump()
+              setFilterOpen(true)
+            }}
+          />
+        ) : null}
         {searchReady ? (
           <>
             {!offline ? (
@@ -543,7 +569,50 @@ function LibraryContent({
         ) : null}
       </div>
       {!searchReady ? <div className="search-prompt">{t('library.searchPrompt')}</div> : null}
-      {error ? <div className="notice notice--error">{error}</div> : null}
+      {error ? (
+        <div className="notice notice--error" role="alert">
+          {error}
+          {scope === 'all' && offline === false ? (
+            <FocusButton action="retry-library" icon="refresh" onSelect={retry}>
+              {t('action.retry')}
+            </FocusButton>
+          ) : null}
+        </div>
+      ) : null}
+      {activeFilters > 0 ? (
+        <div className="library-filter-summary" data-filter-summary>
+          {scope === 'downloaded' ? (
+            t('filters.paused')
+          ) : (
+            <>
+              <span>{t('filters.active')}</span>
+              {Object.entries(filters.facets ?? {})
+                .filter(([, v]) => v.values.length)
+                .map(([key, v]) => (
+                  <span key={key}>
+                    {t(`filters.${key}` as Parameters<typeof t>[0])}: {t(`filters.${v.logic}`)} ·{' '}
+                    {v.values.join(', ')}
+                  </span>
+                ))}
+              {Object.entries(filters.flags ?? {}).map(([key, v]) => (
+                <span key={key}>
+                  {t(`filters.${key}` as Parameters<typeof t>[0])}:{' '}
+                  {t(v ? 'filters.yes' : 'filters.no')}
+                </span>
+              ))}
+              {filters.duration ? (
+                <span>
+                  HowLongToBeat:{' '}
+                  {t('filters.hoursRange', {
+                    min: filters.duration.minHours ?? t('filters.anyValue'),
+                    max: filters.duration.maxHours ?? t('filters.anyValue')
+                  })}
+                </span>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
       {platformError ? <div className="notice notice--error">{platformError}</div> : null}
       {searchReady ? (
         <div className="library-layout">
@@ -624,6 +693,19 @@ function LibraryContent({
           </FocusZone>
         </div>
       ) : null}
+      {filterOpen ? (
+        <LibraryFilterDialog
+          value={filters}
+          query={query}
+          onClose={() => setFilterOpen(false)}
+          onApply={(next) => {
+            resetSelection()
+            setError(null)
+            setFilters(next)
+            setFilterOpen(false)
+          }}
+        />
+      ) : null}
       <LetterGlimpse flash={flash} />
       {pending ? (
         <div className="library-jump-status" role="status">
@@ -654,109 +736,5 @@ function LibraryContent({
         ]}
       />
     </div>
-  )
-}
-
-function LibraryRow({
-  tile,
-  installed,
-  rom,
-  localBytes,
-  selected,
-  onHighlight,
-  onSelect
-}: {
-  tile: GameTile
-  installed: boolean
-  rom?: RommRom
-  localBytes?: number
-  selected: boolean
-  onHighlight: () => void
-  onSelect: () => void
-}): JSX.Element {
-  const { t, formatBytes, formatDate, formatDuration } = useI18n()
-  const { isFocused } = useFocusContext()
-  const focusId = `library-game-${tile.romId}`
-  const { ref, props, focused } = useFocusable({
-    id: focusId,
-    onSelect,
-    actionLabel: t('action.open')
-  })
-  useEffect(() => {
-    // Registration may briefly repair focus before the selected row's autofocus
-    // runs. Only the current focus may update selection after that commit.
-    if (focused && isFocused(focusId)) onHighlight()
-  }, [focused, focusId, isFocused, onHighlight])
-  const released = rom?.metadatum.first_release_date
-  const bytes = rom?.fs_size_bytes ?? localBytes
-  const rating = rom?.metadatum.average_rating
-  return (
-    <button
-      ref={ref as Ref<HTMLButtonElement>}
-      className="library-row"
-      data-rom={tile.romId}
-      data-focus-label={tile.sortTitle ?? tile.title}
-      data-selected={selected}
-      aria-pressed={selected}
-      {...props}
-    >
-      <span className="library-row__game">
-        <CoverArt path={tile.coverPath} name={tile.title} />
-        <span className="library-row__identity">
-          <span className="library-row__title">
-            <strong title={tile.title}>{tile.title}</strong>
-            {tile.group ? (
-              <span
-                className="library-row__badge"
-                title={t('library.versions', { count: tile.group.length })}
-              >
-                <Icon name="roms" size={14} />
-                {tile.group.length}
-              </span>
-            ) : null}
-          </span>
-          {rom?.fs_name ? (
-            <small className="library-row__filename" title={rom.fs_name}>
-              {rom.fs_name}
-            </small>
-          ) : null}
-          <small className="library-row__meta">
-            {tile.platformName}
-            {installed ? (
-              <span className="library-row__badge">
-                <Icon name="download" size={13} />
-                {t('library.downloadedMark')}
-              </span>
-            ) : null}
-          </small>
-        </span>
-      </span>
-      <span data-column="size">{bytes === undefined ? '—' : formatBytes(bytes)}</span>
-      <span data-column="added">{rom?.created_at ? (formatDate(rom.created_at) ?? '—') : '—'}</span>
-      <span data-column="released">{released ? (formatDate(released) ?? '—') : '—'}</span>
-      <span data-column="rating">
-        {typeof rating === 'number' && rating > 0 ? rating.toFixed(1) : '—'}
-      </span>
-      <span data-column="duration">
-        {formatDuration(rom?.hltb_metadata?.main_story ?? 0) ?? '—'}
-      </span>
-      <span data-column="languages">
-        <TableTags values={rom?.languages ?? []} />
-      </span>
-      <span data-column="regions">
-        <TableTags values={rom?.regions ?? []} />
-      </span>
-    </button>
-  )
-}
-
-function TableTags({ values }: { values: string[] }): JSX.Element {
-  return (
-    <span className="library-row__tags" title={values.join(', ')}>
-      {values.length
-        ? values.slice(0, 2).map((value, index) => <span key={`${value}-${index}`}>{value}</span>)
-        : '—'}
-      {values.length > 2 ? <span>+{values.length - 2}</span> : null}
-    </span>
   )
 }

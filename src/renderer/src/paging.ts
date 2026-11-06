@@ -50,6 +50,8 @@ export interface RomPages {
 }
 
 export interface PagedRoms {
+  /** Retry the failed page without discarding already loaded games. */
+  retry: () => void
   /** Optional focus-driven lookahead in addition to the scrolling sentinel. */
   loadMore: () => void
   /** Every page fetched so far, in the order they came. */
@@ -164,6 +166,7 @@ export function useRomPages(
    * dependencies say it is.
    */
   const key = JSON.stringify(query)
+  const [answeredKey, setAnsweredKey] = useState(key)
   const asked = useMemo(() => JSON.parse(key) as RomQuery, [key])
 
   const load = useCallback(
@@ -211,6 +214,7 @@ export function useRomPages(
         setTotal(page.total)
         setMore(hasMorePages(page))
         setRoms((current) => (offset === 0 ? page.items : [...current, ...page.items]))
+        setAnsweredKey(JSON.stringify(asked))
       } catch (cause) {
         if (mine === run.current) onError((cause as Error).message)
       } finally {
@@ -238,7 +242,18 @@ export function useRomPages(
 
   const reload = useCallback(() => void load(0), [load])
 
-  return { roms, total, more, loading, settled, loadMore, reload }
+  // Old cards must not masquerade as a newly applied filter while its request
+  // is pending or has failed. Late responses already belong to `run` above.
+  const current = answeredKey === key
+  return {
+    roms: current ? roms : [],
+    total: current ? total : null,
+    more: current && more,
+    loading,
+    settled,
+    loadMore,
+    reload
+  }
 }
 
 /**
@@ -269,7 +284,7 @@ export function usePagedRoms(
   }
 ): PagedRoms {
   const sentinel = useRef<HTMLDivElement | null>(null)
-  const { roms, total, more, loading, loadMore } = useRomPages(query, {
+  const { roms, total, more, loading, loadMore, reload } = useRomPages(query, {
     pageSize: PAGE_SIZE,
     initialPage,
     fetchPage,
@@ -295,5 +310,5 @@ export function usePagedRoms(
     return () => observer.disconnect()
   }, [loadMore, roms.length, more])
 
-  return { roms, total, more, loading, sentinel, loadMore }
+  return { roms, total, more, loading, sentinel, loadMore, retry: roms.length ? loadMore : reload }
 }

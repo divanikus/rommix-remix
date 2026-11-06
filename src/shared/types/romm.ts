@@ -622,6 +622,7 @@ export interface RommPlaySessionEntry {
 
 /** Query parameters RomMix passes to GET /api/roms. */
 export interface RomQuery {
+  filters?: import('../library-filters.ts').LibraryFilters
   search_term?: string
   platform_ids?: number[]
   collection_id?: number

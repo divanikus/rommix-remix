@@ -1,3 +1,4 @@
+import { FACETS, filterParams, validDuration, type FilterCatalog } from '@shared/library-filters.ts'
 import { app } from 'electron'
 import { Blob } from 'node:buffer'
 import { readFile, rename, rm } from 'node:fs/promises'
@@ -714,8 +715,6 @@ export class RommClient {
     return this.json('/api/roms/random')
   }
 
-  private anniversaryCapability: { base: string; expires: number; value: Promise<boolean> } | null =
-    null
   async anniversaries(day: string, offset = 0): Promise<RommRomPage | null> {
     const date = anniversaryDay(day)
     if (!date) return { items: [], total: 0, limit: 24, offset: 0 }
@@ -723,26 +722,9 @@ export class RommClient {
       throw new Error(t('error.anniversaryOffset'))
     // Older servers ignore unknown query parameters. Check capability before
     // asking so an ordinary library page can never masquerade as anniversaries.
-    const base = this.baseUrl
-    if (
-      !this.anniversaryCapability ||
-      this.anniversaryCapability.base !== base ||
-      this.anniversaryCapability.expires < Date.now()
-    ) {
-      const value = this.json<{
-        paths?: Record<string, { get?: { parameters?: { name?: string }[] } }>
-      }>('/openapi.json').then((schema) => {
-        const params = schema.paths?.['/api/roms']?.get?.parameters ?? []
-        return ['released_days', 'released_before_year'].every((name) =>
-          params.some((p) => p.name === name)
-        )
-      })
-      this.anniversaryCapability = { base, expires: Date.now() + 300000, value }
-      void value.catch(() => {
-        if (this.anniversaryCapability?.value === value) this.anniversaryCapability = null
-      })
-    }
-    if (!(await this.anniversaryCapability.value)) return null
+    const supported = await this.romQueryParameters()
+    if (!['released_days', 'released_before_year'].every((name) => supported.includes(name)))
+      return null
     const params = new URLSearchParams({
       released_days: date.month + '-' + date.date,
       released_before_year: String(date.year),
@@ -758,7 +740,68 @@ export class RommClient {
     return page
   }
 
-  roms(query: RomQuery = {}): Promise<RommRomPage> {
+  private romQueryCapability: { base: string; expires: number; value: Promise<string[]> } | null =
+    null
+  private romQueryParameters(): Promise<string[]> {
+    const base = this.baseUrl
+    if (
+      !this.romQueryCapability ||
+      this.romQueryCapability.base !== base ||
+      this.romQueryCapability.expires < Date.now()
+    ) {
+      const value = this.json<{
+        paths?: Record<string, { get?: { parameters?: { name?: string; in?: string }[] } }>
+      }>('/openapi.json').then((schema) =>
+        (schema.paths?.['/api/roms']?.get?.parameters ?? [])
+          .filter((p) => p.in === 'query' && typeof p.name === 'string')
+          .map((p) => p.name!)
+      )
+      this.romQueryCapability = { base, expires: Date.now() + 300000, value }
+      void value.catch(() => {
+        if (this.romQueryCapability?.value === value) this.romQueryCapability = null
+      })
+    }
+    return this.romQueryCapability.value
+  }
+
+  /** One row only; facet values describe the whole visible scope, not that row.
+   * /roms/filters is unscoped on RomM 5.4.1. Use the visibility-aware listing. */
+  async filterCatalog(query: RomQuery = {}): Promise<FilterCatalog> {
+    const supported = await this.romQueryParameters()
+    if (!supported.includes('with_filter_values')) return { supported: [], values: {} }
+    const params = new URLSearchParams({ limit: '1', offset: '0', with_filter_values: 'true' })
+    for (const key of ['with_files', 'with_char_index', 'with_rom_id_index', 'with_total']) {
+      if (supported.includes(key)) params.set(key, 'false')
+    }
+    for (const id of query.platform_ids ?? []) params.append('platform_ids', String(id))
+    if (query.collection_id != null) params.set('collection_id', String(query.collection_id))
+    if (query.virtual_collection_id != null)
+      params.set('virtual_collection_id', query.virtual_collection_id)
+    const page = await this.json<{ filter_values?: Record<string, unknown> }>('/api/roms?' + params)
+    if (!page.filter_values) throw new Error(t('filters.unavailable'))
+    const values: FilterCatalog['values'] = {}
+    for (const key of FACETS) {
+      const items = page.filter_values[key]
+      if (Array.isArray(items))
+        values[key] = [
+          ...new Set(items.filter((v): v is string => typeof v === 'string' && !!v.trim()))
+        ].sort((a, b) => a.localeCompare(b))
+    }
+    // RomM's explicit status values and two independent user flags.
+
+    values.statuses = [
+      'now_playing',
+      'backlogged',
+      'incomplete',
+      'finished',
+      'completed_100',
+      'retired',
+      'never_playing'
+    ]
+    return { supported, values }
+  }
+
+  async roms(query: RomQuery = {}): Promise<RommRomPage> {
     const params = new URLSearchParams()
     if (query.search_term) params.set('search_term', query.search_term)
     for (const id of query.platform_ids ?? []) params.append('platform_ids', String(id))
@@ -779,6 +822,18 @@ export class RommClient {
     // disk — so every such game looks un-downloaded however many times the
     // library is reconciled.
     params.set('with_files', 'true')
+    if (!validDuration(query.filters?.duration)) throw new Error(t('filters.invalidDuration'))
+    const filters = filterParams(query.filters)
+    if (filters.size) {
+      const supported = await this.romQueryParameters()
+      if ([...filters.keys()].some((key) => !supported.includes(key)))
+        throw new Error(t('filters.unsupported'))
+      for (const [key, value] of filters) params.append(key, value)
+      // The library pages its own results. No full-library ID index is needed.
+      for (const key of ['with_filter_values', 'with_rom_id_index', 'with_char_index']) {
+        if (supported.includes(key)) params.set(key, 'false')
+      }
+    }
     return this.json<RommRomPage>(`/api/roms?${params.toString()}`)
   }
 

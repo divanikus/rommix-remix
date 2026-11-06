@@ -61,6 +61,7 @@ const bridge: RomMixBridge = {
     randomRom: () => ipcRenderer.invoke('library:randomRom'),
     anniversaries: (day: string, offset?: number) =>
       ipcRenderer.invoke('library:anniversaries', day, offset),
+    filterCatalog: (query: RomQuery) => ipcRenderer.invoke('library:filterCatalog', query),
     roms: (query: RomQuery) => ipcRenderer.invoke('library:roms', query),
     rom: (id: number) => ipcRenderer.invoke('library:rom', id),
     playTime: (romId: number) => ipcRenderer.invoke('library:playTime', romId),

@@ -53,6 +53,101 @@ interface Sent {
 const real = globalThis.fetch
 const scratches: string[] = []
 
+describe('library filters', () => {
+  const capabilities = (names: string[]): object => ({
+    paths: { '/api/roms': { get: { parameters: names.map((name) => ({ name, in: 'query' })) } } }
+  })
+  test('gets scope-wide options without search, active filters, files or full ID index', async () => {
+    const { store } = fakeStore({ clientToken: 'fixture' })
+    const sent = serve((s) =>
+      s.url.endsWith('/openapi.json')
+        ? json(
+            capabilities([
+              'with_filter_values',
+              'with_files',
+              'with_total',
+              'with_char_index',
+              'with_rom_id_index',
+              'genres'
+            ])
+          )
+        : json({ filter_values: { genres: ['RPG', 'Action', 'RPG', 7, ''] } })
+    )
+    const result = await new RommClient(store).filterCatalog({
+      collection_id: 4,
+      platform_ids: [2],
+      search_term: 'he',
+      filters: { flags: { favorite: true } }
+    })
+    assert.deepEqual(result.values.genres, ['Action', 'RPG'])
+    const q = new URL(sent[1].url).searchParams
+    assert.equal(q.get('collection_id'), '4')
+    assert.equal(q.get('platform_ids'), '2')
+    assert.equal(q.get('limit'), '1')
+    for (const key of ['with_files', 'with_total', 'with_char_index', 'with_rom_id_index'])
+      assert.equal(q.get(key), 'false')
+    assert.equal(q.get('with_filter_values'), 'true')
+    assert.equal(q.has('search_term'), false)
+    assert.equal(q.has('favorite'), false)
+  })
+  test('sends repeated values, negative flag and exact scope on every page; capability is reused', async () => {
+    const { store } = fakeStore({ clientToken: 'fixture' })
+    const sent = serve((s) =>
+      s.url.endsWith('/openapi.json')
+        ? json(capabilities(['genres', 'genres_logic', 'favorite', 'with_rom_id_index']))
+        : json({ items: [], total: 0, limit: 60, offset: 0 })
+    )
+    const client = new RommClient(store)
+    for (const offset of [0, 60])
+      await client.roms({
+        virtual_collection_id: 'series/a',
+        filters: {
+          facets: { genres: { values: ['A, B', 'C'], logic: 'none' } },
+          flags: { favorite: false }
+        },
+        offset
+      })
+    assert.equal(sent.filter((s) => s.url.endsWith('/openapi.json')).length, 1)
+    for (const request of sent.filter((s) => !s.url.endsWith('/openapi.json'))) {
+      const q = new URL(request.url).searchParams
+      assert.deepEqual(q.getAll('genres'), ['A, B', 'C'])
+      assert.equal(q.get('genres_logic'), 'none')
+      assert.equal(q.get('favorite'), 'false')
+      assert.equal(q.get('virtual_collection_id'), 'series/a')
+      assert.equal(q.get('with_files'), 'true')
+      assert.equal(q.get('with_rom_id_index'), 'false')
+    }
+    assert.equal(new URL(sent.at(-1)!.url).searchParams.get('offset'), '60')
+  })
+  test('unsupported filters fail closed, and ordinary browsing needs no schema request', async () => {
+    const { store } = fakeStore({ clientToken: 'fixture' })
+    const sent = serve((s) =>
+      s.url.endsWith('/openapi.json') ? json(capabilities([])) : json({ items: [] })
+    )
+    const client = new RommClient(store)
+    assert.deepEqual(await client.filterCatalog(), { supported: [], values: {} })
+    await assert.rejects(client.roms({ filters: { flags: { favorite: false } } }), /support/)
+    assert.equal(sent.length, 1)
+    await client.roms({})
+    assert.equal(sent.length, 2)
+  })
+  test('schema failure is retryable, and options failure is not an empty list', async () => {
+    const { store } = fakeStore({ clientToken: 'fixture' })
+    let success = false
+    serve((s) =>
+      s.url.endsWith('/openapi.json')
+        ? success
+          ? json(capabilities(['with_filter_values']))
+          : json({}, 503)
+        : json({})
+    )
+    const client = new RommClient(store)
+    await assert.rejects(client.filterCatalog())
+    success = true
+    await assert.rejects(client.filterCatalog(), /filter options/)
+  })
+})
+
 afterEach(() => {
   globalThis.fetch = real
   for (const dir of scratches.splice(0)) rmSync(dir, { recursive: true, force: true })
@@ -2011,6 +2106,27 @@ describe('what may take as long as it takes', () => {
 })
 
 describe('Home discovery uses server data', () => {
+  test('concurrent anniversary and filter checks share one server capability request', async () => {
+    const requests = serve((sent) =>
+      sent.url.endsWith('/openapi.json')
+        ? json({
+            paths: {
+              '/api/roms': {
+                get: {
+                  parameters: ['released_days', 'released_before_year', 'with_filter_values'].map(
+                    (name) => ({ name, in: 'query' })
+                  )
+                }
+              }
+            }
+          })
+        : json({ items: [], total: 0, limit: 24, offset: 0, filter_values: {} })
+    )
+    const { store } = fakeStore()
+    const client = new RommClient(store)
+    await Promise.all([client.anniversaries('2026-11-07'), client.filterCatalog()])
+    assert.equal(requests.filter((r) => r.url.endsWith('/openapi.json')).length, 1)
+  })
   test('random pick uses the authenticated server endpoint, not a first-page sample', async () => {
     const requests = serve(() => Response.json({ id: 991 }))
     const { store } = fakeStore({ clientToken: 'fixture' })
@@ -2033,7 +2149,12 @@ describe('Home discovery uses server data', () => {
         ? Response.json({
             paths: {
               '/api/roms': {
-                get: { parameters: [{ name: 'released_days' }, { name: 'released_before_year' }] }
+                get: {
+                  parameters: [
+                    { name: 'released_days', in: 'query' },
+                    { name: 'released_before_year', in: 'query' }
+                  ]
+                }
               }
             }
           })

@@ -87,7 +87,9 @@ export function SystemsScreen({ selected }: { selected?: number }): JSX.Element 
             : key.replaceAll('_', ' ')
   return (
     <div className="content systems-screen" data-systems-layout={presentation.layout}>
-      <PageTitle>{t('library.systems')}</PageTitle>
+      <div className="library-heading">
+        <PageTitle>{t('library.systems')}</PageTitle>
+      </div>
       {offline ? <div className="notice notice--warn">{t('app.offlineNotice')}</div> : null}
       {error ? <div className="notice notice--error">{error}</div> : null}
       <div className="library-toolbar systems-toolbar" data-focus-down="systems-list">

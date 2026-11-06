@@ -791,9 +791,54 @@ const bridge: RomMixBridge = {
         offset
       })
     },
+    filterCatalog: () =>
+      later({
+        supported: [
+          'genres',
+          'genres_logic',
+          'languages',
+          'languages_logic',
+          'favorite',
+          'last_played',
+          'statuses',
+          'statuses_logic',
+          'hltb_main_story_min',
+          'hltb_main_story_max'
+        ],
+        values: {
+          genres: [...new Set(ROMS.flatMap((r) => r.metadatum?.genres ?? []))],
+          languages: ['en', 'fr'],
+          statuses: [
+            'now_playing',
+            'backlogged',
+            'incomplete',
+            'finished',
+            'completed_100',
+            'retired',
+            'never_playing'
+          ]
+        }
+      }),
     roms: (query: RomQuery) => {
       const term = query.search_term?.toLowerCase() ?? ''
       const matched = ROMS.filter((rom) => {
+        const genres = query.filters?.facets?.genres
+        if (genres?.values.length) {
+          const hits = genres.values.map((v) => rom.metadatum?.genres.includes(v) ?? false)
+          if (
+            !(genres.logic === 'all'
+              ? hits.every(Boolean)
+              : genres.logic === 'none'
+                ? !hits.some(Boolean)
+                : hits.some(Boolean))
+          )
+            return false
+        }
+        if (
+          query.filters?.flags?.favorite !== undefined &&
+          favourites.has(rom.id) !== query.filters.flags.favorite
+        )
+          return false
         if (term && !(rom.name ?? '').toLowerCase().includes(term)) return false
         if (query.platform_ids?.length && !query.platform_ids.includes(rom.platform_id))
           return false

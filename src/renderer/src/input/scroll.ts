@@ -16,6 +16,7 @@
  * what "up" means to someone holding the stick.
  */
 const SNAP_TO_EDGE_PX = 260
+const MODAL_BOUNDARY = '[role="dialog"][aria-modal="true"]'
 
 /**
  * How this page is allowed to scroll.
@@ -51,6 +52,7 @@ function scrollParentsOf(element: HTMLElement): {
   let vertical: HTMLElement | null = null
   let horizontal: HTMLElement | null = null
   let node = element.parentElement
+  const boundary = element.closest(MODAL_BOUNDARY)
 
   while (node && !(vertical && horizontal)) {
     const style = getComputedStyle(node)
@@ -60,6 +62,9 @@ function scrollParentsOf(element: HTMLElement): {
     if (!horizontal && scrolls(style.overflowX) && node.scrollWidth > node.clientWidth) {
       horizontal = node
     }
+    // A dialog may be mounted inside a scrolling library. Its controls must
+    // never discover that background (or an outer dialog) as their scroller.
+    if (node === boundary) break
     node = node.parentElement
   }
   return { vertical, horizontal }
@@ -114,7 +119,9 @@ function revealAcross(element: HTMLElement, shelf: HTMLElement | null): void {
 export function revealElement(element: HTMLElement): void {
   // One walk for both axes, this being the caller that wants both.
   const { vertical: scroller, horizontal: shelf } = scrollParentsOf(element)
-  if (scroller && element.closest('[data-focus-collection]')) {
+  const inDialog = element.closest(MODAL_BOUNDARY) !== null
+  if (inDialog) revealAcross(element, shelf)
+  if (scroller && (inDialog || element.closest('[data-focus-collection]'))) {
     // Repeated focus moves must finish before the next input. Restarting a
     // smooth animation every 90 ms lets selection run several rows off screen.
     const card = element.getBoundingClientRect()
@@ -126,6 +133,9 @@ export function revealElement(element: HTMLElement): void {
     scroller.scrollTo({ top: scroller.scrollTop + delta, behavior: 'instant' })
     return
   }
+  // Native scrollIntoView also walks ancestors beyond a fixed-position dialog.
+  // A header/footer without an inner scroller is already visible; leave it put.
+  if (inDialog) return
   revealAcross(element, shelf)
 
   if (scroller) {

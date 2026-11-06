@@ -1,0 +1,168 @@
+/* Match the library's theme and density. Footer actions stay in reach. */
+.overlay__panel:has(> .filter-panel) {
+  width: min(920px, 84vw);
+  padding-inline: 24px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.overlay__panel:has(> .filter-panel) > .overlay__title {
+  margin: 0 -24px;
+  padding: 20px 24px 10px;
+  flex-shrink: 0;
+}
+.overlay__panel > .filter-panel {
+  margin-bottom: 0;
+}
+.filter-panel {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.filter-help,
+.filter-footer p {
+  color: var(--text-muted);
+  font-size: 15px;
+  margin: 10px 0;
+}
+.filter-scroll {
+  min-height: 0;
+  max-height: 48vh;
+  overflow-y: auto;
+  padding: 6px;
+  scroll-padding: 8px;
+}
+.filter-section {
+  height: min(360px, 42vh);
+  flex: 0 1 min(360px, 42vh);
+}
+.filter-panel .tabs {
+  margin: 8px 0 10px;
+  flex-shrink: 0;
+}
+.filter-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.filter-row.btn {
+  justify-content: flex-start;
+  min-height: 44px;
+  padding: 10px 14px;
+  gap: 12px;
+  font-size: 17px;
+  text-align: left;
+}
+.filter-row > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.filter-row small {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: 14px;
+  white-space: nowrap;
+}
+.filter-row[aria-pressed='true'] {
+  background: var(--bg-sunken);
+  color: var(--accent);
+}
+.filter-row[data-focused='true'] {
+  color: var(--text);
+}
+.filter-values {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.filter-check {
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  flex: 0 0 22px;
+}
+.filter-footer {
+  flex-shrink: 0;
+  padding: 6px 0 18px;
+  border-top: 1px solid var(--border);
+}
+.filter-footer .btn-row {
+  margin: 0;
+}
+.filter-logic {
+  margin: 10px 0;
+}
+.filter-panel > .field {
+  margin: 0 0 10px;
+}
+.filter-properties {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 0;
+}
+.filter-property.library-control {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.filter-property.library-control > span {
+  color: var(--text);
+  font-size: 17px;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.filter-property .segmented {
+  flex-shrink: 0;
+}
+.filter-duration {
+  margin-top: 0;
+}
+.filter-duration h3 {
+  font-size: 15px;
+  color: var(--text-dim);
+  margin: 0 0 8px;
+}
+.filter-bound {
+  display: flex;
+  gap: 8px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+.filter-bound .field {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+.filter-bound .field__input {
+  min-height: 44px;
+  padding: 10px 14px;
+  font-size: 17px;
+}
+.filter-bound .filter-row {
+  min-width: 44px;
+  justify-content: center;
+}
+.library-filter-summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  color: var(--text-muted);
+  font-size: 15px;
+  padding: 4px 0 16px;
+}
+.library-filter-summary > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 850px) {
+  .filter-fields {
+    grid-template-columns: 1fr;
+  }
+  .filter-row.btn {
+    font-size: 15px;
+  }
+}

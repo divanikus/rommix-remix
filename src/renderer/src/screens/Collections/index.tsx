@@ -101,7 +101,9 @@ export function CollectionsScreen({ view }: { view?: CollectionsView }): JSX.Ele
   }
   return (
     <div className="content collections-screen">
-      <PageTitle>{t('nav.collections')}</PageTitle>
+      <div className="library-heading">
+        <PageTitle>{t('nav.collections')}</PageTitle>
+      </div>
       <div className="library-toolbar" data-focus-down="collections-list">
         <TextField
           field="collections-search"

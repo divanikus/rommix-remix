@@ -189,6 +189,7 @@ export interface RomMixBridge {
      * by platform id. A platform the server did not count is absent.
      */
     platformCounts(platformIds: number[], search: string): Promise<Record<number, number>>
+    filterCatalog(query: RomQuery): Promise<import('./library-filters.ts').FilterCatalog>
     roms(query: RomQuery): Promise<RommRomPage>
     randomRom(): Promise<RommRom | null>
     anniversaries(day: string, offset?: number): Promise<RommRomPage | null>

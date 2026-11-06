@@ -43,7 +43,7 @@
 .library-control {
   gap: 0;
 }
-.library-control > span {
+.library-toolbar .library-control > span {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -83,14 +83,31 @@
   flex: 1 1 220px;
   max-width: 440px;
 }
-.library-heading .page-title,
-.systems-screen .page-title,
-.collections-screen .page-title {
-  font-size: calc(24px * var(--type-scale));
+.library-heading {
+  min-height: calc(36px * var(--type-scale));
   margin-bottom: 12px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.library-heading .page-title {
+  font-size: calc(24px * var(--type-scale));
+  line-height: 1.5;
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
 }
 .library-heading .page-subtitle {
-  margin-block: 0 12px;
+  margin: 0;
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.systems-toolbar {
+  margin-top: 0;
 }
 .library-layout[hidden] {
   display: none;

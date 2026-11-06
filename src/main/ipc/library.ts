@@ -1,4 +1,4 @@
-import type { LibrarySyncResult, RommPlatform, RomUserStatus } from '@shared/types'
+import type { LibrarySyncResult, RommPlatform, RomUserStatus, RomQuery } from '@shared/types'
 import type { RomMixApp } from '../app.ts'
 import { log } from '../log.ts'
 import { refusedUs } from '../romm/index.ts'
@@ -45,6 +45,7 @@ export function registerLibraryIpc(rommix: RomMixApp, handle: Handle): void {
   handle('library:platformCounts', (platformIds: number[], search: string) =>
     client.romCounts(platformIds, search)
   )
+  handle('library:filterCatalog', (query: RomQuery) => client.filterCatalog(query))
   handle('library:randomRom', () => client.randomRom())
   handle('library:anniversaries', (day: string, offset?: number) =>
     client.anniversaries(day, offset)

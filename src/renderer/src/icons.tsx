@@ -1,5 +1,6 @@
 import type { JSX } from 'react'
 import {
+  Funnel,
   ArrowDown,
   ArrowDownWideNarrow,
   ArrowUpWideNarrow,
@@ -124,6 +125,7 @@ export const ICONS = {
   emulator: Gamepad2,
   folder: FolderOpen,
   search: Search,
+  filter: Funnel,
   confirm: Check,
   warn: CircleAlert,
   disconnect: LogOut,

@@ -27,6 +27,7 @@ export type SettingsTarget = 'theme'
  * begins with the whole library — see `SECTIONS`.
  */
 export interface LibraryView {
+  filters?: import('@shared/library-filters').LibraryFilters
   layout?: 'grid' | 'list'
   versionId?: number
   focusSearch?: boolean
