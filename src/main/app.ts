@@ -1,3 +1,4 @@
+import { mediaResponse } from './media-response.ts'
 import { uiScaleFor } from './ui-scale.ts'
 import { BrowserWindow, protocol, screen, shell } from 'electron'
 import { readFile } from 'node:fs/promises'
@@ -700,6 +701,9 @@ export class RomMixApp {
          * drawing one of them. Losing that race falls through to the server,
          * which is the answer the request would have had anyway.
          */
+        if (/\.(mp4|webm|m4v|ogv)(?:[?#]|$)/i.test(path)) {
+          return await mediaResponse(request, (init) => this.client.asset(path, init))
+        }
         const cached = this.offline.assetFile(path)
         if (cached) {
           const bytes = await readFile(cached).catch(() => null)

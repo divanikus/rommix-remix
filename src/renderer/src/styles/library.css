@@ -442,23 +442,11 @@
     flex-basis: 36px;
   }
 }
-.library-detail {
-  min-width: 0;
-  border-left: 1px solid var(--border);
-  padding: 5px 5px 28px 28px;
-  height: 100%;
-  min-height: 0;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scroll-padding: 18px;
-}
-.game-screen .game-hero,
-.game-panel .game-hero {
+.game-screen .game-hero {
   margin: 0;
   padding: 0 0 24px;
 }
-.game-screen .game-hero > .backdrop,
-.game-panel .game-hero > .backdrop {
+.game-screen .game-hero > .backdrop {
   opacity: 0.08;
   border-radius: 18px;
 }
@@ -466,48 +454,12 @@
   grid-template-columns: 220px minmax(0, 1fr);
   align-items: start;
 }
-.game-panel .game-hero__body {
-  grid-template-columns: minmax(100px, 27%) minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
-}
-.game-panel .game-hero__art,
 .game-screen .game-hero__art {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
   border-radius: 8px;
 }
-.game-panel .game-hero__title {
-  font-size: calc(27px * var(--type-scale));
-  letter-spacing: -0.6px;
-}
 .game-screen .game-hero__title {
   font-size: calc(36px * var(--type-scale));
-}
-.game-panel .game-hero__meta {
-  gap: 6px;
-}
-.game-panel .chip,
-.game-panel .game-hero__rating {
-  font-size: calc(11px * var(--type-scale));
-  padding: 3px 7px;
-}
-.game-panel .game-hero__summary {
-  font-size: calc(13px * var(--type-scale));
-}
-.game-panel .btn {
-  padding: 10px 14px;
-  font-size: calc(13px * var(--type-scale));
-}
-.game-panel .tabs {
-  flex-wrap: wrap;
-  gap: 4px;
-}
-.game-panel .tab {
-  padding: 9px 11px;
-  font-size: calc(12px * var(--type-scale));
-}
-.game-panel .tab-panel {
-  padding-top: 18px;
 }
 .game-version {
   margin: 16px 0;
@@ -519,15 +471,13 @@
   border-radius: 0;
   background: transparent;
 }
-.game-screen .btn--primary,
-.game-panel .btn--primary {
+.game-screen .btn--primary {
   background: #ffffff;
   border-color: #ffffff;
   color: #111117;
   border-radius: 100px;
 }
-.game-screen .btn--primary[data-focused='true'],
-.game-panel .btn--primary[data-focused='true'] {
+.game-screen .btn--primary[data-focused='true'] {
   box-shadow: var(--focus-ring);
 }
 .game-version span {
@@ -546,13 +496,6 @@
   }
   :is(.library-topbar, .utility-topbar) .nav-item {
     padding: 9px 11px;
-  }
-  .game-panel .game-hero__body {
-    grid-template-columns: 100px minmax(0, 1fr);
-    gap: 16px;
-  }
-  .game-panel .game-hero__title {
-    font-size: calc(23px * var(--type-scale));
   }
 }
 @media (max-width: 700px) {
@@ -574,13 +517,6 @@
   }
   .topbar__utilities {
     gap: 6px;
-  }
-  .library-detail {
-    height: auto;
-    max-height: none;
-    border-left: 0;
-    border-top: 1px solid var(--border);
-    padding: 24px 4px;
   }
   .game-screen .game-hero__body {
     grid-template-columns: 110px minmax(0, 1fr);
@@ -619,26 +555,22 @@
   --focus-ring: 0 0 0 2px var(--accent);
   --focus-lift: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
-.game-panel .panel,
 .game-screen .panel {
   background: transparent;
   border: 0;
   border-radius: 0;
 }
-.game-panel .panel .tabs,
 .game-screen .panel .tabs,
 .tabs--utility {
   background: transparent;
   padding-inline: 0;
   border-bottom-color: var(--border-strong);
 }
-.game-panel .tab,
 .game-screen .tab,
 .tabs--utility .tab {
   border-bottom-width: 2px;
   font-weight: 500;
 }
-.game-panel .tab[data-focused='true'],
 .game-screen .tab[data-focused='true'],
 .tabs--utility .tab[data-focused='true'] {
   background: var(--surface);
@@ -646,18 +578,15 @@
   border-radius: 4px 4px 0 0;
   border-bottom-color: var(--accent-strong);
 }
-.game-panel .btn:not(.btn--primary):not(.btn--danger),
 .game-screen .btn:not(.btn--primary):not(.btn--danger) {
   background: var(--surface);
   border-color: var(--border-strong);
   color: var(--text);
 }
-.game-panel .btn[data-focused='true']:not(.btn--danger),
 .game-screen .btn[data-focused='true']:not(.btn--danger) {
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
-.game-panel .btn[data-focused='true']:not(.btn--primary):not(.btn--danger),
 .game-screen .btn[data-focused='true']:not(.btn--primary):not(.btn--danger) {
   background: var(--surface-strong);
 }

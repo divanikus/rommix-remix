@@ -33,17 +33,20 @@ const CHOICES: readonly {
   tone: 'ok' | 'warn' | 'info' | 'off'
   icon: IconName
 }[] = [
-  { value: 'incomplete', label: 'status.incomplete', tone: 'info', icon: 'play' },
-  { value: 'finished', label: 'status.finished', tone: 'ok', icon: 'confirm' },
-  // A star for the one that goes further than finished, which is the only
-  // difference between the two and the only thing the marks have to carry.
-  { value: 'completed_100', label: 'status.completed_100', tone: 'ok', icon: 'rating' },
-  { value: 'retired', label: 'status.retired', tone: 'warn', icon: 'cancel' },
-  { value: 'never_playing', label: 'status.never_playing', tone: 'off', icon: 'hide' },
+  { value: 'incomplete', label: 'status.incomplete', tone: 'info', icon: 'statusPlaying' },
+  { value: 'finished', label: 'status.finished', tone: 'ok', icon: 'statusFinished' },
+  { value: 'completed_100', label: 'status.completed_100', tone: 'ok', icon: 'achievement' },
+  { value: 'retired', label: 'status.retired', tone: 'warn', icon: 'statusRetired' },
+  { value: 'never_playing', label: 'status.never_playing', tone: 'off', icon: 'cancel' },
   // Last, and offered always: a status set by accident is otherwise permanent
   // from here, and RomM's own field is nullable.
-  { value: null, label: 'status.none', tone: 'off', icon: 'clear' }
+  { value: null, label: 'status.none', tone: 'off', icon: 'gameStatus' }
 ]
+
+/** The action, picker and title tag share one status vocabulary. */
+export function statusIcon(status: RomUserStatus | null): IconName {
+  return CHOICES.find((entry) => entry.value === status)?.icon ?? 'gameStatus'
+}
 
 /**
  * How far through a game somebody is, as a word with a colour behind it.

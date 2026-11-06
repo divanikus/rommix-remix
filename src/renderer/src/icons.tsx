@@ -1,5 +1,11 @@
 import type { JSX } from 'react'
 import {
+  CircleDashed,
+  Timer,
+  FlagTriangleRight,
+  FlagOff,
+  Volume2,
+  VolumeX,
   Funnel,
   ArrowDown,
   ArrowDownWideNarrow,
@@ -91,6 +97,13 @@ import {
  * flatpak, on a television.
  */
 export const ICONS = {
+  addCollection: Bookmark,
+  gameStatus: CircleDashed,
+  statusPlaying: Timer,
+  statusFinished: FlagTriangleRight,
+  statusRetired: FlagOff,
+  sound: Volume2,
+  mute: VolumeX,
   menu: Menu,
   play: Play,
   download: Download,

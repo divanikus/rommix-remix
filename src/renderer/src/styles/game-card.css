@@ -1,0 +1,407 @@
+/* Cover, source-view navigation and media share RomMix's existing theme tokens. */
+.game-shell {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+.game-navigation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 16px;
+  padding-inline: var(--safe-x);
+  align-items: center;
+  flex-shrink: 0;
+}
+.game-navigation__previous,
+.game-navigation__next {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  min-width: 0;
+}
+.game-navigation__next {
+  justify-content: flex-end;
+}
+.game-navigation .btn {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: block;
+  background: transparent;
+  border-color: transparent;
+}
+.game-navigation__current {
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: calc(19px * var(--type-scale));
+}
+.game-navigation .hint__key {
+  flex-shrink: 0;
+}
+.game-screen .game-hero {
+  margin: 0;
+  padding: 0;
+}
+.game-screen .game-hero > .backdrop {
+  opacity: 1;
+  border-radius: 0;
+  position: fixed;
+  inset: var(--app-header-height) 0 0;
+  pointer-events: none;
+}
+.game-screen .game-hero > .backdrop img {
+  filter: blur(2px);
+  opacity: 0.28;
+  transform: none;
+}
+.game-screen .game-hero > .backdrop::after {
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--bg) 50%, transparent),
+      color-mix(in srgb, var(--bg) 82%, transparent)
+    ),
+    linear-gradient(0deg, var(--bg), transparent);
+}
+.game-screen .game-hero__body {
+  grid-template-columns: minmax(210px, 25%) minmax(0, 1fr);
+  align-items: start;
+  gap: 32px;
+}
+.game-screen .game-hero__aside {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  max-height: calc(100vh - var(--app-header-height) - var(--safe-y) - 80px);
+}
+.game-screen .game-hero__aside > .game-facts {
+  flex: 0 0 auto;
+}
+.game-screen .game-hero__art {
+  min-height: 80px;
+  flex: 0 1 auto;
+  border: none;
+  border-radius: var(--radius);
+}
+.game-screen .game-hero__art .cover {
+  aspect-ratio: 2 / 3;
+}
+.game-screen .game-hero__art .cover::before {
+  display: none;
+}
+.game-screen .game-hero__art .cover img {
+  object-fit: contain;
+}
+.game-screen .game-hero__text {
+  min-width: 0;
+}
+.game-screen .game-hero__title {
+  font-size: calc(34px * var(--type-scale));
+  line-height: 1.1;
+  letter-spacing: -0.7px;
+}
+.game-screen .game-hero__meta {
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.game-screen .game-version--choice {
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin: 10px 0;
+  background: color-mix(in srgb, var(--surface) 65%, transparent);
+}
+.game-version__change {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 6px;
+  color: var(--accent) !important;
+}
+.game-screen .game-version--choice > svg {
+  flex-shrink: 0;
+  color: var(--text-dim);
+}
+.game-screen .game-version--choice strong {
+  flex: 1;
+  min-width: 0;
+  font-size: calc(13px * var(--type-scale));
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.game-version--choice[data-focused='true'] {
+  box-shadow: var(--focus-ring);
+}
+.game-actions {
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 14px 0 20px !important;
+}
+.game-screen .game-actions .btn {
+  min-height: 40px;
+  padding: 8px 13px;
+  font-size: calc(13px * var(--type-scale));
+}
+.game-screen .game-actions .btn:not(:has(svg + *)) {
+  flex-shrink: 0;
+}
+.game-screen .panel {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  margin-top: 22px;
+  /* These tabs no longer have a containing card. Let the summary's negative
+     margin and the edge thumbnails' focus rings paint beyond the pane. */
+  overflow: visible;
+}
+.game-screen .panel__body {
+  padding: 20px 0;
+}
+.game-screen .tabs {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.game-screen .tab {
+  padding: 9px 10px;
+  font-size: calc(13px * var(--type-scale));
+}
+.game-overview {
+  display: grid;
+  gap: 22px;
+}
+.game-screen .game-hero__about {
+  max-width: none;
+}
+.game-screen .game-hero__summary {
+  font-size: calc(16px * var(--type-scale));
+  line-height: 1.6;
+}
+.game-facts {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+}
+.game-facts > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.8fr);
+  gap: 10px;
+  align-items: baseline;
+}
+.game-facts dt {
+  color: var(--text-dim);
+  font-size: calc(12px * var(--type-scale));
+  line-height: 1.4;
+  margin: 0;
+  font-weight: 500;
+}
+.game-facts dd {
+  margin: 0;
+  font-size: calc(13px * var(--type-scale));
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.game-media {
+  min-width: 0;
+}
+.game-media--overview {
+  --preview-height: clamp(220px, 34vh, 340px);
+}
+.game-media--overview.game-media--video {
+  display: grid;
+  grid-template-columns: minmax(0, calc(var(--preview-height) * var(--video-aspect))) minmax(
+      160px,
+      1fr
+    );
+  gap: 14px;
+  align-items: start;
+}
+.game-media--overview .game-video:not(.game-video--expanded) {
+  height: var(--preview-height);
+  aspect-ratio: auto;
+}
+.game-media__shots {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.game-media--overview.game-media--video .game-media__shots {
+  grid-column: 2;
+  min-width: 0;
+  height: var(--preview-height);
+  grid-template-columns: repeat(var(--shot-columns), minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+}
+.game-screen .game-media--overview.game-media--video .shot {
+  height: calc((var(--preview-height) - 14px) / 2);
+  aspect-ratio: auto;
+}
+.game-media--gallery {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: start;
+}
+.game-media--gallery .game-media__shots {
+  display: contents;
+}
+.game-media .shot {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  height: auto;
+  padding: 0;
+}
+.game-media .shot__image {
+  height: 100%;
+  object-fit: contain;
+}
+.game-video {
+  position: relative;
+  background: var(--bg);
+  aspect-ratio: var(--video-aspect, 4 / 3);
+  border-radius: var(--radius);
+}
+.game-video video {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  border-radius: inherit;
+}
+.game-video__surface {
+  position: absolute;
+  inset: 0;
+}
+.game-video__surface > .btn {
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius);
+}
+.game-video__surface > .btn > svg {
+  width: 44px;
+  height: 44px;
+  padding: 10px;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--bg) 70%, transparent);
+}
+/* Play/retry remains discoverable on a stopped tile. A playing preview is
+   unobstructed until the pointer or controller actually focuses its surface. */
+.game-video__surface[data-playing='true'] > .btn:not([data-focused='true']) > svg {
+  opacity: 0;
+}
+.game-video__surface > .btn {
+  color: var(--text);
+}
+.game-video__surface > .btn[data-focused='true'] {
+  box-shadow: var(--focus-ring);
+}
+.game-video__error {
+  position: absolute;
+  bottom: 12px;
+  inset-inline: 12px;
+  background: var(--bg);
+  font-size: 13px;
+  text-align: center;
+  pointer-events: none;
+}
+.game-video--expanded {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  aspect-ratio: auto;
+  border-radius: 0;
+  padding: 30px 30px 94px;
+  background: var(--bg);
+}
+.game-video__controls {
+  position: absolute;
+  bottom: 25px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+}
+@media (max-width: 1050px) {
+  .game-screen .game-hero__body {
+    grid-template-columns: 22% minmax(0, 1fr);
+    gap: 24px;
+  }
+  .game-screen .game-hero__title {
+    font-size: calc(28px * var(--type-scale));
+  }
+  .game-screen .game-hero__art {
+    max-width: none;
+  }
+  .game-navigation {
+    gap: 8px;
+  }
+  .game-navigation__current {
+    font-size: 16px;
+  }
+  .game-navigation .btn {
+    font-size: 13px;
+  }
+}
+@media (max-width: 650px) {
+  .game-screen .game-hero__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .game-screen .game-hero__art {
+    position: static;
+    max-width: 160px;
+  }
+  .game-navigation__previous .btn,
+  .game-navigation__next .btn {
+    display: none;
+  }
+  .game-navigation {
+    grid-template-columns: 40px 40px minmax(0, 1fr) 40px;
+  }
+  .game-media--overview.game-media--video {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .game-media--overview.game-media--video .game-media__shots {
+    grid-column: 1;
+  }
+}
+
+.game-navigation > .btn:first-child {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  padding: 8px;
+}
+
+.game-screen .game-hero__art .cover:has(img) {
+  height: 100%;
+  aspect-ratio: auto;
+  background: transparent;
+}
+.game-screen .game-hero__art .cover img {
+  position: static;
+  height: 100%;
+  max-height: calc(100vh - 160px);
+}
+.game-screen .game-video__surface > .btn {
+  background: transparent;
+}
+
+/* Membership is a neutral filled bookmark, not the favourite heart's red. */
+.game-actions .btn[data-action='collections'][data-on='true'] svg {
+  fill: currentcolor;
+  color: inherit;
+}

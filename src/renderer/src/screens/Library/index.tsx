@@ -20,6 +20,7 @@ import {
   type GameTile
 } from '../../components'
 import { FocusZone, useAction, useFocusContext } from '../../input/focus'
+import { gameBrowse } from '../../game-browse'
 import { PAGE_SIZE, usePagedRoms } from '../../paging'
 import { useApp, useI18n, type LibraryView } from '../../state'
 import {
@@ -442,7 +443,15 @@ function LibraryContent({
         layout: presentation.layout
       }
     })
-    navigate({ name: 'game', romId })
+    const browse = gameBrowse(
+      tiles,
+      tile.romId,
+      installedIds,
+      scope === 'all' ? query : undefined,
+      scope === 'all' && more
+    )
+    browse.items[browse.index].openId = romId
+    navigate({ name: 'game', romId, browse })
   }
   return (
     <div

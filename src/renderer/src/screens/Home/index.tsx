@@ -1,3 +1,4 @@
+import { gameBrowse } from '../../game-browse'
 import { ContinueCard } from './ContinueCard'
 import { HomeWidgets } from './HomeWidgets'
 import { type JSX, useMemo, useState, useCallback } from 'react'
@@ -151,7 +152,21 @@ export function HomeScreen({ view }: { view?: HomeView }): JSX.Element {
 
   const open = (shelf: string, tile: GameTile, discoveryOffset?: number): void => {
     revise({ name: 'home', view: { shelf, romId: tile.romId, discoveryOffset } })
-    navigate({ name: 'game', romId: romToOpen(tile, installedIds) })
+    const tiles =
+      shelf === 'ready'
+        ? readyToPlay
+        : shelf === 'continue'
+          ? continuePlaying.items.map((rom) => tileFromRom(rom))
+          : shelf === 'favourites'
+            ? favourites.items.map((rom) => tileFromRom(rom, true))
+            : shelf === 'recent'
+              ? recentlyAdded.items.map((rom) => tileFromRom(rom, true))
+              : [tile]
+    navigate({
+      name: 'game',
+      romId: romToOpen(tile, installedIds),
+      browse: gameBrowse(tiles, tile.romId, installedIds)
+    })
   }
   /**
    * The card on `shelf` that a return lands on, if any.

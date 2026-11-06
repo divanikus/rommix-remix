@@ -1,11 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { RomUserStatus } from '@shared/types'
 import { useApp, useI18n } from '../../state'
 import type { ToastSubject } from '../../state'
 
 /**
- * The two marks this screen puts on the game itself rather than on the copy of
- * it that happens to be on this disk.
+ * Favourite/status edits and confirmed collection membership for this version.
+ * These belong to RomM, not the copy that happens to be on this disk.
  *
  * Both live on RomM, which is the whole point of them: a game favourited or
  * marked finished from the sofa says the same thing in a browser and on the
@@ -20,6 +20,8 @@ export function useGameMarks(
 ): {
   /** Null until RomM has been asked, which is what the button waits on. */
   favourite: boolean | null
+  inCollection: boolean | null
+  setInCollection: (member: boolean) => void
   toggleFavourite: () => Promise<void>
   status: RomUserStatus | null
   /**
@@ -35,22 +37,42 @@ export function useGameMarks(
   const { t } = useI18n()
   const { notify, offline } = useApp()
   const [favourite, setFavourite] = useState<boolean | null>(null)
+  const [inCollection, updateInCollection] = useState<boolean | null>(null)
+  const membershipRevision = useRef(0)
+  const setInCollection = useCallback((member: boolean) => {
+    membershipRevision.current += 1
+    updateInCollection(member)
+  }, [])
   const [status, setStatus] = useState<RomUserStatus | null>(null)
 
   useEffect(() => {
     setFavourite(null)
-    // Not asked at all while the server is away: the screen hides both marks
-    // there, and every failed call raises a notification of its own, so asking
-    // anyway would greet a game opened offline with an error about a button
-    // that is not on it. Nor before the first answer, which is the same call
-    // made a moment earlier. See `AppState.offline`.
+    updateInCollection(null)
     if (offline !== false) return
+    let alive = true
+    const revision = ++membershipRevision.current
+    // Favourite already reads this endpoint. Share that answer instead of
+    // fetching every collection twice when the game opens.
     void window.rommix.library
-      .favourite(romId)
-      .then(setFavourite)
-      // Asked for a button, not for the screen: a server that will not answer
-      // leaves the button waiting rather than putting an error over the game.
-      .catch(() => setFavourite(null))
+      .collections()
+      .then((collections) => {
+        if (!alive) return
+        setFavourite(
+          collections.some((entry) => entry.is_favorite && entry.rom_ids.includes(romId))
+        )
+        if (revision === membershipRevision.current)
+          updateInCollection(
+            collections.some(
+              (entry) => !entry.is_virtual && !entry.is_favorite && entry.rom_ids.includes(romId)
+            )
+          )
+      })
+      .catch(() => {
+        // Unknown membership is not evidence for a filled bookmark.
+      })
+    return () => {
+      alive = false
+    }
   }, [romId, offline])
 
   const toggleFavourite = async (): Promise<void> => {
@@ -87,5 +109,13 @@ export function useGameMarks(
     }
   }
 
-  return { favourite, toggleFavourite, status, setStatus, chooseStatus }
+  return {
+    favourite,
+    toggleFavourite,
+    status,
+    setStatus,
+    chooseStatus,
+    inCollection,
+    setInCollection
+  }
 }

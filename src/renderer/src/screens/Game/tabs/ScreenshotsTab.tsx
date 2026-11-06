@@ -41,7 +41,7 @@ export function ScreenshotsTab({ rom }: { rom: RommRom }): JSX.Element {
 }
 
 /** One thumbnail, as something the pad can land on and press. */
-function Shot({ path, onSelect }: { path: string; onSelect: () => void }): JSX.Element {
+export function Shot({ path, onSelect }: { path: string; onSelect: () => void }): JSX.Element {
   const { t } = useI18n()
   const { ref, props } = useFocusable({ onSelect, actionLabel: t('shots.view') })
 
@@ -69,7 +69,7 @@ function Shot({ path, onSelect }: { path: string; onSelect: () => void }): JSX.E
  * A focus layer of its own, like every dialog: without it the pad walks off the
  * picture and onto the grid still sitting behind it.
  */
-function ShotViewer({
+export function ShotViewer({
   shots,
   index,
   onMove,
@@ -81,7 +81,7 @@ function ShotViewer({
   onClose: () => void
 }): JSX.Element {
   return (
-    <div className="viewer">
+    <div className="viewer" role="dialog" aria-modal="true">
       <FocusLayer>
         <ViewerFrame shots={shots} index={index} onMove={onMove} onClose={onClose} />
       </FocusLayer>

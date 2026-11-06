@@ -182,6 +182,8 @@ export interface RomMixBridge {
   library: {
     platforms(): Promise<RommPlatform[]>
     collections(): Promise<RommCollection[]>
+    /** Create a private, ordinary collection owned by the signed-in RomM user. */
+    createCollection(name: string): Promise<RommCollection>
     /** The shelves RomM derives from metadata. Empty where the server has none. */
     virtualCollections(): Promise<RommVirtualCollection[]>
     /**

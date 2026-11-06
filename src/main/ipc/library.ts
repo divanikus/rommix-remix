@@ -51,6 +51,7 @@ export function registerLibraryIpc(rommix: RomMixApp, handle: Handle): void {
     client.anniversaries(day, offset)
   )
   handle('library:collections', () => client.collections())
+  handle('library:createCollection', (name: string) => client.createCollection(name))
   handle('library:virtualCollections', () => client.virtualCollections())
   /**
    * The library, reconciled with the disk on the way past.

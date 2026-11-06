@@ -669,6 +669,19 @@ export class RommClient {
     }
   }
 
+  /** Creating a named shelf does not publish it or make it the favourites. */
+  async createCollection(name: string): Promise<RommCollection> {
+    if (typeof name !== 'string' || !name.trim()) throw new Error(t('collections.nameRequired'))
+    const form = new FormData()
+    form.append('name', name.trim())
+    const res = await this.request('/api/collections?is_public=false&is_favorite=false', {
+      method: 'POST',
+      body: form as unknown as RequestInit['body']
+    })
+    if (!res.ok) throw await this.toError(res)
+    return (await res.json()) as RommCollection
+  }
+
   /**
    * Put one game in a collection, or take it out.
    *
@@ -884,10 +897,10 @@ export class RommClient {
   }
 
   /** Streamed asset fetch used by the custom image protocol. */
-  async asset(path: string): Promise<Response> {
+  async asset(path: string, init: RequestInit = {}): Promise<Response> {
     const clean = path.startsWith('/') ? path : `/${path}`
     // The caller reads the body; see `REQUEST_TIMEOUT_MS`.
-    return this.request(clean, {}, { timeoutMs: null })
+    return this.request(clean, init, { timeoutMs: null })
   }
 
   // -- ROM content ----------------------------------------------------------

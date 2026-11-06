@@ -26,7 +26,13 @@ process.on('unhandledRejection', (cause) => log.error('app', 'unhandled rejectio
 protocol.registerSchemesAsPrivileged([
   {
     scheme: IMAGE_SCHEME,
-    privileges: { standard: true, secure: true, supportFetchAPI: true, bypassCSP: true }
+    privileges: {
+      standard: true,
+      secure: true,
+      supportFetchAPI: true,
+      bypassCSP: true,
+      stream: true
+    }
   }
 ])
 
@@ -50,6 +56,9 @@ protocol.registerSchemesAsPrivileged([
 function applyDisplayFlags(): void {
   app.commandLine.appendSwitch('enable-features', 'WaylandWindowDecorations')
   app.commandLine.appendSwitch('enable-smooth-scrolling')
+  // Linux preview video: VA-API disconnected on the verified gamescope host.
+  // Software video decoding keeps UI acceleration and external emulators intact.
+  if (process.platform === 'linux') app.commandLine.appendSwitch('disable-accelerated-video-decode')
 }
 
 // Before the single-instance lock, which starts enough of the browser process

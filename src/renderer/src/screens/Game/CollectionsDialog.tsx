@@ -1,6 +1,6 @@
 import { type JSX, type Ref, useEffect, useRef, useState } from 'react'
 import type { RommCollection } from '@shared/types'
-import { FocusButton, Overlay, Spinner, StatusPill } from '../../components'
+import { FocusButton, Overlay, Spinner, StatusPill, TextField } from '../../components'
 import { Icon } from '../../icons'
 import { useFocusable } from '../../input/focus'
 import { useI18n } from '../../state'
@@ -27,15 +27,28 @@ import { useI18n } from '../../state'
 export function CollectionsDialog({
   romId,
   onClose,
+  onMembershipChange,
   onError
 }: {
   romId: number
   onClose: () => void
+  onMembershipChange: (member: boolean) => void
   onError: (message: string) => void
 }): JSX.Element {
   const { t } = useI18n()
   const [collections, setCollections] = useState<RommCollection[] | null>(null)
   const [members, setMembers] = useState<ReadonlySet<number>>(new Set())
+  const [creating, setCreating] = useState(false)
+  const [name, setName] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const confirmedMembers = useRef(new Set<number>())
+  const membershipChanged = useRef(onMembershipChange)
+  useEffect(() => {
+    membershipChanged.current = onMembershipChange
+  }, [onMembershipChange])
+  const pendingCreate = useRef(false)
+  const pendingMembers = useRef(new Set<number>())
 
   /**
    * Held in a ref rather than listed as a dependency.
@@ -53,21 +66,37 @@ export function CollectionsDialog({
   }, [onError])
 
   useEffect(() => {
+    let alive = true
     void window.rommix.library
       .collections()
       .then((all) => {
+        if (!alive) return
         const own = all.filter((entry) => !entry.is_virtual && !entry.is_favorite)
         setCollections(own)
-        setMembers(new Set(own.filter((e) => e.rom_ids.includes(romId)).map((e) => e.id)))
+        confirmedMembers.current = new Set(
+          own.filter((e) => e.rom_ids.includes(romId)).map((e) => e.id)
+        )
+        setMembers(new Set(confirmedMembers.current))
+        membershipChanged.current(confirmedMembers.current.size > 0)
       })
       .catch((cause: Error) => {
+        if (!alive) return
         setCollections([])
+        setError(cause.message)
         report.current(cause.message)
       })
+    return () => {
+      alive = false
+    }
   }, [romId])
 
-  const toggle = async (collection: RommCollection): Promise<void> => {
-    const member = !members.has(collection.id)
+  const toggle = async (
+    collection: RommCollection,
+    member = !members.has(collection.id)
+  ): Promise<void> => {
+    if (pendingMembers.current.has(collection.id)) return
+    pendingMembers.current.add(collection.id)
+    setError(null)
     setMembers((current) => {
       const next = new Set(current)
       if (member) next.add(collection.id)
@@ -76,6 +105,19 @@ export function CollectionsDialog({
     })
     try {
       await window.rommix.library.setCollection(romId, collection.id, member)
+      if (member) confirmedMembers.current.add(collection.id)
+      else confirmedMembers.current.delete(collection.id)
+      membershipChanged.current(confirmedMembers.current.size > 0)
+      setCollections(
+        (current) =>
+          current?.map((entry) => {
+            if (entry.id !== collection.id) return entry
+            const ids = new Set(entry.rom_ids)
+            if (member) ids.add(romId)
+            else ids.delete(romId)
+            return { ...entry, rom_ids: [...ids], rom_count: ids.size }
+          }) ?? null
+      )
     } catch (cause) {
       setMembers((current) => {
         const next = new Set(current)
@@ -83,7 +125,30 @@ export function CollectionsDialog({
         else next.add(collection.id)
         return next
       })
-      onError((cause as Error).message)
+      setError((cause as Error).message)
+    } finally {
+      pendingMembers.current.delete(collection.id)
+    }
+  }
+
+  const create = async (): Promise<void> => {
+    if (pendingCreate.current || !name.trim()) return
+    pendingCreate.current = true
+    setSaving(true)
+    setError(null)
+    try {
+      const collection = await window.rommix.library.createCollection(name.trim())
+      // Keep the server-created shelf even if the separate membership request
+      // fails. The row can retry adding the game without creating a duplicate.
+      setCollections((current) => [...(current ?? []), collection])
+      setCreating(false)
+      setName('')
+      await toggle(collection, true)
+    } catch (cause) {
+      setError((cause as Error).message)
+    } finally {
+      pendingCreate.current = false
+      setSaving(false)
     }
   }
 
@@ -91,10 +156,12 @@ export function CollectionsDialog({
     <Overlay title={t('collections.dialogTitle')} icon="collection" onDismiss={onClose}>
       {!collections ? <Spinner /> : null}
 
-      {/* RomMix makes no collections of its own: one is a thing somebody named,
-          and naming it on a television is worse than doing it in the browser
-          that is already open on the server. */}
-      {collections && collections.length === 0 ? (
+      {!creating && error ? (
+        <div className="notice notice--error" role="alert">
+          {error}
+        </div>
+      ) : null}
+      {collections && collections.length === 0 && !error ? (
         <p className="muted">{t('collections.none')}</p>
       ) : null}
 
@@ -112,10 +179,57 @@ export function CollectionsDialog({
       ) : null}
 
       <div className="btn-row">
-        <FocusButton icon="keep" action="close-collections" onSelect={onClose} autoFocus>
+        <FocusButton
+          icon="add"
+          action="new-collection"
+          onSelect={() => {
+            setError(null)
+            setCreating(true)
+          }}
+          disabled={saving || collections === null}
+          autoFocus
+        >
+          {t('collections.create')}
+        </FocusButton>
+        <FocusButton icon="keep" action="close-collections" onSelect={onClose}>
           {t('action.close')}
         </FocusButton>
       </div>
+      {creating ? (
+        <Overlay
+          title={t('collections.create')}
+          icon="collection"
+          onDismiss={() => setCreating(false)}
+        >
+          <TextField
+            field="collection-name"
+            label={t('collections.name')}
+            value={name}
+            onChange={setName}
+            hint={t('collections.createHint')}
+            autoFocus
+          />
+          {error ? (
+            <div className="notice notice--error" role="alert">
+              {error}
+            </div>
+          ) : null}
+          <div className="btn-row">
+            <FocusButton
+              action="create-collection"
+              icon="add"
+              variant="primary"
+              disabled={saving || !name.trim()}
+              onSelect={() => void create()}
+            >
+              {saving ? t('app.loading') : t('collections.createAndAdd')}
+            </FocusButton>
+            <FocusButton action="cancel-collection" onSelect={() => setCreating(false)}>
+              {t('action.cancel')}
+            </FocusButton>
+          </div>
+        </Overlay>
+      ) : null}
     </Overlay>
   )
 }

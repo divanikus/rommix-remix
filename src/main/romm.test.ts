@@ -588,6 +588,42 @@ describe('the library', () => {
   })
 })
 
+describe('creating named collections', () => {
+  test('sends the trimmed name as multipart and keeps the shelf private and ordinary', async () => {
+    const { store } = fakeStore({ clientToken: 'fixture' })
+    const calls: { url: string; init: RequestInit }[] = []
+    globalThis.fetch = (async (url: string, init: RequestInit) => {
+      calls.push({ url, init })
+      return json({ id: 42, name: 'Weekend', rom_ids: [], rom_count: 0 })
+    }) as typeof fetch
+    const created = await new RommClient(store).createCollection('  Weekend  ')
+    assert.equal(created.id, 42)
+    assert.equal(calls.length, 1)
+    const { url, init } = calls[0]
+    assert.equal(new URL(url).pathname, '/api/collections')
+    assert.equal(new URL(url).searchParams.get('is_public'), 'false')
+    assert.equal(new URL(url).searchParams.get('is_favorite'), 'false')
+    assert.equal(init.method, 'POST')
+    assert(init.body instanceof FormData)
+    assert.deepEqual([...init.body.entries()], [['name', 'Weekend']])
+    assert.equal(new Headers(init.headers).has('Content-Type'), false)
+  })
+
+  test('rejects an empty name before sending a request', async () => {
+    const { store } = fakeStore()
+    const sent = serve(() => json({}))
+    await assert.rejects(new RommClient(store).createCollection('   '), /name is required/)
+    assert.equal(sent.length, 0)
+  })
+
+  test('reports server refusal without creating or adding anything else', async () => {
+    const { store } = fakeStore()
+    const sent = serve(() => json({ detail: 'Collection already exists' }, 400))
+    await assert.rejects(new RommClient(store).createCollection('Weekend'), /already exists/)
+    assert.equal(sent.length, 1)
+  })
+})
+
 describe('favourites', () => {
   const shelf = {
     id: 4,

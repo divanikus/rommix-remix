@@ -8,11 +8,24 @@ import {
   type InstalledRom,
   type RommRom
 } from '@shared/types'
-import { DownloadBadge, DownloadBar, FocusButton, Hints, Spinner, Tabs } from '../../components'
+import {
+  DownloadBadge,
+  DownloadBar,
+  FocusButton,
+  Hints,
+  Overlay,
+  Spinner,
+  Tabs
+} from '../../components'
 import { Icon } from '../../icons'
 import { useApp, useDownloads, useI18n } from '../../state'
 import { CollectionsDialog } from './CollectionsDialog'
-import { StatusDialog } from './StatusDialog'
+import { StatusDialog, statusIcon } from './StatusDialog'
+import { GameNavigation } from './GameNavigation'
+import { OverviewTab } from './tabs/OverviewTab'
+import { GameFacts } from './tabs/GameFacts'
+import { GameMedia } from './GameMedia'
+import { FocusZone } from '../../input/focus'
 import { GameHero } from './GameHero'
 import { SaveTransfer } from './SaveTransfer'
 import {
@@ -22,41 +35,46 @@ import {
   PushConfirmDialog,
   UninstallDialog
 } from './dialogs'
-import {
-  AchievementsTab,
-  DetailsTab,
-  FilesTab,
-  ManualTab,
-  SavesTab,
-  ScreenshotsTab,
-  VersionsTab
-} from './tabs'
+import { AchievementsTab, DetailsTab, FilesTab, ManualTab, SavesTab, VersionsTab } from './tabs'
 import { useGameCopy } from './useGameCopy'
 import { useGameLaunch } from './useGameLaunch'
 import { useGameMarks } from './useGameMarks'
 import { useGameSaves } from './useGameSaves'
 
 type GameTab =
-  'details' | 'saves' | 'files' | 'screenshots' | 'manual' | 'achievements' | 'versions'
+  | 'overview'
+  | 'details'
+  | 'saves'
+  | 'files'
+  | 'screenshots'
+  | 'manual'
+  | 'achievements'
+  | 'versions'
 
 /**
  * A single game: artwork, metadata, and the actions that matter — download it,
  * play it, remove it.
  */
-export function GameScreen({
+export function GameScreen(props: { romId: number; fromVersions?: boolean }): JSX.Element {
+  return (
+    <div className="game-shell">
+      <GameNavigation />
+      <GameContent key={props.romId} {...props} />
+    </div>
+  )
+}
+
+function GameContent({
   romId,
-  fromVersions = false,
-  embedded = false,
-  onVersion
+  fromVersions = false
 }: {
   romId: number
   /** Opened from another dump's versions list. See `Route`. */
   fromVersions?: boolean
-  embedded?: boolean
-  onVersion?: (id: number) => void
 }): JSX.Element {
   const { t, formatBytes } = useI18n()
   const {
+    route,
     installed,
     installedIds,
     offline,
@@ -71,7 +89,8 @@ export function GameScreen({
 
   const [rom, setRom] = useState<RommRom | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const [tab, setTab] = useState<GameTab>('details')
+  const [tab, setTab] = useState<GameTab>('overview')
+  const [choosingVersion, setChoosingVersion] = useState(false)
   const [choosingStatus, setChoosingStatus] = useState(false)
   const [bios, setBios] = useState<BiosPlatform | null>(null)
   /** True while the shelves this game is on are being looked at or changed. */
@@ -218,10 +237,15 @@ export function GameScreen({
     setDeleting
   } = useGameSaves(romId, subjectOf)
 
-  const { favourite, toggleFavourite, status, setStatus, chooseStatus } = useGameMarks(
-    romId,
-    subjectOf
-  )
+  const {
+    favourite,
+    toggleFavourite,
+    status,
+    setStatus,
+    chooseStatus,
+    inCollection,
+    setInCollection
+  } = useGameMarks(romId, subjectOf)
   const {
     busy: launching,
     variants,
@@ -268,7 +292,7 @@ export function GameScreen({
     // versions is a comparison, and being put back on Details at every step
     // means finding the tab again to take one step more. A game that turns out
     // to have no versions falls back on its own; see `activeTab`.
-    setTab(fromVersions ? 'versions' : 'details')
+    setTab(fromVersions ? 'versions' : 'overview')
     /**
      * Which fetch this is, so a slower earlier one cannot land last.
      *
@@ -297,14 +321,14 @@ export function GameScreen({
    * a second while the first is running is never what was meant.
    */
   const working = syncing || launching || copying
-  const screenClass = embedded ? 'game-panel' : 'content game-screen'
+  const screenClass = 'content game-screen'
 
   if (error) {
     return (
       <div className={screenClass}>
         <div className="notice notice--error">{error}</div>
         <div className="btn-row">
-          <FocusButton icon="back" onSelect={goBack} autoFocus={!embedded}>
+          <FocusButton icon="back" onSelect={goBack} autoFocus>
             {t('action.back')}
           </FocusButton>
         </div>
@@ -393,7 +417,7 @@ export function GameScreen({
     (tab === 'versions' && versions.length === 0) ||
     (tab === 'manual' && !rom.has_manual) ||
     (tab === 'achievements' && achievements.length === 0)
-  const activeTab: GameTab = missingTab ? 'details' : tab
+  const activeTab: GameTab = missingTab ? 'overview' : tab
   /**
    * Whether the highlight belongs to the tab strip rather than to this screen's
    * own first action.
@@ -424,6 +448,26 @@ export function GameScreen({
     outstanding && outstanding.conflicts > 0 ? t('saves.waitingConflict') : null,
     outstanding && outstanding.ready > 0 ? t('saves.waitingConfirm') : null
   ].filter((reason) => reason !== null)
+
+  const openVersion = (id: number, keepVersionsTab = false): void => {
+    setChoosingVersion(false)
+    navigate({
+      name: 'game',
+      romId: id,
+      ...(keepVersionsTab ? { fromVersions: true } : {}),
+      replaceGame: true,
+      ...(route.name === 'game' && route.browse
+        ? {
+            browse: {
+              ...route.browse,
+              items: route.browse.items.map((item, i) =>
+                i === route.browse!.index ? { ...item, openId: id } : item
+              )
+            }
+          }
+        : {})
+    })
+  }
 
   const stopButtons = (focus: boolean): JSX.Element => (
     <>
@@ -456,372 +500,409 @@ export function GameScreen({
 
   return (
     <div className={screenClass}>
-      <GameHero rom={rom} entry={entry} system={system} status={status}>
-        {entry ? (
-          <FocusButton
-            icon="play"
-            action="play"
-            variant="primary"
-            onSelect={() => void startPlay()}
-            disabled={working || running}
-            autoFocus={!embedded && !focusTabs}
-          >
-            {running ? t('game.running') : t('game.play')}
-          </FocusButton>
-        ) : active && !interruptible ? (
-          /* The bytes are all here and the game is being put in place, which
+      <GameHero
+        rom={rom}
+        entry={entry}
+        system={system}
+        status={status}
+        versionCount={versions.length + 1}
+        onVersions={() => setChoosingVersion(true)}
+        facts={<GameFacts rom={rom} played={played} />}
+        actions={
+          <>
+            {entry ? (
+              <FocusButton
+                icon="play"
+                action="play"
+                variant="primary"
+                onSelect={() => void startPlay()}
+                disabled={working || running}
+                autoFocus={!focusTabs}
+              >
+                {running ? t('game.running') : t('game.play')}
+              </FocusButton>
+            ) : active && !interruptible ? (
+              /* The bytes are all here and the game is being put in place, which
              is not something to be stopped half way: both buttons below were
              refused by the queue, so what is left is to say what is happening.
              Which part of it is happening is the badge under the banner. */
-          <FocusButton icon="install" variant="primary" disabled onSelect={() => {}}>
-            {t('action.installing')}
-          </FocusButton>
-        ) : active ? (
-          stopButtons(!embedded && !focusTabs)
-        ) : (
-          <FocusButton
-            icon="download"
-            action="download"
-            variant="primary"
-            onSelect={() => (noEmulator ? setAskingEmulator(true) : void startDownload())}
-            disabled={working}
-            autoFocus={!embedded && !focusTabs}
-          >
-            {/* The same button either way: what the player wants is the game,
+              <FocusButton icon="install" variant="primary" disabled onSelect={() => {}}>
+                {t('action.installing')}
+              </FocusButton>
+            ) : active ? (
+              stopButtons(!focusTabs)
+            ) : (
+              <FocusButton
+                icon="download"
+                action="download"
+                variant="primary"
+                onSelect={() => (noEmulator ? setAskingEmulator(true) : void startDownload())}
+                disabled={working}
+                autoFocus={!focusTabs}
+              >
+                {/* The same button either way: what the player wants is the game,
                 and whether that means starting or finishing a transfer is not
                 a second decision to make. How far it got is on the button, as
                 it is on the two that stopped it. */}
-            {isStopped(download?.state ?? 'downloading')
-              ? t('game.resumeDownload', { percent: progress })
-              : t('action.download')}
-          </FocusButton>
-        )}
+                {isStopped(download?.state ?? 'downloading')
+                  ? t('game.resumeDownload', { percent: progress })
+                  : t('action.download')}
+              </FocusButton>
+            )}
 
-        {/* A transfer that was stopped is still a transfer to be rid of, and
+            {/* A transfer that was stopped is still a transfer to be rid of, and
             this was the one screen with no way to say so — Resume was the only
             thing on offer, and the queue was the only place to change one's
             mind. */}
-        {isStopped(download?.state ?? 'downloading') ? (
-          <FocusButton
-            icon="cancel"
-            action="cancel-download"
-            variant="danger"
-            onSelect={() => void window.rommix.downloads.cancel(romId)}
-          >
-            {t('game.cancelDownload', { percent: progress })}
-          </FocusButton>
-        ) : null}
+            {isStopped(download?.state ?? 'downloading') ? (
+              <FocusButton
+                icon="cancel"
+                action="cancel-download"
+                variant="danger"
+                onSelect={() => void window.rommix.downloads.cancel(romId)}
+              >
+                {t('game.cancelDownload', { percent: progress })}
+              </FocusButton>
+            ) : null}
 
-        {/* After Play rather than in its place: the game stays playable while
+            {/* After Play rather than in its place: the game stays playable while
             new files arrive, so the highlight stays on Play as well. */}
-        {entry && download?.adding && interruptible ? stopButtons(false) : null}
+            {entry && download?.adding && interruptible ? stopButtons(false) : null}
 
-        {/* The three marks that live on RomM rather than on this disk. Greyed
+            {/* The three marks that live on RomM rather than on this disk. Greyed
             while it is away rather than taken off the screen: a heart that
             cannot be saved undoes itself a second after it is pressed, but a
             heart that has vanished has moved Play under the player's thumb and
             told a first-time offline user that RomMix has no favourites. */}
 
-        {/* Marked on RomM, so the Favourites row on the home screen and the
+            {/* Marked on RomM, so the Favourites row on the home screen and the
             same game in a browser agree. Always offered: a game does not have
             to be downloaded to be marked. Icon only — a filled heart says which
             way it is set, and the word beside it said the same thing twice;
             `actionLabel` is what the hint bar and a screen reader get. */}
-        <FocusButton
-          icon="favourite"
-          action="favourite"
-          on={favourite === true}
-          actionLabel={favourite ? t('game.removeFavourite') : t('game.addFavourite')}
-          onSelect={() => void toggleFavourite()}
-          disabled={favourite === null || offline === true}
-        />
+            <FocusButton
+              icon="favourite"
+              action="favourite"
+              on={favourite === true}
+              actionLabel={favourite ? t('game.removeFavourite') : t('game.addFavourite')}
+              onSelect={() => void toggleFavourite()}
+              disabled={favourite === null || offline === true}
+            />
 
-        {/* And how far through it you are, next to the heart for the same
+            {/* And how far through it you are, next to the heart for the same
             reason: both are a mark on the game rather than on the copy here.
             Icon only — the answer is already a tag under the title, and the
             button would have said it a second time. */}
-        <FocusButton
-          icon="note"
-          action="status"
-          actionLabel={t('status.button')}
-          onSelect={() => setChoosingStatus(true)}
-          disabled={offline === true}
-        />
+            <FocusButton
+              icon={statusIcon(status)}
+              action="status"
+              actionLabel={`${t('status.button')}: ${t(status ? `status.${status}` : 'status.none')}`}
+              onSelect={() => setChoosingStatus(true)}
+              disabled={offline === true}
+            />
 
-        {/* Collections on RomM. Beside the heart because both mark the game on
+            {/* Collections on RomM. Beside the heart because both mark the game on
             the server rather than touching the copy on this disk — and icon
             only for the same reason those two are: this is the third mark in a
             row, the word was the longest thing on the line, and shelving a game
             is not what anybody opened this screen to do. */}
-        <FocusButton
-          icon="collection"
-          action="collections"
-          actionLabel={t('collections.button')}
-          onSelect={() => setChoosingCollections(true)}
-          disabled={offline === true}
-        />
+            <FocusButton
+              icon="addCollection"
+              on={inCollection === true}
+              action="collections"
+              actionLabel={t('collections.button')}
+              onSelect={() => setChoosingCollections(true)}
+              disabled={offline === true}
+            />
 
-        {/* The way back to a choice already made: without it, a platform
+            {/* The way back to a choice already made: without it, a platform
             answered once could only be changed by editing settings. Shown only
             where there is genuinely more than one answer. */}
-        {entry && variants.length > 1 ? (
-          <FocusButton
-            icon="emulator"
-            action="run-with"
-            onSelect={() => void openChooser()}
-            disabled={working || running}
-          >
-            {t('game.runWith')}
-          </FocusButton>
-        ) : null}
+            {entry && variants.length > 1 ? (
+              <FocusButton
+                icon="emulator"
+                action="run-with"
+                onSelect={() => void openChooser()}
+                disabled={working || running}
+              >
+                {t('game.runWith')}
+              </FocusButton>
+            ) : null}
 
-        {/* Only for a game that is here: there is no local save directory to
+            {/* Only for a game that is here: there is no local save directory to
             read from or write into until the ROM has been downloaded. Greyed
             while RomM is away, since neither direction has anywhere to go —
             the saves a session writes are still written, they simply do not go
             up until something can reach the server. */}
-        {entry ? (
-          <>
-            <FocusButton
-              icon="pull"
-              action="pull-saves"
-              onSelect={() => void syncSaves('pull')}
-              disabled={working || running || offline === true}
-            >
-              {t('game.pullSaves')}
-            </FocusButton>
-            {/* Always asks while a session's saves are outstanding, whatever
+            {entry ? (
+              <>
+                <FocusButton
+                  icon="pull"
+                  action="pull-saves"
+                  onSelect={() => void syncSaves('pull')}
+                  disabled={working || running || offline === true}
+                >
+                  {t('game.pullSaves')}
+                </FocusButton>
+                {/* Always asks while a session's saves are outstanding, whatever
                 the confirmation setting says. Those are precisely the files
                 RomMix would not send on its own — RomM holds a copy from
                 somewhere else, or a newer one — so sending them blind is the
                 one press on this screen that can lose somebody's progress. */}
-            <FocusButton
-              icon="push"
-              action="push-saves"
-              onSelect={() => void beginPush(savesWaiting)}
-              disabled={working || running || offline === true}
-            >
-              {t('game.pushSaves')}
-            </FocusButton>
-          </>
-        ) : null}
+                <FocusButton
+                  icon="push"
+                  action="push-saves"
+                  onSelect={() => void beginPush(savesWaiting)}
+                  disabled={working || running || offline === true}
+                >
+                  {t('game.pushSaves')}
+                </FocusButton>
+              </>
+            ) : null}
 
-        {entry ? (
-          <FocusButton
-            icon="uninstall"
-            action="uninstall"
-            variant="danger"
-            onSelect={() =>
-              // Without the confirmation, one A press on a focused danger
-              // button deletes a multi-gigabyte download outright.
-              settings?.confirmUninstall === false ? void uninstall() : setConfirmingRemoval(true)
-            }
-            disabled={working || running || (download?.adding === true && active)}
-          >
-            {t('action.uninstall')}
-          </FocusButton>
-        ) : null}
+            {entry ? (
+              <FocusButton
+                icon="uninstall"
+                action="uninstall"
+                variant="danger"
+                onSelect={() =>
+                  // Without the confirmation, one A press on a focused danger
+                  // button deletes a multi-gigabyte download outright.
+                  settings?.confirmUninstall === false
+                    ? void uninstall()
+                    : setConfirmingRemoval(true)
+                }
+                disabled={working || running || (download?.adding === true && active)}
+              >
+                {t('action.uninstall')}
+              </FocusButton>
+            ) : null}
 
-        {/* No Back button here. B is what goes back on every screen in RomMix
+            {/* No Back button here. B is what goes back on every screen in RomMix
             and the hint bar says so, so one drawn on this screen alone is a
             button that teaches the wrong thing about all the others — and this
             row is the longest in the app without it. The error state below
             keeps one: it is the only control on that screen, and a screen with
             nothing focusable is a screen a pointer cannot leave. */}
-      </GameHero>
-
-      {/* Paused as well as moving: where a transfer stopped is the thing being
+          </>
+        }
+      >
+        {/* Paused as well as moving: where a transfer stopped is the thing being
           decided about, and the bar is what shows it.
 
           The same panel the queue draws, minus the game — which game this is is
           the rest of this screen, and repeating it here would be the only thing
           on the page saying it twice. */}
-      {active || isStopped(download?.state ?? 'downloading') ? (
-        <div className="download download--bare">
-          <span className="download__facts">
-            {download?.state === 'downloading' && download.currentFile ? (
-              <span className="download__fact download__fact--file">
-                <Icon name="file" size={13} />
-                <span className="download__filename">{download.currentFile}</span>
-              </span>
-            ) : null}
-          </span>
-          {/* State then figures, in that order and in that corner, exactly as a
-              queue row has them — the two screens show the same transfer. */}
-          <div className="download__figures">
-            <DownloadBadge state={download?.state ?? 'downloading'} />
-            <span className="download__size">
-              {t('value.progressBytes', {
-                received: formatBytes(download?.receivedBytes ?? 0),
-                total: formatBytes(download?.totalBytes ?? 0)
-              })}
+        {active || isStopped(download?.state ?? 'downloading') ? (
+          <div className="download download--bare">
+            <span className="download__facts">
+              {download?.state === 'downloading' && download.currentFile ? (
+                <span className="download__fact download__fact--file">
+                  <Icon name="file" size={13} />
+                  <span className="download__filename">{download.currentFile}</span>
+                </span>
+              ) : null}
             </span>
+            {/* State then figures, in that order and in that corner, exactly as a
+              queue row has them — the two screens show the same transfer. */}
+            <div className="download__figures">
+              <DownloadBadge state={download?.state ?? 'downloading'} />
+              <span className="download__size">
+                {t('value.progressBytes', {
+                  received: formatBytes(download?.receivedBytes ?? 0),
+                  total: formatBytes(download?.totalBytes ?? 0)
+                })}
+              </span>
+            </div>
+            <DownloadBar state={download?.state ?? 'downloading'} percent={progress} />
           </div>
-          <DownloadBar state={download?.state ?? 'downloading'} percent={progress} />
-        </div>
-      ) : null}
+        ) : null}
 
-      {download?.state === 'error' && download.error ? (
-        <div className="notice notice--error">{download.error}</div>
-      ) : null}
+        {download?.state === 'error' && download.error ? (
+          <div className="notice notice--error">{download.error}</div>
+        ) : null}
 
-      {/* The saves going the other way, in the same panel and the same place:
+        {/* The saves going the other way, in the same panel and the same place:
           both are this game's bytes on the wire, and only one of them can be
           running at a time — the transfer buttons grey each other out. */}
-      {saveProgress ? <SaveTransfer progress={saveProgress} /> : null}
+        {saveProgress ? <SaveTransfer progress={saveProgress} /> : null}
 
-      {/* Saves a session wrote that RomMix would not hand over on its own —
+        {/* Saves a session wrote that RomMix would not hand over on its own —
           because RomM's copy came from somewhere else or has moved on, or
           because the user has asked to be asked. The only place it is said:
           this is the screen with the button that answers it, and a warning on
           any other screen is one the user cannot act on from there. */}
-      {waitingReasons.length > 0 ? (
-        <div className="notice notice--warn">
-          {waitingReasons.length === 1 ? (
-            waitingReasons[0]
-          ) : (
-            <ul className="notice__list">
-              {waitingReasons.map((reason) => (
-                <li key={reason}>{reason}</li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ) : null}
+        {waitingReasons.length > 0 ? (
+          <div className="notice notice--warn">
+            {waitingReasons.length === 1 ? (
+              waitingReasons[0]
+            ) : (
+              <ul className="notice__list">
+                {waitingReasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        ) : null}
 
-      {/* A platform whose BIOS is not in place, said where the game is about to
+        {/* A platform whose BIOS is not in place, said where the game is about to
           be launched. Only what is genuinely wrong: a required file that is
           missing, or a console whose BIOS RomMix cannot name and which has
           nothing at all in place — an optional regional BIOS missing is not a
           reason to warn anybody. */}
-      {biosWarning ? (
-        <div className="notice notice--warn">
-          {biosWarning}
-          <div className="btn-row">
-            <FocusButton icon="bios" variant="ghost" onSelect={() => navigate({ name: 'bios' })}>
-              {t('game.openBios')}
-            </FocusButton>
+        {biosWarning ? (
+          <div className="notice notice--warn">
+            {biosWarning}
+            <div className="btn-row">
+              <FocusButton icon="bios" variant="ghost" onSelect={() => navigate({ name: 'bios' })}>
+                {t('game.openBios')}
+              </FocusButton>
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* What the emulator still needs done by hand. Here rather than in
+        {/* What the emulator still needs done by hand. Here rather than in
           Settings because this is the screen where the game is about to be
           played, and every one of these steps looks like RomMix failing when it
           has not been done — the download is there and named, but the
           emulator's own list is empty, or the game starts unpatched. */}
-      {setupNotes ? (
-        <div className="notice notice--warn">
-          <ul className="notice__list">
-            {setupNotes.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-          <div className="btn-row">
-            <FocusButton icon="hide" variant="ghost" onSelect={() => void dismissSetup()}>
-              {t('setup.dontShowAgain')}
-            </FocusButton>
+        {setupNotes ? (
+          <div className="notice notice--warn">
+            <ul className="notice__list">
+              {setupNotes.map((note) => (
+                <li key={note}>{note}</li>
+              ))}
+            </ul>
+            <div className="btn-row">
+              <FocusButton icon="hide" variant="ghost" onSelect={() => void dismissSetup()}>
+                {t('setup.dontShowAgain')}
+              </FocusButton>
+            </div>
           </div>
-        </div>
-      ) : null}
+        ) : null}
 
-      {/* Tabs rather than one long column: saves, files and screenshots are
+        {/* Tabs rather than one long column: saves, files and screenshots are
           each a list that can run to dozens of rows, and stacking them put the
           thing you came for several screens of scrolling down.
 
           Strip and contents share one card, so the tabs read as the lid of what
           is under them rather than as four buttons floating above the page. */}
-      <div className="panel">
-        <Tabs<GameTab>
-          actionScope={embedded ? '.library-detail' : undefined}
-          active={activeTab}
-          onChange={setTab}
-          autoFocus={focusTabs}
-          tabs={[
-            { id: 'details', label: t('game.tabDetails'), icon: 'details' },
-            { id: 'saves', label: t('game.tabSaves'), icon: 'saves', badge: assets?.length },
-            {
-              id: 'files',
-              label: t('game.tabFiles'),
-              icon: 'file',
-              badge: rom.files.length || undefined
-            },
-            {
-              id: 'screenshots',
-              label: t('game.tabScreenshots'),
-              icon: 'screenshots',
-              badge: rom.merged_screenshots?.length || undefined
-            },
-            // Only for a game the server has one, on the same terms as
-            // Versions below: the tab is the whole of the feature, so a game
-            // with no manual is a game with no tab rather than an empty one.
-            ...(rom.has_manual
-              ? [{ id: 'manual' as const, label: t('game.tabManual'), icon: 'manual' as const }]
-              : []),
-            // Only for a game RetroAchievements covers. The badge is how many
-            // there are rather than how many are earned: the count beside a
-            // tab is what it holds, and the score is the tab's own first line.
-            ...(achievements.length > 0
-              ? [
-                  {
-                    id: 'achievements' as const,
-                    label: t('game.tabAchievements'),
-                    icon: 'achievement' as const,
-                    badge: achievements.length
-                  }
-                ]
-              : []),
-            // Only where there is more than one dump — see `tabs/index.ts`. The
-            // count is every version including this one, which is the number
-            // the grid's own tile carries.
-            ...(versions.length > 0
-              ? [
-                  {
-                    id: 'versions' as const,
-                    label: t('game.tabVersions'),
-                    icon: 'roms' as const,
-                    badge: versions.length + 1
-                  }
-                ]
-              : [])
-          ]}
-        />
+        <div className="panel">
+          <Tabs<GameTab>
+            navigation="triggers"
+            bumperHints
+            active={activeTab}
+            onChange={setTab}
+            autoFocus={focusTabs}
+            tabs={[
+              { id: 'overview', label: t('game.tabOverview'), icon: 'home' },
+              { id: 'details', label: t('game.tabDetails'), icon: 'details' },
+              { id: 'saves', label: t('game.tabSaves'), icon: 'saves', badge: assets?.length },
+              {
+                id: 'files',
+                label: t('game.tabFiles'),
+                icon: 'file',
+                badge: rom.files.length || undefined
+              },
+              {
+                id: 'screenshots',
+                label: t('game.tabMedia'),
+                icon: 'screenshots',
+                badge: rom.merged_screenshots?.length || undefined
+              },
+              // Only for a game the server has one, on the same terms as
+              // Versions below: the tab is the whole of the feature, so a game
+              // with no manual is a game with no tab rather than an empty one.
+              ...(rom.has_manual
+                ? [{ id: 'manual' as const, label: t('game.tabManual'), icon: 'manual' as const }]
+                : []),
+              // Only for a game RetroAchievements covers. The badge is how many
+              // there are rather than how many are earned: the count beside a
+              // tab is what it holds, and the score is the tab's own first line.
+              ...(achievements.length > 0
+                ? [
+                    {
+                      id: 'achievements' as const,
+                      label: t('game.tabAchievements'),
+                      icon: 'achievement' as const,
+                      badge: achievements.length
+                    }
+                  ]
+                : []),
+              // Only where there is more than one dump — see `tabs/index.ts`. The
+              // count is every version including this one, which is the number
+              // the grid's own tile carries.
+              ...(versions.length > 0
+                ? [
+                    {
+                      id: 'versions' as const,
+                      label: t('game.tabVersions'),
+                      icon: 'roms' as const,
+                      badge: versions.length + 1
+                    }
+                  ]
+                : [])
+            ]}
+          />
 
-        <div className="panel__body">
-          {activeTab === 'details' ? <DetailsTab rom={rom} entry={entry} played={played} /> : null}
-          {activeTab === 'saves' ? (
-            <SavesTab assets={assets} entry={entry} onDelete={(asset) => setDeleting(asset)} />
-          ) : null}
-          {activeTab === 'files' ? (
-            <FilesTab
-              rom={rom}
-              entry={entry}
-              onAddFiles={() => void addFiles()}
-              addDisabled={working || running || active || offline === true}
-            />
-          ) : null}
-          {activeTab === 'screenshots' ? <ScreenshotsTab rom={rom} /> : null}
-          {activeTab === 'manual' ? <ManualTab rom={rom} /> : null}
-          {activeTab === 'achievements' ? <AchievementsTab rom={rom} entry={entry} /> : null}
-          {activeTab === 'versions' ? (
-            <VersionsTab
-              rom={rom}
-              siblings={versions}
-              installedIds={installedIds}
-              onOpen={(id) =>
-                onVersion
-                  ? onVersion(id)
-                  : navigate({ name: 'game', romId: id, fromVersions: true })
-              }
-            />
-          ) : null}
+          <div className="panel__body">
+            {activeTab === 'overview' ? <OverviewTab rom={rom} /> : null}
+            {activeTab === 'details' ? (
+              <DetailsTab rom={rom} entry={entry} played={played} />
+            ) : null}
+            {activeTab === 'saves' ? (
+              <SavesTab assets={assets} entry={entry} onDelete={(asset) => setDeleting(asset)} />
+            ) : null}
+            {activeTab === 'files' ? (
+              <FilesTab
+                rom={rom}
+                entry={entry}
+                onAddFiles={() => void addFiles()}
+                addDisabled={working || running || active || offline === true}
+              />
+            ) : null}
+            {activeTab === 'screenshots' ? <GameMedia rom={rom} mode="gallery" /> : null}
+            {activeTab === 'manual' ? <ManualTab rom={rom} /> : null}
+            {activeTab === 'achievements' ? <AchievementsTab rom={rom} entry={entry} /> : null}
+            {activeTab === 'versions' ? (
+              <FocusZone id="game-versions">
+                <VersionsTab
+                  rom={rom}
+                  siblings={versions}
+                  installedIds={installedIds}
+                  onOpen={(id) => openVersion(id, true)}
+                />
+              </FocusZone>
+            ) : null}
+          </div>
         </div>
-      </div>
 
-      {running ? (
-        <div className="notice notice--warn">
-          {settings?.confirmSavePush ? t('game.runningAsk') : t('game.runningAuto')}
-        </div>
+        {running ? (
+          <div className="notice notice--warn">
+            {settings?.confirmSavePush ? t('game.runningAsk') : t('game.runningAuto')}
+          </div>
+        ) : null}
+      </GameHero>
+
+      {choosingVersion ? (
+        <Overlay
+          title={t('game.changeVersion')}
+          icon="group"
+          onDismiss={() => setChoosingVersion(false)}
+        >
+          <VersionsTab
+            rom={rom}
+            siblings={versions}
+            installedIds={installedIds}
+            onOpen={openVersion}
+          />
+          <div className="btn-row">
+            <FocusButton action="cancel-version" onSelect={() => setChoosingVersion(false)}>
+              {t('action.cancel')}
+            </FocusButton>
+          </div>
+        </Overlay>
       ) : null}
 
       {choosingStatus ? (
@@ -838,6 +919,7 @@ export function GameScreen({
       {choosingCollections ? (
         <CollectionsDialog
           romId={romId}
+          onMembershipChange={setInCollection}
           onClose={() => setChoosingCollections(false)}
           onError={(message) => notify(message, 'error')}
         />
@@ -898,16 +980,16 @@ export function GameScreen({
         />
       ) : null}
 
-      {!embedded ? (
-        <Hints
-          items={[
-            { key: 'A', label: entry ? t('game.play') : t('action.download') },
-            { key: 'LB', label: t('action.previousTab') },
-            { key: 'RB', label: t('action.nextTab') },
-            { key: 'B', label: t('action.back') }
-          ]}
-        />
-      ) : null}
+      <Hints
+        items={[
+          { key: 'A', label: entry ? t('game.play') : t('action.download') },
+          { key: 'LB', label: t('game.previousGame') },
+          { key: 'RB', label: t('game.nextGame') },
+          { key: 'LT', label: t('action.previousTab') },
+          { key: 'RT', label: t('action.nextTab') },
+          { key: 'B', label: t('action.back') }
+        ]}
+      />
     </div>
   )
 }

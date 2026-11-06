@@ -1,9 +1,13 @@
+:root {
+  --app-header-height: 58px;
+}
+
 /* Root, utility and platform navigation share one frame across routes/themes. */
 .app-header {
-  height: 58px;
-  min-height: 58px;
-  max-height: 58px;
-  flex: 0 0 58px;
+  height: var(--app-header-height);
+  min-height: var(--app-header-height);
+  max-height: var(--app-header-height);
+  flex: 0 0 var(--app-header-height);
   padding-block: 5px;
   border-bottom: 1px solid var(--border);
   background: var(--surface-soft);

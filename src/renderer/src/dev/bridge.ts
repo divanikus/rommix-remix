@@ -762,6 +762,15 @@ const bridge: RomMixBridge = {
   library: {
     platforms: () => later(PLATFORMS),
     collections: () => later(collectionList()),
+    createCollection: (name: string) => {
+      const trimmed = name.trim()
+      if (!trimmed) return Promise.reject(new Error('Collection name is required'))
+      if (COLLECTIONS.some((entry) => entry.name === trimmed))
+        return Promise.reject(new Error('Collection already exists'))
+      const id = Math.max(...COLLECTIONS.map((entry) => entry.id)) + 1
+      COLLECTIONS.push({ id, name: trimmed, description: '', roms: new Set() })
+      return later(collectionList().find((entry) => entry.id === id)!)
+    },
     virtualCollections: () => later(virtualList()),
     platformCounts: (platformIds: number[], search: string) => {
       const term = search.toLowerCase()

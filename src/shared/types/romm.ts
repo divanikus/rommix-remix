@@ -263,6 +263,10 @@ export interface RommRomMetadata {
   genres: string[]
   franchises: string[]
   companies: string[]
+  /** Separate merged roles supplied by newer RomM servers. */
+  developers?: string[]
+  publishers?: string[]
+  collections?: string[]
   game_modes: string[]
   age_ratings: string[]
   player_count: string
@@ -324,6 +328,7 @@ export interface RommRom {
   path_cover_large: string | null
   url_cover: string | null
   path_video: string | null
+  ss_metadata?: { fanart_path?: string | null } | null
 
   /**
    * The scanned manual, which RomM serves as a PDF like any other asset.

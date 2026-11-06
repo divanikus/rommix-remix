@@ -97,7 +97,13 @@ export type Route =
    * list, which is where the highlight belongs when it arrives: the pad is on a
    * tab strip and stepping to the next version should leave it there.
    */
-  | { name: 'game'; romId: number; fromVersions?: true }
+  | {
+      name: 'game'
+      romId: number
+      fromVersions?: true
+      browse?: import('./game-browse').GameBrowse
+      replaceGame?: true
+    }
   | { name: 'downloads' }
   /**
    * One shelf on RomM. The name travels with the id: it was on screen in the
@@ -213,6 +219,30 @@ export function pushRoute(history: readonly Route[], next: Route): readonly Rout
   const current = history.at(-1)
   if (current && isUtilityRoute(current) && isUtilityRoute(next))
     return [...history.slice(0, -1), next]
+  if (current?.name === 'game' && next.name === 'game' && (next.browse || next.replaceGame)) {
+    const parents = history.slice(0, -1)
+    const parent = parents.at(-1)
+    const item = next.browse?.items[next.browse.index]
+    if (
+      item &&
+      parent &&
+      (parent.name === 'library' || parent.name === 'collection') &&
+      parent.view
+    ) {
+      parents[parents.length - 1] = {
+        ...parent,
+        view: {
+          ...parent.view,
+          romId: item.id,
+          versionId: next.romId,
+          held: Math.max(parent.view.held ?? 0, next.browse!.items.length)
+        }
+      }
+    } else if (item && parent?.name === 'home' && parent.view) {
+      parents[parents.length - 1] = { ...parent, view: { ...parent.view, romId: item.id } }
+    }
+    return [...parents, next]
+  }
   const at = history.findIndex((step) => sameRoute(step, next))
   if (at < 0) return [...history, next]
   /**

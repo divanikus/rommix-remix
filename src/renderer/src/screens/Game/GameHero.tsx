@@ -1,4 +1,5 @@
 import { type JSX, type ReactNode, type Ref, useEffect, useState } from 'react'
+import { romResourcePath } from '@shared/romm-resource'
 import { bytesOf, newFilesOf } from '@shared/gamefiles'
 import type { InstalledRom, RommRom, RomUserStatus } from '@shared/types'
 import { ArtBackdrop, CoverArt, PlatformIcon } from '../../components'
@@ -7,34 +8,15 @@ import { Icon } from '../../icons'
 import { useI18n } from '../../state'
 import { StatusTag } from './StatusDialog'
 
-/**
- * The game's own banner: a still of it washed out behind the cover and the
- * title, running to both edges of the screen. The artwork is what says which
- * game this is from across a room — the words only confirm it — so it is given
- * the top of the page rather than a thumbnail.
- *
- * Everything drawn here is a fact about the game. What can be *done* with it
- * arrives as `children`, because those buttons are the screen's own state —
- * what is downloading, what is running, what is busy — and only the screen
- * holding that state can say what each one does.
- *
- * The line under the title answers one question — whether to play this now —
- * and holds only what bears on it: what it runs on, what people think of it,
- * how old it is, how big the download is, whether it is here already, and how
- * far through it the player says they are. Which dump this is and what is in it
- * are a different question and are answered a press away, on the Details tab.
- *
- * That division is what keeps the line readable. Every fact RomM holds has a
- * claim to being here, and a well-matched game drew ten of them across a
- * television: a row of grey pills nobody reads, in which the two that are
- * actually a state — downloaded, and the player's own mark — were lost among
- * eight that are not.
- */
 export function GameHero({
   rom,
   entry,
   system,
   status,
+  actions,
+  facts,
+  versionCount,
+  onVersions,
   children
 }: {
   rom: RommRom
@@ -44,6 +26,10 @@ export function GameHero({
   /** How far through it the player says they are, or null if they have not. */
   status: RomUserStatus | null
   /** The action row: Play, Download, Pull saves, and the rest. */
+  actions: ReactNode
+  facts: ReactNode
+  versionCount: number
+  onVersions: () => void
   children: ReactNode
 }): JSX.Element {
   const { t, formatBytes } = useI18n()
@@ -52,16 +38,29 @@ export function GameHero({
   const year = rom.metadatum.first_release_date
     ? new Date(rom.metadatum.first_release_date).getFullYear()
     : null
+  const { ref: versionRef, props: versionProps } = useFocusable({
+    onSelect: onVersions,
+    enabled: versionCount > 1,
+    actionLabel: t('game.changeVersion')
+  })
   const added = entry ? newFilesOf(rom.files, entry) : []
 
   return (
     <div className="game-hero">
       <ArtBackdrop
-        paths={[rom.merged_screenshots?.[0], rom.path_cover_large, rom.path_cover_small]}
+        paths={[
+          romResourcePath(rom.ss_metadata?.fanart_path),
+          rom.merged_screenshots?.[0],
+          rom.path_cover_large,
+          rom.path_cover_small
+        ]}
       />
       <div className="game-hero__body">
-        <div className="game-hero__art">
-          <CoverArt path={rom.path_cover_large ?? rom.path_cover_small} name={title} />
+        <div className="game-hero__aside">
+          <div className="game-hero__art">
+            <CoverArt path={rom.path_cover_large ?? rom.path_cover_small} name={title} />
+          </div>
+          {facts}
         </div>
         <div className="game-hero__text">
           <h1 className="game-hero__title">{title}</h1>
@@ -127,13 +126,25 @@ export function GameHero({
                 would be a fact about nothing. */}
             {status ? <StatusTag status={status} /> : null}
           </div>
-          {rom.summary ? <Summary text={rom.summary} /> : null}
 
-          <div className="game-version">
-            <span>{t('game.tabVersions')}</span>
+          <button
+            className="game-version game-version--choice"
+            data-action="choose-version"
+            ref={versionRef as Ref<HTMLButtonElement>}
+            {...versionProps}
+            aria-label={`${t('game.selectedVersion', { count: versionCount })}: ${rom.fs_name}`}
+            title={rom.fs_name}
+          >
+            <Icon name="group" size={18} />
             <strong>{rom.fs_name}</strong>
-          </div>
-          <div className="btn-row">{children}</div>
+            {versionCount > 1 ? (
+              <span className="game-version__change">
+                {t('game.changeVersion')} ({versionCount}) <Icon name="expand" size={15} />
+              </span>
+            ) : null}
+          </button>
+          <div className="btn-row game-actions">{actions}</div>
+          {children}
         </div>
       </div>
     </div>
@@ -152,7 +163,7 @@ export function GameHero({
  * Focusable only when there is more to see. A press that visibly does nothing
  * is worse than no press at all, and the hint bar would be advertising it.
  */
-function Summary({ text }: { text: string }): JSX.Element {
+export function Summary({ text }: { text: string }): JSX.Element {
   const { t } = useI18n()
   const [expanded, setExpanded] = useState(false)
   const [clipped, setClipped] = useState(false)

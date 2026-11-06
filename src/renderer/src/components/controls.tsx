@@ -286,7 +286,6 @@ function SegmentedOption({
 export function Tabs<T extends string>({
   bumperHints = false,
   navigation = 'shoulders',
-  actionScope,
   tabs,
   active,
   onChange,
@@ -295,8 +294,6 @@ export function Tabs<T extends string>({
   bumperHints?: boolean
   /** Utility shoulders switch sections; triggers switch their internal tabs. */
   navigation?: 'shoulders' | 'triggers'
-  /** Embedded tabs only own shoulder actions while focus is in this region. */
-  actionScope?: string
   /** `badge` is a count, as the Saves tab has, or a short word — a version. */
   tabs: { id: T; label: string; icon?: IconName; badge?: number | string }[]
   active: T
@@ -311,11 +308,10 @@ export function Tabs<T extends string>({
    */
   autoFocus?: boolean
 }): JSX.Element {
-  const { getFocusedElement, setFocus } = useFocusContext()
+  const { setFocus } = useFocusContext()
   const focusPrefix = useId()
   const keyLabel = useKeyLabel()
-  const step = (delta: number): void | boolean => {
-    if (actionScope && !getFocusedElement()?.closest(actionScope)) return false
+  const step = (delta: number): void => {
     const index = tabs.findIndex((tab) => tab.id === active)
     if (index < 0) return
     const next = tabs[(index + delta + tabs.length) % tabs.length].id

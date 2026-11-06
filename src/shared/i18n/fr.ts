@@ -12,6 +12,27 @@ import type { Catalog } from './catalog.ts'
  * en anglais.
  */
 export const fr: Catalog = {
+  'game.developers': 'Développeurs',
+  'game.publishers': 'Éditeurs',
+  'game.metadataCollections': 'Collections',
+
+  'game.tabOverview': 'Aperçu',
+  'game.tabMedia': 'Médias',
+  'game.previousGame': 'Jeu précédent',
+  'game.nextGame': 'Jeu suivant',
+  'game.selectedVersion': 'Version sélectionnée · {count} disponibles',
+  'game.changeVersion': 'Changer de version',
+  'game.videoExpand': 'Agrandir la vidéo',
+  'game.videoPlay': 'Lire la vidéo',
+  'game.videoPause': 'Mettre en pause',
+  'game.videoMute': 'Couper le son',
+  'game.videoUnmute': 'Activer le son',
+  'game.videoBack': 'Reculer de 10 secondes',
+  'game.videoForward': 'Avancer de 10 secondes',
+  'game.videoUnavailable': 'La vidéo ne peut pas être lue. Les captures restent disponibles.',
+  'game.videoRetry': 'Réessayer la vidéo',
+  'game.ageRatings': 'Classification par âge',
+
   'filters.categories': 'Catégories',
   'filters.durationTab': 'Durée',
   'filters.properties': 'Propriétés',
@@ -402,8 +423,12 @@ export const fr: Catalog = {
   'status.cleared': 'Progression effacée',
   'collections.button': 'Collections',
   'collections.dialogTitle': 'Dans quelles collections ?',
-  'collections.none':
-    'Vous n’avez encore aucune collection sur RomM. Créez-en une là-bas et elle apparaîtra ici.',
+  'collections.none': 'Aucune collection. Créez-en une pour ajouter ce jeu.',
+  'collections.create': 'Nouvelle collection',
+  'collections.name': 'Nom',
+  'collections.createAndAdd': 'Créer et ajouter le jeu',
+  'collections.createHint': 'Crée une collection privée sur RomM et y ajoute le jeu actuel.',
+  'collections.nameRequired': 'Le nom de la collection est obligatoire',
   'collections.on': 'Dedans',
   'collections.off': 'Ajouter',
   'collections.add': 'Ajouter à cette collection',

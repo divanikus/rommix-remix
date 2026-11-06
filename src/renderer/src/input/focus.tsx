@@ -57,6 +57,8 @@ interface FocusContextValue {
    * not anything on it can be focused. Returns a release function.
    */
   claimLayer(layer: number): () => void
+  getTopLayer(): number
+  subscribeLayer(listener: () => void): () => void
   /**
    * Whether `id` has the highlight right now, and a way to hear when that
    * changes — the pair `useSyncExternalStore` takes.
@@ -313,6 +315,14 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
   const isFocused = useCallback((id: string): boolean => focusedRef.current === id, [])
   // Highest layer with anything on it: whatever is topmost owns the input.
   const layerRef = useRef(0)
+  const layerListeners = useRef(new Set<() => void>())
+  const getTopLayer = useCallback(() => layerRef.current, [])
+  const subscribeLayer = useCallback((listener: () => void): (() => void) => {
+    layerListeners.current.add(listener)
+    return () => {
+      layerListeners.current.delete(listener)
+    }
+  }, [])
   /**
    * Layers a mounted modal is holding, counted because two can be up at once.
    *
@@ -471,6 +481,7 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
     if (top !== previous) {
       if (focusedRef.current) restorePoints.current.set(previous, focusedRef.current)
       layerRef.current = top
+      for (const listener of layerListeners.current) listener()
       restorePoints.current.delete(previous > top ? previous : top)
     }
 
@@ -869,6 +880,8 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
     () => ({
       register,
       claimLayer,
+      getTopLayer,
+      subscribeLayer,
       isFocused,
       getFocusedElement,
       subscribeFocus,
@@ -886,6 +899,8 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
     [
       register,
       claimLayer,
+      getTopLayer,
+      subscribeLayer,
       isFocused,
       subscribeFocus,
       subscribeMove,
@@ -1152,4 +1167,10 @@ export function useAction(action: Action, handler: () => void | boolean, enabled
     if (!enabled) return
     return onAction(action, () => handlerRef.current(), layer)
   }, [action, enabled, onAction, layer])
+}
+
+/** Media pauses whenever a modal owns the interface. */
+export function useTopFocusLayer(): number {
+  const { getTopLayer, subscribeLayer } = useFocusContext()
+  return useSyncExternalStore(subscribeLayer, getTopLayer, () => 0)
 }
