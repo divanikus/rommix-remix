@@ -67,7 +67,7 @@ The subsequent 0.23.0-remix.1 release preparation migrates these scenarios to ro
 navigation, platform browsing, empty Search, internal-tab triggers and the current
 game card. HOME/XDG fixtures isolate host emulator discovery, and the ES-DE fixture
 resolves symlinked temporary roots. The complete Linux run now passes all 195
-Electron scenarios, 1,450 Node tests, 9 input tests and 21 ES-DE tests, plus formatting,
+Electron scenarios, 1,451 Node tests, 9 input tests and 21 ES-DE tests, plus formatting,
 lint, both type checks and AppImage packaging. The Electron release gate is retained.
 
 ES-DE publication detects ordinary concurrent edits; it is not a transaction

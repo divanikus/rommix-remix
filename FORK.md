@@ -57,7 +57,7 @@ The briefly published `0.24.0` was withdrawn to correct its numbering.
 ## Checks and remaining work
 
 The 0.23.0-remix.1 Linux candidate passes formatting, lint, both TypeScript projects,
-1,450 Node tests, 195 Electron scenarios, 9 input tests, 21 ES-DE tests and AppImage
+1,451 Node tests, 195 Electron scenarios, 9 input tests, 21 ES-DE tests and AppImage
 packaging. The inherited Electron scenarios now use the fork's navigation and
 isolate HOME/XDG paths from the host emulator setup. Its release gate remains intact.
 
