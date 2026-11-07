@@ -142,10 +142,14 @@ test('a timestamped server cover is fetched, published and removed from the queu
     },
     entry
   )
-  await until(() => !existsSync(join(f.root, 'config/esde-pending/8.json')))
+  // Removing the queue entry precedes asynchronous staging cleanup.
+  const media = join(f.root, 'config/esde-pending/media')
+  await until(
+    () => !existsSync(join(f.root, 'config/esde-pending/8.json')) && readdirSync(media).length === 0
+  )
   assert.deepEqual(requests, ['/assets/romm/resources/roms/1/8/cover/big.png'])
   assert.deepEqual(f.published, [cover])
-  assert.deepEqual(readdirSync(join(f.root, 'config/esde-pending/media')), [])
+  assert.deepEqual(readdirSync(media), [])
 })
 test('shared storage and foreign emulators cannot publish', async () => {
   const f = fixture()
