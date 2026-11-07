@@ -33,7 +33,8 @@ More views, versions, collections and utility screenshots are in the [gallery](d
 
 ## Build on Linux
 
-For now, build from source. We'll publish the first release after trying it on Steam Deck.
+Download an AppImage and `rommix-steam.sh` from the
+[releases page](https://github.com/divanikus/rommix-remix/releases), or build from source:
 
 Requires Node.js 24+, npm and Python 3. See [CONTRIBUTING.md](CONTRIBUTING.md) for development details.
 
@@ -50,6 +51,13 @@ and add the script as a non-Steam game.
 
 To try ES-DE export, enable **Enrich ES-DE after downloads (Experimental)** in
 Settings → Games. It starts off disabled and requires an existing EmuDeck setup.
+Only media available in RomM is exported. For themes that display a **Miximage**
+(a composite of screenshot, box and disc), use ES-DE's **Scraper → Miximage
+settings → Offline generator** when RomM has no ready-made composite. Select the
+intended systems in the scraper and leave **Overwrite miximages** disabled to keep
+existing compositions. ES-DE can use a regular cover when a 3D box is missing;
+RomMix does not generate 3D artwork. See the
+[ES-DE guide](https://gitlab.com/es-de/emulationstation-de/-/blob/master/USERGUIDE.md#miximage-settings).
 
 The fork uses `~/rommix-remix` and a separate Chromium profile by default. It does
 not import the original client's account/settings automatically. The existing

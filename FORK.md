@@ -43,21 +43,21 @@ input. Existing emulator configuration is reused.
 
 The updater targets only `divanikus/rommix-remix`. Release publication requires
 `ROMMIX_PUBLISH_RELEASES=true`; Pages requires `ROMMIX_PUBLISH_PAGES=true`. Fork push
-builds remain paused until Steam Deck testing; manual and PR checks are available.
+builds follow the release opt-in; manual and PR checks are always available.
+Rolling canary publication requires a separate `ROMMIX_PUBLISH_CANARY=true` opt-in.
 The original website/demo sources are retained.
 
 ## Checks and remaining work
 
-See the [code audit](docs/code-audit.md) for fixes, regression evidence and current
-limits. Formatting, lint, both TypeScript projects, production bundling and 316
-targeted Node tests pass on the development host. Eleven browser regression suites
-pass, including failed-page recovery, controller navigation, filters and media.
+The 0.24.0 Linux candidate passes formatting, lint, both TypeScript projects,
+1,450 Node tests, 195 Electron scenarios, 9 input tests, 21 ES-DE tests and AppImage
+packaging. The inherited Electron scenarios now use the fork's navigation and
+isolate HOME/XDG paths from the host emulator setup. Its release gate remains intact.
 
-The full Node suite still has 79 failures on Windows in existing host/path/process
-assumptions; it is not a green Linux release run. The earlier prepared Linux build
-passed 1,441 Node tests, 9 input tests, 19 ES-DE tests and AppImage packaging. That
-evidence predates this audit. The upstream Electron end-to-end suite still needs
-navigation-fixture migration; its release gate remains intact.
+See the [code audit](docs/code-audit.md) for earlier fixes and regression evidence.
+Eleven browser suites also cover failed-page recovery, controller navigation,
+filters and media. Linux remains the supported target; Windows tests retain
+host/path/process assumptions and do not qualify a Windows release.
 
 Use the commands in [CONTRIBUTING.md](CONTRIBUTING.md), plus:
 
@@ -71,5 +71,6 @@ local Playwright installation and Chrome. Set `PLAYWRIGHT_MODULE` to its module
 URL when it is outside this checkout; `PREVIEW_URL` selects the preview server.
 They use fixture data and do not qualify real controllers, emulators or save sync.
 
-Steam Deck and new-download ES-DE cover acceptance remain open. ES-DE enrichment
-is Experimental. No binary release or device deployment accompanies this audit.
+The owner confirms Steam Deck and Bazzite menus, downloads, game launch and return,
+plus the Deck's gameplay audio and ES-DE metadata/media export. ES-DE enrichment
+remains Experimental. Miximage composition belongs to ES-DE's native generator.

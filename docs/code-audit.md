@@ -60,9 +60,15 @@ was touched. Production bundling on the development host is not Linux packaging.
 
 ## Remaining limits
 
-The retained Electron `test:app` suite still refers to old Home/menu selectors;
-the earlier Linux setup run passed 7 of 13 tests. Adapt and run it on Linux before
-enabling releases. Browser scenarios do not replace its preload/IPC coverage.
+At the audit boundary, the retained Electron `test:app` suite still referred to
+old Home/menu selectors; the earlier Linux setup run passed 7 of 13 tests.
+
+The subsequent 0.24.0 release preparation migrates these scenarios to root/utility
+navigation, platform browsing, empty Search, internal-tab triggers and the current
+game card. HOME/XDG fixtures isolate host emulator discovery, and the ES-DE fixture
+resolves symlinked temporary roots. The complete Linux run now passes all 195
+Electron scenarios, 1,450 Node tests, 9 input tests and 21 ES-DE tests, plus formatting,
+lint, both type checks and AppImage packaging. The Electron release gate is retained.
 
 ES-DE publication detects ordinary concurrent edits; it is not a transaction
 shared with ES-DE. Linux symlink and filesystem acceptance, real controllers,
