@@ -1,6 +1,6 @@
 {
   "name": "rommix-remix",
-  "version": "0.23.0-remix.1",
+  "version": "0.24.0",
   "description": "RomMix-Remix: a RomMix fork with improved controller input, richer library and game views, gamepad filters and experimental EmuDeck/ES-DE enrichment",
   "license": "MIT",
   "author": "Benjamin Leclerc",

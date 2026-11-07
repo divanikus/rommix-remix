@@ -4,6 +4,28 @@ Newest first. `npm run release` adds the entry for a version, falling back to th
 commit subjects and ids since the previous tag — so write the section by hand
 before releasing if you want prose instead. See [Releasing](README.md#releasing).
 
+## 0.24.0 — 2026-11-07
+
+First RomMix-Remix release, based on RomMix 0.23.0 and upstream changes through
+`b5d59c6`. Original MIT attribution and upstream history are preserved.
+
+- Native Linux controller input, reconnect handling and protection against held
+  buttons when returning from an emulator or the Steam menu.
+- Dedicated Home, Systems, Collections and Search, with platform carousels,
+  adjustable cover grids, full-width tables and server-backed filters.
+- Richer game cards with artwork, screenshots, video, version selection and
+  collection/status actions; compact menus and consistent controller navigation.
+- Optional experimental EmuDeck/ES-DE export of missing metadata and available
+  media after downloads. Existing edits and media are preserved; writes wait
+  until ES-DE is closed. Miximage composition stays with ES-DE's native generator.
+- Separate fork profile and updates, with the original RomMix application icon.
+- Steam Deck and Bazzite checks cover menus, downloads, game launch and return;
+  the Deck trial also confirms gameplay audio and ES-DE metadata/media export.
+
+Existing RomMix downloads, BIOS, emulator integration, save/state synchronization
+and offline workflows remain. ES-DE enrichment is disabled by default. Physical
+suspend/resume and save round trips were not part of this release's device trial.
+
 ## 0.23.0 — 2026-11-02
 
 - chore: update the dependencies (0e3760b)
