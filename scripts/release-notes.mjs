@@ -50,7 +50,9 @@ const entry = markdown.slice(from, to).trim()
 const previous = headings[index + 1]?.[1]
 // The fork's first release follows upstream history, without importing its tags.
 const previousRef =
-  version === '0.24.0' ? 'b5d59c6310b9ad6787fc0af72d2264c64daa1357' : previous && `v${previous}`
+  version === '0.23.0-remix.1'
+    ? 'b5d59c6310b9ad6787fc0af72d2264c64daa1357'
+    : previous && `v${previous}`
 
 console.log(`### What's new
 

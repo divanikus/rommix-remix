@@ -42,6 +42,13 @@ test('numeric pre-release identifiers count up, not across', () => {
   assert.ok(compareVersions('1.0.0-rc.10', '1.0.0-rc.2') > 0)
 })
 
+test('fork revisions and upstream bases advance independently', () => {
+  assert.ok(compareVersions('0.23.0-remix.2', '0.23.0-remix.1') > 0)
+  assert.ok(compareVersions('0.23.0-remix.10', '0.23.0-remix.2') > 0)
+  assert.ok(compareVersions('0.24.0-remix.1', '0.23.0-remix.10') > 0)
+  assert.equal(compareVersions('v0.23.0-remix.1', '0.23.0-remix.1'), 0)
+})
+
 test('a longer pre-release is the newer one when the prefix matches', () => {
   assert.ok(compareVersions('1.0.0-rc.1.1', '1.0.0-rc.1') > 0)
 })

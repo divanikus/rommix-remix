@@ -63,7 +63,7 @@ was touched. Production bundling on the development host is not Linux packaging.
 At the audit boundary, the retained Electron `test:app` suite still referred to
 old Home/menu selectors; the earlier Linux setup run passed 7 of 13 tests.
 
-The subsequent 0.24.0 release preparation migrates these scenarios to root/utility
+The subsequent 0.23.0-remix.1 release preparation migrates these scenarios to root/utility
 navigation, platform browsing, empty Search, internal-tab triggers and the current
 game card. HOME/XDG fixtures isolate host emulator discovery, and the ES-DE fixture
 resolves symlinked temporary roots. The complete Linux run now passes all 195

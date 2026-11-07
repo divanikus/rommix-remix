@@ -47,9 +47,16 @@ builds follow the release opt-in; manual and PR checks are always available.
 Rolling canary publication requires a separate `ROMMIX_PUBLISH_CANARY=true` opt-in.
 The original website/demo sources are retained.
 
+Release versions use `<upstream version>-remix.<revision>`, starting with
+`0.23.0-remix.1`. Increase the final number for fork releases on the same upstream
+base, for example `0.23.0-remix.2`. Do not consume upstream's next version number.
+These are normal GitHub releases, available through the default updater despite
+the SemVer suffix. Use an explicit version with release-it rather than `minor`.
+The briefly published `0.24.0` was withdrawn to correct its numbering.
+
 ## Checks and remaining work
 
-The 0.24.0 Linux candidate passes formatting, lint, both TypeScript projects,
+The 0.23.0-remix.1 Linux candidate passes formatting, lint, both TypeScript projects,
 1,450 Node tests, 195 Electron scenarios, 9 input tests, 21 ES-DE tests and AppImage
 packaging. The inherited Electron scenarios now use the fork's navigation and
 isolate HOME/XDG paths from the host emulator setup. Its release gate remains intact.

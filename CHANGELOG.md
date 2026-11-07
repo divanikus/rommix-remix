@@ -4,7 +4,7 @@ Newest first. `npm run release` adds the entry for a version, falling back to th
 commit subjects and ids since the previous tag — so write the section by hand
 before releasing if you want prose instead. See [Releasing](README.md#releasing).
 
-## 0.24.0 — 2026-11-07
+## 0.23.0-remix.1 — 2026-11-07
 
 First RomMix-Remix release, based on RomMix 0.23.0 and upstream changes through
 `b5d59c6`. Original MIT attribution and upstream history are preserved.

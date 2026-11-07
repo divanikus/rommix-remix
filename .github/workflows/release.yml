@@ -267,7 +267,11 @@ jobs:
       # build job has already refused the tag if that section is missing, so
       # this cannot publish a release with nothing to read.
       - name: Write the release notes
-        run: node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" > release-notes.md
+        id: notes
+        run: |
+          node scripts/release-notes.mjs "${GITHUB_REF_NAME#v}" > release-notes.md
+          # Remix is a fork revision, not a release-candidate channel.
+          node -e 'const stable = /^v\d+\.\d+\.\d+(?:-remix\.\d+)?$/.test(process.env.GITHUB_REF_NAME); console.log(`prerelease=${!stable}`)' >> "$GITHUB_OUTPUT"
 
       # The notes are RomMix's own — see `scripts/release-notes.mjs` for why
       # they are not GitHub's generated ones. A tag like v0.2.0-rc1 is a
@@ -282,5 +286,6 @@ jobs:
             dist/rommix-steam.sh
           name: RomMix-Remix ${{ github.ref_name }}
           body_path: release-notes.md
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ steps.notes.outputs.prerelease == 'true' }}
+          make_latest: ${{ steps.notes.outputs.prerelease == 'true' && 'false' || 'true' }}
           fail_on_unmatched_files: true
