@@ -30,6 +30,8 @@ export default {
       'npm run lint',
       'npm run typecheck',
       'npm test',
+      "python3 -m unittest discover -s src/main/input -p 'test_*.py'",
+      "python3 -m unittest discover -s src/main/esde -p 'test_*.py'",
       'npm run test:app',
       // The one thing none of the above runs. `test:app` drives `out/` with a
       // bare `electron .`, so `electron-builder.yml` and
@@ -65,7 +67,7 @@ export default {
     // it out of the way, which is the same reason it is not `feat` or `fix`.
     commitMessage: 'chore(release): ${version}',
     tagName: 'v${version}',
-    tagAnnotation: 'RomMix ${version}'
+    tagAnnotation: 'RomMix-Remix ${version}'
   },
 
   // RomMix ships as an AppImage, not as a package on the registry.

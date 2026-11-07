@@ -25,8 +25,8 @@ permissions:
 
 jobs:
   build:
-    # Fork builds stay manual/PR-only until the Steam Deck trial.
-    if: github.repository == 'leclercb/rommix' || github.event_name != 'push'
+    # Fork pushes build after the owner enables release publication.
+    if: github.repository == 'leclercb/rommix' || github.event_name != 'push' || vars.ROMMIX_PUBLISH_RELEASES == 'true'
     # One leg per architecture, each on a runner of that architecture:
     # electron-builder packages the Electron binary for the machine it is told
     # to target, and cross-packaging an AppImage means fetching a foreign
@@ -179,7 +179,7 @@ jobs:
     # of which publish the tip of the branch, which is what the channel is. Not
     # a pull request, which builds the same images from something nobody has
     # merged, and not a tag, which the release job below answers for.
-    if: github.ref == 'refs/heads/main' && (github.repository == 'leclercb/rommix' || vars.ROMMIX_PUBLISH_RELEASES == 'true')
+    if: github.ref == 'refs/heads/main' && (github.repository == 'leclercb/rommix' || vars.ROMMIX_PUBLISH_CANARY == 'true')
     runs-on: ubuntu-24.04
 
     permissions:
@@ -205,7 +205,7 @@ jobs:
             dist/*.AppImage
             dist/rommix-steam.sh
           tag_name: canary
-          name: RomMix canary
+          name: RomMix-Remix canary
           # Shown and not read: the commit a copy on this channel compares
           # itself against comes from the tag. This is what the release page
           # says to whoever is looking at it, which is what the channel is
@@ -280,7 +280,7 @@ jobs:
           files: |
             dist/*.AppImage
             dist/rommix-steam.sh
-          name: RomMix ${{ github.ref_name }}
+          name: RomMix-Remix ${{ github.ref_name }}
           body_path: release-notes.md
           prerelease: ${{ contains(github.ref_name, '-') }}
           fail_on_unmatched_files: true

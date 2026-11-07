@@ -26,7 +26,7 @@ if (!version) {
   process.exit(1)
 }
 
-const REPOSITORY = 'https://github.com/leclercb/rommix'
+const REPOSITORY = 'https://github.com/divanikus/rommix-remix'
 const markdown = readFileSync('CHANGELOG.md', 'utf8')
 
 /**
@@ -48,6 +48,9 @@ const entry = markdown.slice(from, to).trim()
 
 // The tag, not the bare version: that is what the compare page is addressed by.
 const previous = headings[index + 1]?.[1]
+// The fork's first release follows upstream history, without importing its tags.
+const previousRef =
+  version === '0.24.0' ? 'b5d59c6310b9ad6787fc0af72d2264c64daa1357' : previous && `v${previous}`
 
 console.log(`### What's new
 
@@ -58,8 +61,8 @@ ${entry}
 Choose \`x86_64\` or \`arm64\` depending on your machine's architecture.
 
 \`\`\`bash
-chmod +x RomMix-x86_64.AppImage
-./RomMix-x86_64.AppImage
+chmod +x RomMix-Remix-x86_64.AppImage
+./RomMix-Remix-x86_64.AppImage
 \`\`\`
 
 No version in the file name: updates are written over that same file.
@@ -69,4 +72,4 @@ No version in the file name: updates are written over that same file.
 Download \`rommix-steam.sh\` too, \`chmod +x\` it, keep it beside the AppImage,
 and add **the script** as the non-Steam game — Steam cannot launch the AppImage
 directly.
-${previous ? `\n**Full changelog**: ${REPOSITORY}/compare/v${previous}...v${version}\n` : ''}`)
+${previousRef ? `\n**Full changelog**: ${REPOSITORY}/compare/${previousRef}...v${version}\n` : ''}`)
