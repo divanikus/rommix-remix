@@ -11,7 +11,7 @@ class EnrichmentTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
-        self.home = Path(self.temp.name)
+        self.home = Path(self.temp.name).resolve()
         self.roms = self.home / 'SD card/roms'
         self.media = self.home / 'SD card/media'
         self.data = self.home / 'ES-DE'

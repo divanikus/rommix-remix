@@ -32,8 +32,7 @@ after(async () => {
 
 describe('when the server goes out of reach', () => {
   test('a game is downloaded first, so there is something to be offline with', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 1)!)
     await downloadAnyway(app)
     await app.waitFor(
       `(await window.rommix.library.installed()).some((one) => one.romId === 1)`,
@@ -50,6 +49,8 @@ describe('when the server goes out of reach', () => {
 
   test('it says which machine is missing rather than only that one is', async () => {
     await server.goAway()
+    await app.goTo('systems')
+    await app.waitFor(`(await window.rommix.server.status()).offline`, 'the server to be offline')
 
     // Prompted rather than waited out: a screen making requests finds out
     // within the request, and the poll behind it is the backstop for a session
@@ -57,12 +58,11 @@ describe('when the server goes out of reach', () => {
     await app.goTo('library')
     await app.waitFor(`document.querySelector('.notice--warn')`, 'the offline notice')
 
-    // "Offline" alone reads as a setting somebody turned on, so the bar names
-    // the server it cannot reach.
-    const host = new URL(server.baseUrl).host
+    // The compact header keeps account details on Settings, while the library
+    // reports the loss of connectivity without losing its local games.
     await app.waitFor(
-      `document.querySelector('.topbar__host')?.textContent?.includes(${JSON.stringify(host)})`,
-      'the missing server to be named'
+      `(await window.rommix.server.status()).baseUrl === ${JSON.stringify(server.baseUrl)}`,
+      'the missing server identity to be retained'
     )
   })
 
@@ -78,6 +78,7 @@ describe('when the server goes out of reach', () => {
   })
 
   test('the library is what this disk holds', async () => {
+    await app.browsePlatform(1)
     await app.waitFor(`document.querySelector('[data-rom="1"]')`, 'the downloaded game')
 
     // And nothing else. Offering a game that cannot be fetched would be a
@@ -128,17 +129,21 @@ describe('and when it comes back', () => {
       'the offline notice to clear itself',
       30_000
     )
-    await app.waitFor(`document.querySelector('.topbar__user')`, 'the signed-in name again')
+    await app.waitFor(
+      `(await window.rommix.server.status()).connected`,
+      'the authenticated connection again'
+    )
   })
 
   test('and the screens it took away are offered again', async () => {
+    await app.goTo('home')
     await app.waitFor(
       `document.querySelector('[data-route="collections"]')`,
       'collections to return to the bar'
     )
 
-    // The whole library again, not only what is on the disk.
-    await app.goTo('library')
+    // An online platform again, including a game that is not on this disk.
+    await app.browsePlatform(2)
     await app.waitFor(`document.querySelector('[data-rom="2"]')`, 'the games only RomM has')
   })
 

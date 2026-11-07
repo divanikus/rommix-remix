@@ -45,15 +45,6 @@ export const SETTLE_TIMEOUT_MS = 15_000
 export const POLL_MS = 100
 
 /**
- * How long `goTo` waits for a section to open after Enter, before it takes the
- * press as lost and walks the menu again.
- *
- * Short, because a press that reached the menu item opens the section on the
- * next render; anything left waiting past that is a press that went elsewhere.
- */
-const OPEN_TIMEOUT_MS = 2000
-
-/**
  * Where a failure leaves its screenshot. See `capture`.
  *
  * Under the repository rather than in a temporary folder, because the reader is
@@ -231,6 +222,8 @@ export interface App {
   type: (text: string) => Promise<void>
   /** Go to one of the sections in the navigation bar. */
   goTo: (route: string) => Promise<void>
+  browsePlatform: (platformId: number) => Promise<void>
+  openGame: (rom: { id: number; platform_id: number }) => Promise<void>
   /** The label of whatever is highlighted, for a failure worth reading. */
   focused: () => Promise<string>
   home: string
@@ -247,7 +240,19 @@ export interface App {
  * all — see `keyboardLabel`, which names the same pairs for the hint bar.
  */
 export type Key =
-  'Up' | 'Down' | 'Left' | 'Right' | 'Enter' | 'Escape' | 'TabNext' | 'TabBack' | 'Search' | 'Menu'
+  | 'Up'
+  | 'Down'
+  | 'Left'
+  | 'Right'
+  | 'Enter'
+  | 'Escape'
+  | 'TabNext'
+  | 'TabBack'
+  | 'Search'
+  | 'Menu'
+  | 'Header'
+  | 'TriggerNext'
+  | 'TriggerBack'
 
 /**
  * Whether Chromium recognised the pad, which changes where its buttons are.
@@ -299,7 +304,10 @@ const KEYS: Record<
   // two directions apart.
   TabBack: { code: 'Tab', key: 'Tab', windowsVirtualKeyCode: 9, modifiers: SHIFT },
   Search: { code: 'Slash', key: '/', windowsVirtualKeyCode: 191 },
-  Menu: { code: 'KeyM', key: 'm', windowsVirtualKeyCode: 77 }
+  Menu: { code: 'KeyM', key: 'm', windowsVirtualKeyCode: 77 },
+  Header: { code: 'Home', key: 'Home', windowsVirtualKeyCode: 36 },
+  TriggerNext: { code: 'PageDown', key: 'PageDown', windowsVirtualKeyCode: 34 },
+  TriggerBack: { code: 'PageUp', key: 'PageUp', windowsVirtualKeyCode: 33 }
 }
 
 export interface StartOptions {
@@ -533,10 +541,7 @@ function seed(home: string, options: StartOptions): void {
  */
 export async function atHome(app: App): Promise<void> {
   await app.waitFor(`document.querySelector('[data-screen="home"]')`, 'the home screen')
-  await app.waitFor(
-    `document.querySelector('.hero')?.dataset.focused === 'true'`,
-    'the home screen to settle'
-  )
+  await app.waitFor(`document.querySelector('.continue-card')`, 'the home screen to settle')
 }
 
 /**
@@ -571,7 +576,11 @@ export async function startApp(options: StartOptions): Promise<App> {
     stdio: ['ignore', 'pipe', 'pipe'],
     env: {
       ...process.env,
+      HOME: home,
+      XDG_DATA_HOME: join(home, 'xdg-data'),
+      XDG_CACHE_HOME: join(home, 'xdg-cache'),
       ROMMIX_HOME: home,
+      ROMMIX_NATIVE_GAMEPAD: '0',
       /**
        * Electron's profile too, not only RomMix's own root.
        *
@@ -994,6 +1003,26 @@ export async function startApp(options: StartOptions): Promise<App> {
       `${selector} to be reachable`
     )
 
+    // Internal tabs have a direct controller action, including while their
+    // strip is scrolled out of view. Use the same triggers a player would.
+    if (
+      await read<boolean>(
+        `document.querySelector(${JSON.stringify(selector)})?.hasAttribute('data-tab')`
+      )
+    ) {
+      const count = await read<number>(`document.querySelectorAll('[data-tab]').length`)
+      for (let step = 0; step < count; step++) {
+        if (
+          await read<boolean>(
+            `document.querySelector(${JSON.stringify(selector)})?.dataset.active === 'true'`
+          )
+        )
+          return
+        await press('TriggerNext')
+      }
+      throw new Error(`Triggers did not reach ${selector}`)
+    }
+
     const there = (): Promise<boolean> =>
       read<boolean>(
         `document.querySelector(${JSON.stringify(selector)})?.matches('[data-focused="true"]') ?? false`
@@ -1092,94 +1121,42 @@ export async function startApp(options: StartOptions): Promise<App> {
     )
   }
 
-  /**
-   * Go to a section, the way the interface offers it.
-   *
-   * The navigation bar is a focus zone rather than the row above the content,
-   * and directional movement does not climb into it — Back does, which is what
-   * `App`'s own handler means by `enterZone('nav')`. So a test that pressed Up
-   * would never arrive, and one that clicked would not be testing the way
-   * anybody reaches it with a controller.
-   *
-   * Back until it is in the bar rather than once: the first press steps back
-   * through the screen's own history where it has any, and only the press with
-   * nowhere left to go climbs into the menu. Never pressed while already in the
-   * bar, which is the press that offers to quit.
-   *
-   * Then along it by counting rather than by feeling for the end. The bar is a
-   * row whose order the page will simply state, and a walk that pressed Right
-   * until something looked right would leave the bar the moment it ran off the
-   * end of it.
-   */
+  /** Reach root sections through Select/Home, and utility sections through Start. */
   const goTo = async (route: string): Promise<void> => {
-    const item = `.topbar__nav [data-route="${route}"]`
-    await waitFor(`document.querySelector(${JSON.stringify(item)})`, `the ${route} menu item`)
-
-    const inBar = (): Promise<boolean> =>
-      read<boolean>(
-        `Boolean(document.querySelector('[data-focused="true"]')?.closest('.topbar__nav'))`
-      )
-    const arrived = (): Promise<boolean> =>
-      read<boolean>(
-        `document.querySelector(${JSON.stringify(item)})?.matches('[data-focused="true"]') ?? false`
-      )
-    const opened = async (): Promise<boolean> => {
-      const until = Date.now() + OPEN_TIMEOUT_MS
-      while (Date.now() < until) {
-        if (
-          await read<boolean>(
-            `document.querySelector('[data-screen]')?.dataset.screen === ${JSON.stringify(route)}`
-          )
-        ) {
-          return true
-        }
-        await new Promise((resolve) => setTimeout(resolve, POLL_MS))
-      }
-      return false
+    if (await read<boolean>(`document.activeElement?.tagName === 'INPUT'`)) {
+      await press('Escape')
     }
-
-    // Three goes at it, because a screen still filling can move the highlight
-    // out of the bar between measuring the distance and walking it — which is
-    // not a broken menu, just a slow one, and the answer is to look again.
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      for (let step = 0; step < 5 && !(await inBar()); step += 1) {
+    if (await read<boolean>(`Boolean(document.querySelector('.overlay'))`)) {
+      await press('Escape')
+      await waitFor(`!document.querySelector('.overlay')`, 'the overlay to close')
+    }
+    if (['settings', 'emulators', 'bios', 'downloads'].includes(route)) {
+      await press('Menu')
+      await choose(`[data-action="open-${route}"]`)
+    } else {
+      for (let step = 0; step < 12; step += 1) {
+        if (await read<boolean>(`Boolean(document.querySelector('.topbar .topbar__nav'))`)) break
         await press('Escape')
-        if (await read<boolean>(`Boolean(document.querySelector('.overlay'))`)) {
-          throw new Error('backing out to the menu reached the quit confirmation')
-        }
       }
-      if (!(await inBar())) continue
-
-      const distance = await read<number>(
-        `(() => {
-           const items = [...document.querySelectorAll('.topbar__nav [data-route]')]
-           const wanted = items.findIndex((one) => one.dataset.route === ${JSON.stringify(route)})
-           const here = items.findIndex((one) => one.matches('[data-focused="true"]'))
-           return wanted < 0 || here < 0 ? NaN : wanted - here
-         })()`
-      )
-      if (Number.isNaN(distance)) continue
-
-      // One press at a time, checking after each: a fixed count walked blindly
-      // carries on past the bar if anything moved the highlight on the way.
-      for (let step = 0; step < Math.abs(distance); step += 1) {
-        if (await arrived()) break
-        if (!(await inBar())) break
-        await press(distance > 0 ? 'Right' : 'Left')
-      }
-      if (!(await arrived())) continue
-
-      // Confirmed rather than assumed. A screen still filling can take the
-      // highlight between the last look and the press, and Enter then lands on
-      // whatever took it while the section never opens.
-      await press('Enter')
-      if (await opened()) return
+      await press('Header')
+      await choose(`.topbar .topbar__nav [data-route="${route}"]`)
     }
-
-    throw new Error(
-      `the menu never reached ${route}; the highlight is on "${await focused()}"` +
-        (await capture(`going to ${route}`))
+    await waitFor(
+      `document.querySelector('[data-screen]')?.dataset.screen === ${JSON.stringify(route)}`,
+      `the ${route} screen`
     )
+  }
+
+  const browsePlatform = async (platformId: number): Promise<void> => {
+    await goTo('systems')
+    await choose(`[data-system="${platformId}"]`)
+    await waitFor(`document.querySelector('[data-screen="library"]')`, 'the platform library')
+  }
+
+  const openGame = async (rom: { id: number; platform_id: number }): Promise<void> => {
+    await browsePlatform(rom.platform_id)
+    await choose(`[data-rom="${rom.id}"]`)
+    await waitFor(`document.querySelector('[data-screen="game"]')`, 'the game card')
   }
 
   return {
@@ -1194,6 +1171,8 @@ export async function startApp(options: StartOptions): Promise<App> {
     plugInPad,
     type,
     goTo,
+    browsePlatform,
+    openGame,
     focused,
     home,
     stop: async () => {

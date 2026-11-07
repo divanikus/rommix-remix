@@ -52,8 +52,7 @@ describe('while an emulator owns the screen', () => {
 
   test('a game takes the screen, and the overlay says so', async () => {
     await atHome(stuck)
-    await stuck.goTo('library')
-    await stuck.choose('[data-rom="3"]')
+    await stuck.openGame(server.roms.find((rom) => rom.id === 3)!)
     await stuck.choose('[data-action="download"]')
     await stuck.waitFor(
       `(await window.rommix.library.installed()).some((one) => one.romId === 3)`,

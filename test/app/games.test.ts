@@ -59,22 +59,15 @@ describe('starting up', () => {
   })
 
   test('it reached the server, and said who it was', async () => {
-    await app.waitFor(`document.querySelector('.topbar__user')`, 'the signed-in name')
+    await app.goTo('settings')
+    await app.waitFor(
+      `[...document.querySelectorAll('.kv dd')].some((one) => one.textContent === 'tester')`,
+      'the signed-in name in Settings'
+    )
     const asked = server.asked.filter((one) => one.path === '/api/users/me')
     assert.ok(asked.length > 0, 'it should have asked who it is signed in as')
     assert.equal(asked[0].authorization, `Bearer ${server.token}`)
-  })
-
-  test('the face beside the name is one the server drew', async () => {
-    // This account uploaded no picture, which is the ordinary case, so the bar
-    // asks RomM for its own default rather than drawing a mark of RomMix's.
-    // Asserted through the request as well as the element: an image that never
-    // arrived is replaced by that mark, and a bar with a mark in it looks the
-    // same whether the picture was missing or never asked for.
-    await app.waitFor(`document.querySelector('.topbar__avatar')`, 'the account picture')
-    const asked = server.asked.filter((one) => one.path === '/assets/default/user.svg')
-    assert.ok(asked.length > 0, 'it should have fetched the default picture')
-    assert.equal(asked[0].authorization, `Bearer ${server.token}`)
+    await app.goTo('home')
   })
 
   test('the library it drew is the one the server sent', async () => {
@@ -101,16 +94,17 @@ describe('moving around', () => {
     await app.waitFor(`document.querySelector('[data-screen="downloads"]')`, 'the downloads screen')
   })
 
-  test('back out of a section offers to quit rather than doing it', async () => {
-    // The highlight is in the navigation bar, having just chosen from it, and
-    // there is nowhere further back to go — so the press that would leave
-    // RomMix asks first. The same press arrives here by accident, which is the
-    // whole reason it asks. See `back` in App.tsx.
+  test('Back returns from utilities, and Quit in the menu asks first', async () => {
     await app.press('Escape')
-    await app.waitFor(`document.querySelector('.overlay')`, 'the quit confirmation')
-
-    // The dialog answers Back itself, which is what makes the accident cost
-    // one press rather than a lost session.
+    await app.waitFor(`document.querySelector('[data-screen="home"]')`, 'the original screen')
+    await app.press('Menu')
+    await app.choose('[data-action="menu-quit"]')
+    await app.waitFor(
+      `document.querySelector('[data-action="confirm-quit"]')`,
+      'the quit confirmation'
+    )
+    await app.press('Escape')
+    await app.waitFor(`document.querySelector('[data-action="menu-quit"]')`, 'the menu again')
     await app.press('Escape')
     await app.waitFor(`!document.querySelector('.overlay')`, 'the confirmation to close')
   })
@@ -123,10 +117,7 @@ describe('moving around', () => {
 
 describe('downloading a game', () => {
   test('a game with nothing to run it offers an emulator before the transfer', async () => {
-    await app.goTo('library')
-    await app.waitFor(`document.querySelector('[data-screen="library"]')`, 'the library')
-
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 1)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'a game screen')
 
     // Eden is the only emulator here and it runs the Switch, so a Mega Drive
@@ -150,10 +141,7 @@ describe('downloading a game', () => {
   })
 
   test('the file lands on this disk and the queue says so', async () => {
-    await app.goTo('library')
-    await app.waitFor(`document.querySelector('[data-screen="library"]')`, 'the library')
-
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 1)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'a game screen')
 
     await downloadAnyway(app)
@@ -210,8 +198,8 @@ describe('downloading a game', () => {
     // the game. None of them can be drawn for something that has not been
     // downloaded — which is every game in `interface.test.ts`, where the rest
     // of that tab is read.
-    await app.goTo('library')
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 1)!)
+    await app.choose('[data-tab="details"]')
     await app.waitFor(`document.querySelector('.kv--columns')`, 'the details')
 
     const entry = await app.read<{ path: string; system: string }>(
@@ -242,8 +230,7 @@ describe('launching a game', () => {
     // Eden is one emulator rather than a core loader, so a launch here fetches
     // nothing off the internet. Through RetroArch the same test would try to
     // download a libretro core.
-    await app.goTo('library')
-    await app.choose('[data-rom="3"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 3)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
 
     await app.choose('[data-action="download"]')
@@ -306,8 +293,7 @@ describe('downloading a game of several files', () => {
     // smaller than a zip around bytes it does not compress. Every RomM under
     // `schema/` serves them this way, which is what makes the fake's version of
     // it worth asserting against.
-    await app.goTo('library')
-    await app.choose('[data-rom="4"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 4)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
 
     await downloadAnyway(app)
@@ -394,8 +380,7 @@ describe('downloading a game of several files', () => {
     )
 
     server.uploadFile(4, 'Added (Track 2).bin')
-    await app.goTo('library')
-    await app.choose('[data-rom="4"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 4)!)
     await app.waitFor(`document.querySelector('[data-new-files]')`, 'the new files mark')
 
     await app.choose('[data-tab="files"]')
@@ -455,8 +440,7 @@ describe('uninstalling a game', () => {
     )
     assert.notEqual(discSet, undefined, 'the disc set should still be installed')
 
-    await app.goTo('library')
-    await app.choose('[data-rom="4"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 4)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
 
     await app.choose('[data-action="uninstall"]')
@@ -488,8 +472,7 @@ describe('pausing a download and picking it up again', () => {
     // before the first key press cannot be interrupted. Everything under test
     // here is in `transfer.ts`, and this is the only place it runs against a
     // real socket rather than a stubbed fetch.
-    await app.goTo('library')
-    await app.choose('[data-rom="5"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 5)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await downloadAnyway(app)
 
@@ -799,8 +782,7 @@ describe('driving the queue from the activity tab', () => {
   test('one moved to the front takes the wire off the one that had it', async () => {
     // Uninstalled first, so there is something to download. The confirmation is
     // the same one the uninstall scenario above answers.
-    await app.goTo('library')
-    await app.choose('[data-rom="5"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 5)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.choose('[data-action="uninstall"]')
     await app.choose('[data-action="uninstall-confirm"]')
@@ -814,8 +796,7 @@ describe('driving the queue from the activity tab', () => {
 
     // And a second game behind it. One transfer at a time is what makes a queue
     // a queue, and what makes moving something up mean anything.
-    await app.goTo('library')
-    await app.choose('[data-rom="4"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 4)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the other game')
     await downloadAnyway(app)
 
@@ -1054,8 +1035,7 @@ describe('saves either side of a session', () => {
 
   test("the server's copy is brought down before the game starts", async () => {
     await atHome(saved)
-    await saved.goTo('library')
-    await saved.choose('[data-rom="1"]')
+    await saved.openGame(server.roms.find((rom) => rom.id === 1)!)
     await saved.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
 
     await saved.choose('[data-action="download"]')
@@ -1141,8 +1121,7 @@ describe('saves either side of a session', () => {
     // after — which is the only state where the dialog has a choice to offer.
     // A file one end holds alone gets one button, so it can never offer a
     // delete that would do nothing.
-    await saved.goTo('library')
-    await saved.choose('[data-rom="1"]')
+    await saved.openGame(server.roms.find((rom) => rom.id === 1)!)
     await saved.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await saved.choose('[data-tab="saves"]')
     await saved.waitFor(`document.querySelector('[data-action="delete-asset"]')`, 'the save row')
@@ -1194,8 +1173,7 @@ describe('saves either side of a session', () => {
     // above left off. Closing one leaves the highlight nowhere for a moment and
     // the list rebuilds underneath it, so a walk that starts there is racing
     // both; arriving fresh is neither.
-    await saved.goTo('library')
-    await saved.choose('[data-rom="1"]')
+    await saved.openGame(server.roms.find((rom) => rom.id === 1)!)
     await saved.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await saved.choose('[data-tab="saves"]')
     await saved.waitFor(`document.querySelector('[data-action="delete-asset"]')`, 'the save row')
@@ -1245,8 +1223,7 @@ describe('saves either side of a session', () => {
       content: 'stopped somewhere else'
     })
 
-    await saved.goTo('library')
-    await saved.choose('[data-rom="1"]')
+    await saved.openGame(server.roms.find((rom) => rom.id === 1)!)
     await saved.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await saved.choose('[data-action="pull-saves"]')
 
@@ -1309,8 +1286,7 @@ describe('saves either side of a session', () => {
     writeFileSync(join(saveDir, 'cavestory 2.srm'), "the sequel's save")
     writeFileSync(join(stateDir, 'cavestory 2.state1'), "the sequel's state")
 
-    await saved.goTo('library')
-    await saved.choose('[data-rom="1"]')
+    await saved.openGame(server.roms.find((rom) => rom.id === 1)!)
     await saved.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await saved.choose('[data-action="push-saves"]')
 
@@ -1481,10 +1457,7 @@ describe('installing the BIOS a platform needs', () => {
 
   test('a game whose console needs one is warned before it is played, not after', async () => {
     await atHome(bios)
-    await bios.goTo('library')
-    // The Sega CD game. Its platform is the only one in this library with a
-    // file marked required, and this application has installed nothing.
-    await bios.choose('[data-rom="4"]')
+    await bios.openGame(server.roms.find((rom) => rom.id === 4)!)
     await bios.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
 
     // Said on the screen the Play button is on, which is the point of asking
@@ -1569,8 +1542,7 @@ describe('installing the BIOS a platform needs', () => {
     // notice is drawn from a fresh look at the folder rather than from
     // anything the BIOS screen said, so installing from one screen has to be
     // visible from the other without either being told.
-    await bios.goTo('library')
-    await bios.choose('[data-rom="4"]')
+    await bios.openGame(server.roms.find((rom) => rom.id === 4)!)
     await bios.waitFor(`document.querySelector('[data-action="download"]')`, 'the game screen')
     assert.equal(
       await bios.read<boolean>(
@@ -1625,18 +1597,21 @@ describe('when the server goes away', () => {
     // asked this question; the fallback is decided there and shown here.
     await server.close()
 
+    await app.goTo('systems')
+    await app.waitFor(`(await window.rommix.server.status()).offline`, 'the server to be offline')
     await app.goTo('library')
     await app.waitFor(`document.querySelector('.notice--warn')`, 'the offline notice')
 
-    // Named rather than merely marked offline: "offline" on its own reads as a
-    // setting somebody turned on.
-    await app.waitFor(`document.querySelector('.topbar__user')`, 'the status in the bar')
-
-    // Both games downloaded above are still listed, from the local index.
     await app.waitFor(
-      `document.querySelector('[data-rom="1"]') && document.querySelector('[data-rom="3"]')`,
-      'the downloaded games'
+      `(await window.rommix.server.status()).offline`,
+      'the offline connection state'
     )
+
+    // Each platform still lists its downloaded games from the local index.
+    await app.browsePlatform(1)
+    await app.waitFor(`document.querySelector('[data-rom="1"]')`, 'the downloaded Mega Drive game')
+    await app.browsePlatform(3)
+    await app.waitFor(`document.querySelector('[data-rom="3"]')`, 'the downloaded Switch game')
 
     // And the one that was never downloaded is not: offline, the library is
     // what this disk holds, and offering a game that cannot be fetched would

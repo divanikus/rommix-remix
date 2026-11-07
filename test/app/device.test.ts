@@ -85,8 +85,7 @@ const devicesAsked = (method: string): number =>
 
 /** Download the one game this file uses, and leave a save beside it. */
 async function aSaveWaitingToGoUp(content: string): Promise<void> {
-  await app.goTo('library')
-  await app.choose('[data-rom="1"]')
+  await app.openGame(server.roms.find((rom) => rom.id === 1)!)
   // The button rather than the screen: the route changes before the game has
   // loaded, and a page still spinning has neither button to read.
   await app.waitFor(
@@ -127,8 +126,7 @@ describe('a client that signed in with a token', () => {
   test('and asks RomM to record it when a save first needs a name', async () => {
     await aSaveWaitingToGoUp('what the sofa session wrote')
 
-    await app.goTo('library')
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 1)!)
     await app.waitFor(`document.querySelector('[data-action="push-saves"]')`, 'the game screen')
     await app.choose('[data-action="push-saves"]')
 
@@ -157,8 +155,7 @@ describe('a client that signed in with a token', () => {
   test('and does not ask again, because the answer is kept with the credentials', async () => {
     writeFileSync(join(saveDir, 'cavestory.srm'), 'another evening')
 
-    await app.goTo('library')
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 1)!)
     await app.waitFor(`document.querySelector('[data-action="push-saves"]')`, 'the game screen')
     await app.choose('[data-action="push-saves"]')
 
@@ -203,8 +200,7 @@ describe('and one that signed in with a username and password', () => {
     await atHome(app)
 
     await aSaveWaitingToGoUp('and one more after signing back in')
-    await app.goTo('library')
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 1)!)
     await app.waitFor(`document.querySelector('[data-action="push-saves"]')`, 'the game screen')
     await app.choose('[data-action="push-saves"]')
 

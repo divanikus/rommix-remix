@@ -76,16 +76,16 @@ describe('the collections screen', () => {
     )
   })
 
-  test('the ones RomM derives are behind a lid, and cost nothing while it is shut', async () => {
+  test('derived collections are absent from the default Mine view', async () => {
     await app.goTo('collections')
-    await app.waitFor(`document.querySelector('.group__header')`, 'the shelves to fill')
+    await app.waitFor(`document.querySelector('[data-collection]')`, 'the shelves to fill')
 
     // Two groups: the ones somebody made, open, and the ones RomM worked out,
     // closed. `data-open` rather than which comes second — the order is a
     // layout decision and this is about the lid.
     await app.waitFor(
-      `document.querySelectorAll('.group__header[data-open="false"]').length === 1`,
-      'the derived shelves to be closed'
+      `document.querySelector('[data-control="collection-kind"] [data-option="mine"]')?.dataset.active === 'true'`,
+      'Mine to be selected by default'
     )
 
     // Not merely hidden. RomM derives one per genre, per franchise, per
@@ -101,8 +101,8 @@ describe('the collections screen', () => {
     )
   })
 
-  test('opening it draws them, and leaves the empty one out', async () => {
-    await app.choose('.group__header[data-open="false"]')
+  test('selecting Derived draws them, and leaves the empty one out', async () => {
+    await app.choose('[data-control="collection-kind"] [data-option="virtual"]')
     await app.waitFor(
       `[...document.querySelectorAll('.card__title')].some((one) => one.textContent === ${JSON.stringify(server.virtualCollections[0].name)})`,
       'the derived shelves to be drawn'
@@ -158,17 +158,17 @@ describe('the settings screen', () => {
     )
   })
 
-  test('and its other two tabs are reachable from the shoulder buttons', async () => {
+  test('and its other two tabs are reachable from the triggers', async () => {
     // Everything RomMix can be told to do that is not about one game lives
     // behind this strip — where the library goes, which emulator runs what.
     // Until now nothing had opened either of them.
-    await app.press('TabNext')
+    await app.press('TriggerNext')
     await app.waitFor(
       `document.querySelector('[data-tab="games"]')?.dataset.active === 'true'`,
       'the games tab'
     )
 
-    await app.press('TabNext')
+    await app.press('TriggerNext')
     await app.waitFor(
       `document.querySelector('[data-tab="system"]')?.dataset.active === 'true'`,
       'the system tab'
@@ -178,7 +178,7 @@ describe('the settings screen', () => {
     // itself active over the previous tab's contents would pass a check on the
     // strip alone.
     await app.waitFor(
-      `document.querySelectorAll('.panel__body *').length > 0`,
+      `document.querySelectorAll('.settings-body *').length > 0`,
       'the system tab to have drawn something'
     )
   })
@@ -237,7 +237,8 @@ describe('the buttons that are not on the D-pad', () => {
     // directions cannot tell a working binding from a missing one.
     await app.goTo('home')
     await app.press('Menu')
-    await app.waitFor(`document.querySelector('[data-screen="settings"]')`, 'the settings screen')
+    await app.waitFor(`document.querySelector('[data-action="open-settings"]')`, 'the tools menu')
+    await app.press('Escape')
   })
 
   test('and Y goes to the one search box there is', async () => {
@@ -280,7 +281,7 @@ describe('the buttons that are not on the D-pad', () => {
      * to leave the caret behind, at which point every key was discarded and a
      * real keyboard was dead for the rest of the screen.
      */
-    await app.hover('[data-rom="1"]')
+    await app.hover('.topbar [data-route="home"]')
     await app.waitFor(
       `document.activeElement?.tagName !== 'INPUT'`,
       'the caret to be released by the highlight moving off'
@@ -303,40 +304,38 @@ describe('the buttons that are not on the D-pad', () => {
 /**
  * The game screen is opened by the download and launch scenarios in
  * `games.test.ts`. What none of them touch is the strip across its panel, and
- * three of its four tabs are the only place saves, files and screenshots are
+ * its tabs are where saves, files and the full media gallery are
  * ever drawn.
  */
 describe('the tabs on a game', () => {
-  test('it opens on details, and the shoulder buttons walk the strip', async () => {
-    await app.goTo('library')
-    // Any game will do, and that is the point of it being here rather than in
-    // `games.test.ts`: the strip and its four panels are drawn from what the
-    // server sent about the game, so none of this needs one on the disk.
-    await app.choose('[data-rom="3"]')
+  test('it opens on Overview, and triggers walk the strip', async () => {
+    await app.openGame(server.roms.find((one) => one.id === 3)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
 
-    // The strip is bound to LB/RB as well as being focusable, because reaching
-    // it by walking focus up from the content is not how a console UI changes
-    // tab. That binding is what is under test here.
+    await app.waitFor(
+      `document.querySelector('[data-tab="overview"]')?.dataset.active === 'true'`,
+      'the Overview tab'
+    )
+    await app.press('TriggerNext')
     await app.waitFor(
       `document.querySelector('[data-tab="details"]')?.dataset.active === 'true'`,
       'the details tab to be the one open'
     )
 
-    await app.press('TabNext')
+    await app.press('TriggerNext')
     await app.waitFor(
       `document.querySelector('[data-tab="saves"]')?.dataset.active === 'true'`,
       'the saves tab'
     )
 
-    await app.press('TabNext')
+    await app.press('TriggerNext')
     await app.waitFor(
       `document.querySelector('[data-tab="files"]')?.dataset.active === 'true'`,
       'the files tab'
     )
 
     // Back the way it came, which is the half a single direction cannot show.
-    await app.press('TabBack')
+    await app.press('TriggerBack')
     await app.waitFor(
       `document.querySelector('[data-tab="saves"]')?.dataset.active === 'true'`,
       'the saves tab again'
@@ -344,7 +343,7 @@ describe('the tabs on a game', () => {
   })
 
   test('the files tab lists the file the server named', async () => {
-    await app.press('TabNext')
+    await app.press('TriggerNext')
     await app.waitFor(
       `document.querySelector('[data-tab="files"]')?.dataset.active === 'true'`,
       'the files tab'
@@ -364,10 +363,9 @@ describe('the tabs on a game', () => {
   })
 
   test('and the strip comes round rather than stopping at the end', async () => {
-    // Four tabs, four presses. A strip that stopped at the last one would leave
-    // the first three unreachable without changing direction, which on a pad is
-    // the difference between a control and a puzzle.
-    for (let step = 0; step < 4; step += 1) await app.press('TabNext')
+    // Optional tabs change the length, but a full lap must return to Files.
+    const count = await app.read<number>(`document.querySelectorAll('[data-tab]').length`)
+    for (let step = 0; step < count; step += 1) await app.press('TriggerNext')
     await app.waitFor(
       `document.querySelector('[data-tab="files"]')?.dataset.active === 'true'`,
       'the files tab, one lap later'
@@ -380,7 +378,7 @@ describe('driving it with a mouse instead', () => {
     // `useFocusable` binds `onMouseMove` as well as `onClick`, so a pointer
     // and a pad have to agree about what is current. They are two ways into
     // every button in the application and only one of them was ever driven.
-    await app.goTo('library')
+    await app.browsePlatform(2)
     await app.waitFor(`document.querySelector('[data-rom="2"]')`, 'the library grid')
 
     await app.hover('[data-rom="2"]')
@@ -504,22 +502,21 @@ describe('driving it with a controller', () => {
   const DPAD_RIGHT = 15
 
   test('the d-pad moves the highlight and A opens what it is on', async () => {
-    await app.goTo('library')
-    await app.waitFor(`document.querySelector('[data-rom="1"]')`, 'the library grid')
+    await app.goTo('home')
 
     const pad = await app.plugInPad()
     // The pointer puts the highlight somewhere known without choosing it, which
     // no press can do.
-    await app.hover('[data-rom="1"]')
+    await app.hover('.topbar [data-route="home"]')
 
     await pad.tap(DPAD_RIGHT)
     await app.waitFor(
-      `document.querySelector('[data-rom="2"]')?.dataset.focused === 'true'`,
+      `document.querySelector('.topbar [data-route="systems"]')?.dataset.focused === 'true'`,
       'the highlight to step right'
     )
 
     await pad.tap(A)
-    await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game it was on')
+    await app.waitFor(`document.querySelector('[data-screen="systems"]')`, 'the selected section')
     await pad.unplug()
   })
 
@@ -527,22 +524,22 @@ describe('driving it with a controller', () => {
     // The repeat is the pad's alone: a keyboard's comes from the operating
     // system, and the driver sends one event per press. Without it, crossing a
     // library of any size means pressing a hundred times.
-    await app.goTo('library')
+    await app.goTo('home')
     const pad = await app.plugInPad()
 
-    await app.hover('[data-rom="1"]')
+    await app.hover('.topbar [data-route="home"]')
     await pad.tap(DPAD_RIGHT)
     const afterOne = await app.read<string>(
-      `document.querySelector('[data-focused="true"]')?.dataset.rom`
+      `document.querySelector('[data-focused="true"]')?.dataset.route`
     )
-    assert.equal(afterOne, '2', 'one press should be one step')
+    assert.equal(afterOne, 'systems', 'one press should be one step')
 
-    await app.hover('[data-rom="1"]')
+    await app.hover('.topbar [data-route="home"]')
     await pad.hold(DPAD_RIGHT)
     // Past the delay before repeating starts, and far enough into it for
     // several. See REPEAT_DELAY_MS and REPEAT_INTERVAL_MS.
     await app.waitFor(
-      `Number(document.querySelector('[data-focused="true"]')?.dataset.rom) > 2`,
+      `['library', 'collections'].includes(document.querySelector('[data-focused="true"]')?.dataset.route)`,
       'a held direction to carry on moving'
     )
     await pad.release(DPAD_RIGHT)
@@ -561,20 +558,24 @@ describe('driving it with a controller', () => {
     const HAT_X = 6
     const UNMAPPED_START = 7
 
-    await app.goTo('library')
+    await app.goTo('home')
     const pad = await app.plugInPad('')
-    await app.hover('[data-rom="1"]')
+    await app.hover('.topbar [data-route="home"]')
 
     await pad.axis(HAT_X, 1)
     await app.waitFor(
-      `document.querySelector('[data-rom="2"]')?.dataset.focused === 'true'`,
+      `document.querySelector('.topbar [data-route="systems"]')?.dataset.focused === 'true'`,
       'the hat to move the highlight'
     )
     await pad.axis(HAT_X, 0)
 
     await pad.tap(UNMAPPED_START)
-    await app.waitFor(`document.querySelector('[data-screen="settings"]')`, 'the settings screen')
+    await app.waitFor(
+      `document.querySelector('.overlay [data-action="open-settings"]')`,
+      'the tools menu'
+    )
     await pad.unplug()
+    await app.press('Escape')
   })
 
   test('and the same button on a mapped pad is the right trigger, not Start', async () => {
@@ -617,12 +618,10 @@ describe('driving it with a controller', () => {
  */
 
 describe('narrowing the library down', () => {
-  test('a platform chip asks the server for that platform and nothing else', async () => {
-    await app.goTo('library')
-    await app.waitFor(`document.querySelector('[data-rom="1"]')`, 'the whole library')
-
+  test('a system card asks the server for that platform and nothing else', async () => {
     const megadrive = server.platforms[0]
-    await app.choose(`[data-platform="${megadrive.id}"]`)
+    await app.browsePlatform(megadrive.id)
+    await app.waitFor(`document.querySelector('[data-rom="1"]')`, 'the platform games')
 
     // Narrowed at the server rather than in the page. A library runs to
     // thousands and arrives a page at a time, so a filter applied to what has
@@ -649,9 +648,9 @@ describe('narrowing the library down', () => {
     )
   })
 
-  test('and All platforms puts them back', async () => {
-    await app.choose('[data-platform="all"]')
-    await app.waitFor(`document.querySelector('[data-rom="2"]')`, 'the whole library again')
+  test('and another system shows its own games', async () => {
+    await app.browsePlatform(2)
+    await app.waitFor(`document.querySelector('[data-rom="2"]')`, 'the Game Boy library')
   })
 
   test('Downloaded only is answered from this disk, without asking the server', async () => {
@@ -685,7 +684,7 @@ describe('narrowing the library down', () => {
 describe('searching the library', () => {
   test('what is typed reaches the server as a search, once', async () => {
     await app.goTo('library')
-    await app.waitFor(`document.querySelector('[data-rom="2"]')`, 'the whole library')
+    await app.waitFor(`document.querySelector('.search-prompt')`, 'the empty search prompt')
 
     // Y is how anybody gets here, and the caret is what decides where typing
     // lands — see `type` in the driver.
@@ -708,19 +707,6 @@ describe('searching the library', () => {
       // being weighed here is how long the box waited before asking at all.
       .filter((one) => one.path.includes('search_term=Tobu') && !one.path.includes('platform_ids'))
     assert.equal(sent.length, 1, `four letters should be one query, not ${sent.length}`)
-
-    // The chips narrow with the grid. A platform's own count is the whole
-    // platform, and a chip left carrying it under a search promises games the
-    // grid it opens does not hold.
-    const gameboy = server.platforms[1]
-    await app.waitFor(
-      `document.querySelector('[data-platform="${gameboy.id}"]')?.textContent?.includes('(1)')`,
-      'the Game Boy chip to count what matches'
-    )
-    await app.waitFor(
-      `!document.querySelector('[data-platform="${server.platforms[0].id}"]')`,
-      'the platforms with nothing matching to go'
-    )
 
     // Out of the field before anything else is driven. While it holds the caret
     // the keyboard handler stands down, so a scenario that walked away leaving
@@ -749,12 +735,10 @@ describe('searching the library', () => {
   })
 
   test('and leaving the screen forgets it', async () => {
-    // The search is a way of looking at the library rather than a setting, so
-    // coming back to it should be the whole library and not the last thing
-    // somebody looked for.
+    // A fresh Search waits for a term; only Back from a game retains the query.
     await app.goTo('home')
     await app.goTo('library')
-    await app.waitFor(`document.querySelector('[data-rom="1"]')`, 'the whole library again')
+    await app.waitFor(`document.querySelector('.search-prompt')`, 'the empty search prompt again')
     assert.equal(
       await app.read<string>(`document.querySelector('.field__input')?.value`),
       '',
@@ -767,7 +751,7 @@ describe('coming back from a game', () => {
   test('the library hands the highlight back to the card it was opened from', async () => {
     // A card that is not the first, which is where a grid drawn afresh puts
     // the highlight anyway. See `LibraryView.romId`.
-    await app.goTo('library')
+    await app.browsePlatform(4)
     await app.waitFor(`document.querySelector('[data-rom="4"]')`, 'the library grid')
     await app.choose('[data-rom="4"]')
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
@@ -811,12 +795,12 @@ describe('coming back from a game', () => {
     )
   })
 
-  test('and the collections screen, with the lid it was behind still open', async () => {
+  test('and the collections screen retains its selected kind', async () => {
     // A derived shelf, so the lid that is shut on a fresh visit has to have
     // been carried back as well. See `CollectionsView`.
     const derived = server.virtualCollections[0]
     await app.goTo('collections')
-    await app.choose('.group__header[data-open="false"]')
+    await app.choose('[data-control="collection-kind"] [data-option="virtual"]')
     await app.choose(`[data-collection="${derived.id}"]`)
     await app.waitFor(`document.querySelector('[data-rom]')`, 'the games on the derived shelf')
 
@@ -836,7 +820,7 @@ describe('the artwork a library is mostly made of', () => {
     // the main process answers that by going to the server — or to the copy it
     // saved. Nothing had ever driven it, because every cover the fake served
     // was null.
-    await app.goTo('library')
+    await app.browsePlatform(1)
     await app.waitFor(`document.querySelector('.cover img')`, 'a cover to be drawn')
 
     const src = await app.read<string>(`document.querySelector('.cover img')?.getAttribute('src')`)
@@ -854,6 +838,7 @@ describe('the artwork a library is mostly made of', () => {
   test('and a game RomM has no artwork for falls back to its name', async () => {
     // Not every game has a cover, and the tile for one that does not has to say
     // something rather than leave a hole the size of a cover.
+    await app.browsePlatform(3)
     await app.waitFor(
       `document.querySelector('[data-rom="3"] .cover__fallback')`,
       'the fallback for the game with no art'
@@ -865,8 +850,7 @@ describe('putting a game on a shelf', () => {
   test('the dialog says which shelves this game is already on', async () => {
     // Rom 3 is on none of them — the fake's shelf holds 1 and 2 — so the row
     // starts off, which is the state the toggle below has somewhere to go from.
-    await app.goTo('library')
-    await app.choose('[data-rom="3"]')
+    await app.openGame(server.roms.find((one) => one.id === 3)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.choose('[data-action="collections"]')
 
@@ -929,8 +913,7 @@ describe('putting a game on a shelf', () => {
 
 describe('saying how far through a game you are', () => {
   test('the dialog opens on the answer already given', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="2"]')
+    await app.openGame(server.roms.find((one) => one.id === 2)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.choose('[data-action="status"]')
 
@@ -986,8 +969,7 @@ describe('saying how far through a game you are', () => {
  */
 describe('the achievements of a game', () => {
   test('the tab draws the set, marking the one already earned', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="2"]')
+    await app.openGame(server.roms.find((one) => one.id === 2)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.choose('[data-tab="achievements"]')
 
@@ -1048,8 +1030,7 @@ describe('the achievements of a game', () => {
   })
 
   test('and a game it does not cover has no tab at all', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="3"]')
+    await app.openGame(server.roms.find((one) => one.id === 3)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.waitFor(`document.querySelector('[data-tab="details"]')`, 'the tabs')
 
@@ -1091,10 +1072,10 @@ describe('how long a game has taken', () => {
     server.holdPlaySession({ romId: 1, seconds: 2 * 3600 })
     server.holdPlaySession({ romId: 1, seconds: 3600 })
 
-    await app.goTo('library')
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((one) => one.id === 1)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
 
+    await app.choose('[data-tab="details"]')
     await app.waitFor(
       `[...document.querySelectorAll('.kv__row dt')].some((one) =>
          one.textContent?.includes(${JSON.stringify(en['details.played'])}))`,
@@ -1116,9 +1097,9 @@ describe('how long a game has taken', () => {
   })
 
   test('and a game with neither is given neither row', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="2"]')
+    await app.openGame(server.roms.find((one) => one.id === 2)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
+    await app.choose('[data-tab="details"]')
     await app.waitFor(`document.querySelector('.kv__row')`, 'the details')
 
     assert.equal(await fact(en['details.toBeat']), null, 'a game RomM knows nothing about')
@@ -1159,8 +1140,7 @@ describe('reading the manual of a game', () => {
     app.read<string>(`document.querySelector('.viewer__page')?.src ?? ''`)
 
   test('the tab is a row, and pressing it hands the manual the screen', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="2"]')
+    await app.openGame(server.roms.find((one) => one.id === 2)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.choose('[data-tab="manual"]')
 
@@ -1229,8 +1209,7 @@ describe('reading the manual of a game', () => {
   })
 
   test('and a game the server has no manual for has no tab at all', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="3"]')
+    await app.openGame(server.roms.find((one) => one.id === 3)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.waitFor(`document.querySelector('[data-tab="details"]')`, 'the tabs')
 
@@ -1264,8 +1243,7 @@ describe('looking at the screenshots of a game', () => {
     )
 
   test('the tab draws one thumbnail per shot, and they decode', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="2"]')
+    await app.openGame(server.roms.find((one) => one.id === 2)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.choose('[data-tab="screenshots"]')
 
@@ -1324,10 +1302,9 @@ describe('looking at the screenshots of a game', () => {
   })
 
   test('a game RomM holds no shots for says so', async () => {
-    await app.goTo('library')
     // The game the fake serves without artwork, which is also the one without
     // pictures — an empty tab has to say something rather than be a blank card.
-    await app.choose('[data-rom="3"]')
+    await app.openGame(server.roms.find((one) => one.id === 3)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.choose('[data-tab="screenshots"]')
     await app.waitFor(`document.querySelector('.panel__body .empty')`, 'the empty tab')
@@ -1385,8 +1362,7 @@ describe('marking a game a favourite', () => {
   })
 
   test('pressing it makes the shelf and puts the game on it', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((one) => one.id === 1)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
 
     // Off to begin with, and it has to have been answered before it can be
@@ -1432,8 +1408,7 @@ describe('marking a game a favourite', () => {
   })
 
   test('and pressing it again takes the game off, leaving the shelf behind', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="1"]')
+    await app.openGame(server.roms.find((one) => one.id === 1)!)
     await app.waitFor(
       `document.querySelector('[data-action="favourite"]')?.dataset.on === 'true'`,
       'the heart, still filled in from last time'
@@ -1646,7 +1621,7 @@ describe('reading it in another language', () => {
     // sentence typed here, so a wording change is not a broken test.
     await app.choose('[data-option="fr"]')
     await app.waitFor(
-      `document.querySelector('[data-route="settings"]')?.title === ${JSON.stringify(
+      `document.querySelector('[data-utility-route="settings"]')?.textContent === ${JSON.stringify(
         fr['nav.settings']
       )}`,
       'the menu to come back in French'
@@ -1662,7 +1637,7 @@ describe('reading it in another language', () => {
     // which is what the handles are for.
     await app.choose('[data-option="en"]')
     await app.waitFor(
-      `document.querySelector('[data-route="settings"]')?.title === ${JSON.stringify(
+      `document.querySelector('[data-utility-route="settings"]')?.textContent === ${JSON.stringify(
         en['nav.settings']
       )}`,
       'the menu in English again'
@@ -1793,11 +1768,11 @@ describe('the home screen', () => {
       `document.querySelector('[data-shelf="continue"] .card__title')?.textContent`
     )
     assert.equal(
-      await app.read<string>(`document.querySelector('.hero__title')?.textContent`),
+      await app.read<string>(`document.querySelector('.continue-card strong')?.textContent`),
       shelved
     )
     assert.equal(
-      await app.read<string>(`document.querySelector('.hero__reason')?.textContent`),
+      await app.read<string>(`document.querySelector('.continue-card__reason')?.textContent`),
       en['home.continuePlaying']
     )
   })
@@ -1806,8 +1781,10 @@ describe('the home screen', () => {
     // Focusable, and what the highlight opens on: this is the only screen in
     // RomMix where the first thing under it is not a button, so a hero that
     // draws and does nothing is a press into a page that appears to be stuck.
-    const title = await app.read<string>(`document.querySelector('.hero__title')?.textContent`)
-    await app.choose('.hero')
+    const title = await app.read<string>(
+      `document.querySelector('.continue-card strong')?.textContent`
+    )
+    await app.choose('.continue-card')
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     assert.equal(
       await app.read<string>(`document.querySelector('.game-hero__title')?.textContent`),
@@ -1818,15 +1795,15 @@ describe('the home screen', () => {
 
 describe('the end of the library', () => {
   test('a grid with no more pages behind it says how many that was', async () => {
-    await app.goTo('library')
+    await app.browsePlatform(1)
     await app.waitFor(`document.querySelector('[data-rom="1"]')`, 'the grid')
 
     // The grid pages on a sentinel below it, so "nothing more is coming" is a
     // statement rather than the absence of one — without it a library that has
     // been read to the end is indistinguishable from one still fetching.
     await app.waitFor(
-      `[...document.querySelectorAll('.empty')].some(
-         (one) => one.textContent?.includes(${JSON.stringify(String(server.roms.length))})
+      `[...document.querySelectorAll('.library-end')].some(
+         (one) => one.textContent?.includes(${JSON.stringify(String(server.roms.filter((rom) => rom.platform_id === 1).length))})
        )`,
       'the line saying that is all of them'
     )
@@ -1891,9 +1868,9 @@ describe('what a game says about itself', () => {
     )
 
   test('it draws what the server sent and leaves out what it did not', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="2"]')
+    await app.openGame(server.roms.find((one) => one.id === 2)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
+    await app.choose('[data-tab="details"]')
     await app.waitFor(`document.querySelector('.kv--columns')`, 'the details')
 
     // The fake holds no company and no franchise for this game, and nobody has
@@ -1985,8 +1962,8 @@ describe('what a game says about itself', () => {
       'the format to be kept'
     )
 
-    await app.goTo('library')
-    await app.choose('[data-rom="2"]')
+    await app.openGame(server.roms.find((one) => one.id === 2)!)
+    await app.choose('[data-tab="details"]')
     await app.waitFor(`document.querySelector('.kv--columns')`, 'the details again')
     assert.equal(
       await valueOf(en['details.released']),

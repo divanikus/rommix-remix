@@ -87,8 +87,7 @@ after(async () => {
 
 describe('a game its emulator has more than one way to run', () => {
   test('pressing Play asks which, rather than picking for you', async () => {
-    await app.goTo('library')
-    await app.choose('[data-rom="2"]')
+    await app.openGame(server.roms.find((rom) => rom.id === 2)!)
     await app.waitFor(`document.querySelector('[data-screen="game"]')`, 'the game screen')
     await app.choose('[data-action="download"]')
     await app.waitFor(

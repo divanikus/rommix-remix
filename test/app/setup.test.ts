@@ -110,7 +110,10 @@ describe('signing in for the first time', () => {
     // is the start of a session, not a step into one. Settled rather than
     // arrived, because the scenario below reads the requests its shelves make.
     await atHome(app)
-    await app.waitFor(`document.querySelector('.topbar__user')`, 'the signed-in name')
+    await app.waitFor(
+      `(await window.rommix.server.status()).connected`,
+      'the authenticated connection'
+    )
   })
 
   test('the token it was given is the one it uses from then on', async () => {
