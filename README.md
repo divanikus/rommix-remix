@@ -1,5 +1,82 @@
 <div align="center">
 
+<h1 align="center"><sub><img src="packaging/icon.png" width="40" height="40" alt=""></sub>&nbsp; RomMix-Remix</h1>
+
+**A [RomMix](https://github.com/leclercb/rommix) fork with improved controller input and a richer interface for your own [RomM](https://romm.app) library.**
+
+[Screenshots](docs/screenshots.md) · [Build](#build-on-linux) · [Upstream features](#original-rommix-description) · [Contributing](FORK.md) · [MIT license](LICENSE)
+
+</div>
+
+![Home with last played, random pick, anniversaries and artwork shelves](docs/screenshots/home.webp)
+
+## What changes
+
+- **Controllers:** reworked Linux input handling, reconnects and navigation. Tested with Steam Controller and DualSense plugged in together.
+- **Library:** dedicated Home, Systems, Collections and Search; platform carousel, grouped cover grids, adjustable card sizes, full-width tables and fast letter navigation.
+- **Game cards:** larger covers, artwork backgrounds, screenshots, video with sound, richer metadata, collection/status actions and clearer version selection.
+- **Filters:** RomM-backed categories, properties and playtime ranges, with gamepad tabs and explicit Apply/Cancel.
+- **Menus:** compact main menu, consistent utility navigation, controller hints and predictable Back behavior.
+- **EmuDeck/ES-DE:** send missing metadata, covers, screenshots, videos and other media to ES-DE after downloading a game through EmuDeck. Your existing edits are kept, and updates wait until ES-DE is closed. This option is still experimental.
+
+RomMix's downloads, installed-version preference, removal, save/state sync,
+offline play, emulator integration and BIOS workflows remain. This is a fork,
+not an official RomM or RomMix release.
+
+| Game overview                                                                    | Library table                                                    |
+| -------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| ![Game overview with video and screenshots](docs/screenshots/game-overview.webp) | ![Full-width library table](docs/screenshots/library-table.webp) |
+| Gamepad filters                                                                  | Systems by generation                                            |
+| ![Filter categories](docs/screenshots/filters-categories.webp)                   | ![Systems grouped by generation](docs/screenshots/systems.webp)  |
+
+More views, versions, collections and utility screenshots are in the [gallery](docs/screenshots.md).
+
+## Build on Linux
+
+For now, build from source. We'll publish the first release after trying it on Steam Deck.
+
+Requires Node.js 24+, npm and Python 3. See [CONTRIBUTING.md](CONTRIBUTING.md) for development details.
+
+```sh
+git clone --branch main https://github.com/divanikus/rommix-remix.git
+cd rommix-remix
+npm ci
+npm run appimage
+```
+
+The result is `dist/RomMix-Remix-x86_64.AppImage` (or the architecture built).
+Make it executable. For Steam, place `packaging/rommix-steam.sh` beside the AppImage
+and add the script as a non-Steam game.
+
+To try ES-DE export, enable **Enrich ES-DE after downloads (Experimental)** in
+Settings → Games. It starts off disabled and requires an existing EmuDeck setup.
+
+The fork uses `~/rommix-remix` and a separate Chromium profile by default. It does
+not import the original client's account/settings automatically. The existing
+`ROMMIX_HOME` override remains available; choose a separate directory when testing.
+Updates are checked against this fork's releases, not the original repository.
+
+## Upstream and credits
+
+Built on **RomMix by Benjamin Leclerc**, with its MIT license, attribution, history
+and original feature documentation retained in [README.upstream.md](README.upstream.md).
+That guide describes upstream names, download links and defaults; use the fork
+instructions above for installation. RomM and Ludo informed the interface design.
+
+We keep changes in separate commits so they can be contributed back to RomMix.
+See [FORK.md](FORK.md) for the change history and development notes.
+Game artwork shown in screenshots belongs to its respective owners; no games or
+BIOS files are distributed here.
+
+---
+
+## Original RomMix description
+
+The original description is retained below. Its release links and application
+names refer to upstream RomMix; use the Remix build instructions above for this fork.
+
+<div align="center">
+
 <img src="packaging/icon.png" width="128" alt="RomMix logo">
 
 # RomMix

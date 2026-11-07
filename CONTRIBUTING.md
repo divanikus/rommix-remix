@@ -1,4 +1,6 @@
-# Contributing to RomMix
+# Contributing to RomMix-Remix
+
+See [FORK.md](FORK.md) for the change map and upstream contribution workflow.
 
 Thanks for looking. RomMix is a front end for [RomM](https://romm.app) that runs
 on a television and is driven with a controller, and most of what makes it hard
@@ -13,8 +15,8 @@ stripping and a `module.registerHooks` loader — and nothing an end user instal
 depends on it, the AppImage carrying Electron's own runtime.
 
 ```bash
-git clone https://github.com/leclercb/rommix.git
-cd rommix
+git clone --branch main https://github.com/divanikus/rommix-remix.git
+cd rommix-remix
 npm install
 npx install-electron   # Electron no longer fetches its binary on install
 npm run dev
@@ -22,7 +24,7 @@ npm run dev
 
 `npm run dev` wants a real RomM server. If you do not have one to hand,
 `npm run preview:app` runs the interface in a browser against a stub library —
-see [The web preview](README.md#the-web-preview-and-the-site).
+see [The web preview](README.upstream.md#the-web-preview-and-the-site).
 
 ## Before you open a pull request
 
