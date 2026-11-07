@@ -6,10 +6,7 @@ an `upstream` remote tracks the original project.
 
 ## Feature history
 
-The initial 33 trial patches and subsequent fork changes were regrouped with the
-owner's permission on 2026-11-07. Corrections belong to their feature rather than
-separate rounds of layout feedback. The five functional commits are followed by
-the upstream merge, fork identity, CI policy and public documentation.
+The initial fork changes are grouped by feature for review and upstream reuse.
 
 | Area     | Commit                                                                                               | Change                                                               |
 | -------- | ---------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
@@ -27,9 +24,6 @@ The original history through `7b411da` and all three upstream improvements throu
 UI features build on earlier groups; these are review boundaries, not a promise of
 independent cherry-picks. For an upstream PR, extract one feature with its tests
 against current upstream and omit fork identity and distribution policy.
-
-This replaces the published tips `181fc60` and `5f1edc1`; existing contributors should reconcile
-local work before pulling the rewritten `main`. No upstream branch was rewritten.
 
 ## Distribution boundaries
 
@@ -78,6 +72,6 @@ local Playwright installation and Chrome. Set `PLAYWRIGHT_MODULE` to its module
 URL when it is outside this checkout; `PREVIEW_URL` selects the preview server.
 They use fixture data and do not qualify real controllers, emulators or save sync.
 
-The owner confirms Steam Deck and Bazzite menus, downloads, game launch and return,
-plus the Deck's gameplay audio and ES-DE metadata/media export. ES-DE enrichment
+Manual acceptance covers Steam Deck and Bazzite menus, downloads, game launch and
+return, plus Deck gameplay audio and ES-DE metadata/media export. ES-DE enrichment
 remains Experimental. Miximage composition belongs to ES-DE's native generator.

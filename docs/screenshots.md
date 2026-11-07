@@ -1,7 +1,7 @@
 # RomMix-Remix screenshots
 
-Screenshots from our Bazzite TV setup and RomM library. They were taken before
-the app was renamed, so you'll still see RomMix in the footer.
+Interface examples from the Linux application. Earlier captures retain the
+original RomMix name in the footer.
 
 ## Home
 

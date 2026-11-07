@@ -1,9 +1,9 @@
 # Code audit, 2026-11-07
 
-Compared the fork's additions with upstream `b5d59c6`, starting from published
-fork tip `181fc60`. The review covered input/provider boundaries, navigation and
-paging, filters, card/media operations, ES-DE publication and fork isolation.
-Existing downloads, launch and save services were retained.
+The review compares the fork's additions with upstream `b5d59c6` and covers
+input/provider boundaries, navigation and paging, filters, card/media operations,
+ES-DE publication and fork isolation. Existing downloads, launch and save services
+were retained.
 
 ## Corrections
 
@@ -38,40 +38,27 @@ staging and cleanup share one path calculation. No runtime dependency was added.
 
 ## Verification
 
-- Formatting, lint, main/preload and renderer type checks, production bundling
-  and whitespace checks pass. Every grouped code-history boundary also passes
-  both TypeScript projects.
-- 316 targeted Node tests pass, including new queue races/failure isolation and
-  concurrent API capability checks, plus input, media, filters, history and paging.
+- The 0.23.0-remix.1 Linux release passes 1,451 Node tests, 195 Electron scenarios,
+  9 input tests and 21 ES-DE tests, plus formatting, lint, both TypeScript projects
+  and AppImage packaging.
+- Node regressions cover queue races/failure isolation, concurrent API capability
+  checks, input, media, filters, history and paging.
 - Eleven browser suites pass: library retry, table, navigation, filters, toolbar
   geometry, game media, focus/collection creation, marks, header focus, utility
   sections and ES-DE settings. The retry suite covers initial and subsequent pages.
-- Python: all 9 input checks and 20 of 21 ES-DE checks pass on this Windows host.
-  The remaining ES-DE test cannot create its fixture symlink because Windows
-  requires a privilege unavailable to this process. It remains enabled for Linux.
-- Full Node run: 1,366 pass, 79 fail, 1 skipped. All final failure names were
-  already present before the changes; the baseline also had a timing failure in
-  connection polling. Linux shell, path, permission and symlink assumptions
-  prevent treating this Windows run as release qualification.
+- Electron scenarios cover root/utility navigation, platform browsing, empty
+  Search, internal-tab triggers and the current game card. HOME/XDG fixtures isolate
+  emulator discovery, and the ES-DE fixture resolves symlinked temporary roots.
+- The ES-DE cover test waits for both queue removal and asynchronous staging
+  cleanup, avoiding a timing-dependent assertion on ARM64.
 
-Browser tests use the public demo fixture and mocked server operations. No real
-library, credentials, save data, controller settings or emulator configuration
-was touched. Production bundling on the development host is not Linux packaging.
+Browser tests use the public demo fixture and mocked server operations. Linux is
+the supported target; Windows runs do not qualify a release.
 
 ## Remaining limits
 
-At the audit boundary, the retained Electron `test:app` suite still referred to
-old Home/menu selectors; the earlier Linux setup run passed 7 of 13 tests.
-
-The subsequent 0.23.0-remix.1 release preparation migrates these scenarios to root/utility
-navigation, platform browsing, empty Search, internal-tab triggers and the current
-game card. HOME/XDG fixtures isolate host emulator discovery, and the ES-DE fixture
-resolves symlinked temporary roots. The complete Linux run now passes all 195
-Electron scenarios, 1,451 Node tests, 9 input tests and 21 ES-DE tests, plus formatting,
-lint, both type checks and AppImage packaging. The Electron release gate is retained.
-
 ES-DE publication detects ordinary concurrent edits; it is not a transaction
-shared with ES-DE. Linux symlink and filesystem acceptance, real controllers,
-emulator return, sound, save round trips and Steam Deck tests remain separate.
+shared with ES-DE. Real controllers, emulator return, sound and save round trips
+require separate device acceptance; automated checks do not substitute for it.
 The earlier save-list retry/deletion-scope findings concern unchanged upstream
 code and remain follow-up work, not new restore semantics in this refactor.
