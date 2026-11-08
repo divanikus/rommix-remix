@@ -47,11 +47,12 @@ The initial feature map above is a starting point for extraction. Later fixes
 remain ordinary commits so an upstream contribution can include them without
 pulling in unrelated fork changes.
 
-Before proposing ES-DE export upstream, move its direct EmuDeck eligibility/path
-rules behind the configuration boundary and localize the remaining diagnostic
-reasons shown in Settings. The existing source checks do not catch every returned
-message or enforce that architectural boundary; passing CI does not close these
-two gaps.
+ES-DE export eligibility and strict discovery paths are declared by the emulator
+descriptor in `src/config/`. The helper receives that trusted configuration
+separately from queued downloads and verifies the actual files before publishing.
+Its diagnostic codes resolve through the shared catalogs before reaching Settings;
+technical exception details stay in the log. Keep these boundaries when extracting
+the feature for upstream. Generated multidisc playlists remain separate work.
 
 ## Distribution boundaries
 

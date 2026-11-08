@@ -14,6 +14,37 @@ import type { Catalog } from './catalog.ts'
  * Se tutea, que es como habla el resto de una interfaz de salón.
  */
 export const es: Catalog = {
+  'settings.esdeLinux': 'El enriquecimiento de ES-DE requiere Linux.',
+  'settings.esdePython': 'El enriquecimiento de ES-DE requiere Python 3.',
+  'settings.esdeStorage':
+    'Elige las carpetas ROM de los emuladores para usar la biblioteca verificada.',
+  'settings.esdePaths': 'Configura rutas ROM y multimedia explícitas y absolutas en ES-DE.',
+  'settings.esdeRoms':
+    'No se ha podido verificar una única carpeta ROM en los ajustes de la integración.',
+  'settings.esdeLaunchers': 'No se encuentra la carpeta de lanzadores configurada.',
+  'settings.esdeLegacy': 'Las ubicaciones antiguas de listas de juegos ES-DE no son compatibles.',
+  'settings.esdeMismatch': 'ES-DE y la integración seleccionada usan carpetas ROM diferentes.',
+  'settings.esdeDirectories': 'Falta una carpeta ROM, multimedia o de listas de juegos de ES-DE.',
+  'settings.esdeWritable': 'No se puede escribir en la carpeta de metadatos de ES-DE.',
+  'settings.esdeOutside':
+    'Un archivo está fuera de la biblioteca o de la carpeta temporal verificada.',
+  'settings.esdeXml':
+    'El archivo XML de ES-DE no es válido, no es compatible o es demasiado grande.',
+  'settings.esdeDuplicates':
+    'Se han encontrado entradas duplicadas para este juego en la lista de ES-DE.',
+  'settings.esdeMediaType': 'Este tipo de archivo multimedia de ES-DE no es compatible.',
+  'settings.esdeEligibility': 'No hay una única integración ES-DE verificada para esta descarga.',
+  'settings.esdeLaunchMissing': 'Falta el archivo de inicio del juego descargado.',
+  'settings.esdeLayout':
+    'Las estructuras ES-DE aplanadas o con carpetas tratadas como archivos aún no son compatibles.',
+  'settings.esdeCustomSystem': 'Las rutas de sistemas ES-DE personalizadas aún no son compatibles.',
+  'settings.esdeStaging': 'Falta la carpeta temporal de archivos multimedia de ES-DE.',
+  'settings.esdeRunning':
+    'Cierra ES-DE para publicar los metadatos y archivos multimedia pendientes.',
+  'settings.esdeChanged':
+    'ES-DE o sus metadatos han cambiado. Se volverá a intentar la publicación.',
+  'settings.esdeFailed':
+    'No se ha podido completar el enriquecimiento de ES-DE. Consulta el registro de la aplicación.',
   'error.esdeMedia': 'Falló la descarga del medio de ES-DE ({status})',
   'error.esdeMediaSize': 'Este archivo multimedia supera el límite de transferencia de 512 MiB.',
   'error.esdeMediaIncomplete':

@@ -44,6 +44,7 @@ export const xenia: EmulatorDescriptor = {
   // One Xbox 360 emulator, one way to run a game.
   variants: undefined,
   ownsLibrary: false,
+  esde: undefined,
   dirs: {
     // Xenia has no ROM folder and no game list: a game is opened by path.
     // RomMix's own folder is therefore the honest answer.

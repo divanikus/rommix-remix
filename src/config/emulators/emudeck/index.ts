@@ -355,6 +355,13 @@ export const emudeck: EmulatorDescriptor = {
   // EmuDeck builds the Emulation folder during its own setup, and until that
   // has happened there is nowhere to install a ROM to.
   ownsLibrary: true,
+  esde: {
+    settings: ['emudeck/settings.sh', '.config/EmuDeck/settings.sh'],
+    romsKey: 'romsPath',
+    toolsKey: 'toolsPath',
+    launcherDirectory: 'launchers',
+    dataDirectory: 'ES-DE'
+  },
   // Discovered from EmuDeck's settings rather than declared: every one of them
   // is a path the user chose, and an SD card is the usual reason.
   dirs: {},

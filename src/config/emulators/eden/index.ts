@@ -53,6 +53,7 @@ export const eden: EmulatorDescriptor = {
   // One Switch emulator, one way to run a game.
   variants: undefined,
   ownsLibrary: false,
+  esde: undefined,
   dirs: {
     // Eden ships no ROM folder at all: `Paths\romsPath` is empty and its game
     // list is the virtual SDMC/NAND entries plus directories the user adds.

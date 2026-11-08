@@ -23,6 +23,30 @@
  */
 
 export const en = {
+  'settings.esdeLinux': 'ES-DE enrichment requires Linux.',
+  'settings.esdePython': 'ES-DE enrichment requires Python 3.',
+  'settings.esdeStorage': 'Choose emulator ROM folders to use the verified library.',
+  'settings.esdePaths': 'Configure explicit, absolute ROM and media paths in ES-DE.',
+  'settings.esdeRoms': 'A unique ROM directory could not be verified in the integration settings.',
+  'settings.esdeLaunchers': 'The configured launcher directory is missing.',
+  'settings.esdeLegacy': 'Legacy ES-DE gamelist locations are not supported.',
+  'settings.esdeMismatch': 'ES-DE and the selected integration use different ROM directories.',
+  'settings.esdeDirectories': 'An ES-DE ROM, media or gamelist directory is missing.',
+  'settings.esdeWritable': 'The ES-DE metadata directory is not writable.',
+  'settings.esdeOutside': 'A file is outside the verified library or staging directory.',
+  'settings.esdeXml': 'The ES-DE XML file is invalid, unsupported or too large.',
+  'settings.esdeDuplicates': 'Duplicate entries for this game were found in the ES-DE gamelist.',
+  'settings.esdeMediaType': 'This ES-DE media type is not supported.',
+  'settings.esdeEligibility':
+    'No unique verified ES-DE integration is available for this download.',
+  'settings.esdeLaunchMissing': 'The completed game’s launch file is missing.',
+  'settings.esdeLayout': 'Flattened and directory-as-file ES-DE layouts are not yet supported.',
+  'settings.esdeCustomSystem': 'Custom ES-DE system paths are not yet supported.',
+  'settings.esdeStaging': 'The ES-DE media staging directory is missing.',
+  'settings.esdeRunning': 'Close ES-DE to publish pending metadata and artwork.',
+  'settings.esdeChanged': 'ES-DE or its metadata changed. Publication will be retried.',
+  'settings.esdeFailed':
+    'ES-DE enrichment could not finish. Check the application log for details.',
   'error.esdeMedia': 'ES-DE media request failed ({status})',
   'error.esdeMediaSize': 'This ES-DE media file exceeds the 512 MiB transfer limit.',
   'error.esdeMediaIncomplete':

@@ -12,6 +12,37 @@ import type { Catalog } from './catalog.ts'
  * en anglais.
  */
 export const fr: Catalog = {
+  'settings.esdeLinux': 'L’enrichissement ES-DE nécessite Linux.',
+  'settings.esdePython': 'L’enrichissement ES-DE nécessite Python 3.',
+  'settings.esdeStorage':
+    'Choisissez les dossiers ROM des émulateurs pour utiliser la bibliothèque vérifiée.',
+  'settings.esdePaths': 'Configurez des chemins ROM et médias explicites et absolus dans ES-DE.',
+  'settings.esdeRoms':
+    'Aucun dossier ROM unique n’a pu être vérifié dans les paramètres de l’intégration.',
+  'settings.esdeLaunchers': 'Le dossier des lanceurs configuré est introuvable.',
+  'settings.esdeLegacy':
+    'Les anciens emplacements des listes de jeux ES-DE ne sont pas pris en charge.',
+  'settings.esdeMismatch':
+    'ES-DE et l’intégration sélectionnée utilisent des dossiers ROM différents.',
+  'settings.esdeDirectories': 'Un dossier ROM, médias ou listes de jeux ES-DE est introuvable.',
+  'settings.esdeWritable': 'Le dossier des métadonnées ES-DE n’est pas accessible en écriture.',
+  'settings.esdeOutside':
+    'Un fichier se trouve hors de la bibliothèque ou du dossier temporaire vérifié.',
+  'settings.esdeXml': 'Le fichier XML ES-DE est invalide, non pris en charge ou trop volumineux.',
+  'settings.esdeDuplicates': 'La liste de jeux ES-DE contient plusieurs entrées pour ce jeu.',
+  'settings.esdeMediaType': 'Ce type de média ES-DE n’est pas pris en charge.',
+  'settings.esdeEligibility':
+    'Aucune intégration ES-DE vérifiée et unique n’est disponible pour ce téléchargement.',
+  'settings.esdeLaunchMissing': 'Le fichier de lancement du jeu téléchargé est introuvable.',
+  'settings.esdeLayout':
+    'Les structures ES-DE aplaties ou avec des dossiers traités comme des fichiers ne sont pas encore prises en charge.',
+  'settings.esdeCustomSystem':
+    'Les chemins de systèmes ES-DE personnalisés ne sont pas encore pris en charge.',
+  'settings.esdeStaging': 'Le dossier temporaire des médias ES-DE est introuvable.',
+  'settings.esdeRunning': 'Fermez ES-DE pour publier les métadonnées et les médias en attente.',
+  'settings.esdeChanged': 'ES-DE ou ses métadonnées ont changé. La publication sera réessayée.',
+  'settings.esdeFailed':
+    'L’enrichissement ES-DE n’a pas pu se terminer. Consultez le journal de l’application.',
   'error.esdeMedia': 'Échec du téléchargement du média ES-DE ({status})',
   'error.esdeMediaSize': 'Ce média ES-DE dépasse la limite de transfert de 512 Mio.',
   'error.esdeMediaIncomplete':

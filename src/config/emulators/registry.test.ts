@@ -42,6 +42,7 @@ const FIELD_ORDER = [
   'systems',
   'variants',
   'ownsLibrary',
+  'esde',
   'dirs',
   'layout',
   'flatLibrary',

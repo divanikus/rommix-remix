@@ -1,17 +1,30 @@
 import assert from 'node:assert/strict'
 import { test, afterEach } from 'node:test'
-import { mkdtempSync, existsSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  mkdirSync,
+  mkdtempSync,
+  existsSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync
+} from 'node:fs'
+import { execFileSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import { emulatorById } from '@config/emulators'
 import type { InstalledRom, RommRom } from '@shared/types'
 import type { RommClient } from './romm/index.ts'
 import { Store } from './store.ts'
-import { EsdeEnrichment, esdeFields, esdeArtwork, type EsdeStatus } from './esde.ts'
+import { setLanguage, t } from './i18n.ts'
+import { EsdeEnrichment, esdeFields, esdeArtwork, esdeResult, type EsdeResult } from './esde.ts'
 
 const roots: string[] = []
 const workers: EsdeEnrichment[] = []
 const originalRoot = process.env.ROMMIX_HOME
 afterEach(() => {
+  setLanguage('auto')
   workers.splice(0).forEach((worker) => worker.stop())
   roots.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true }))
   if (originalRoot === undefined) delete process.env.ROMMIX_HOME
@@ -50,7 +63,7 @@ function fixture(client = {} as RommClient) {
   const store = new Store(join(root, 'config'))
   store.setServer({ baseUrl: 'https://server.example', authMode: 'device' })
   store.addInstalled(entry)
-  let result: EsdeStatus = { state: 'deferred', reason: 'ES-DE running' }
+  let result: EsdeResult = { state: 'deferred', reason: 'settings.esdeRunning' }
   let called = 0
   const published: Buffer[] = []
   const worker = new EsdeEnrichment(store, client, async (_action, job) => {
@@ -65,7 +78,7 @@ function fixture(client = {} as RommClient) {
     worker,
     published,
     called: () => called,
-    answer: (next: EsdeStatus) => {
+    answer: (next: EsdeResult) => {
       result = next
     }
   }
@@ -80,6 +93,102 @@ async function until(predicate: () => boolean | Promise<boolean>): Promise<void>
     await quiet()
   }
 }
+
+test('helper protocol rejects raw diagnostics and unknown codes', () => {
+  for (const value of [
+    null,
+    'bad JSON',
+    {},
+    { state: 'unexpected' },
+    { state: 'blocked', reasonCode: 'future-code' },
+    { state: 'blocked', reasonCode: '__proto__' },
+    { state: 'blocked', reason: '/private/path: raw Python exception' }
+  ]) {
+    assert.deepEqual(esdeResult(value), { state: 'blocked', reason: 'settings.esdeUnavailable' })
+  }
+  assert.deepEqual(esdeResult({ state: 'deferred', reasonCode: 'running' }), {
+    state: 'deferred',
+    reason: 'settings.esdeRunning'
+  })
+})
+
+test('pending helper diagnostics follow language changes before IPC', async () => {
+  const f = fixture()
+  f.store.updateSettings({ enrichEsde: true, romStorage: 'emulator' })
+  f.answer(esdeResult({ state: 'deferred', reasonCode: 'running' }))
+  await f.worker.completed(rom, entry)
+  await until(() => f.called() > 0)
+  f.answer({ state: 'ready' })
+  const translated = new Set<string>()
+  for (const language of ['en', 'fr', 'de', 'es'] as const) {
+    setLanguage(language)
+    const status = await f.worker.status()
+    assert.equal(status.reason, t('settings.esdeRunning'))
+    assert.equal(status.pending, 1)
+    translated.add(status.reason!)
+  }
+  assert.equal(translated.size, 4)
+})
+
+test(
+  'configured integration and helper share discovery and publication protocol',
+  {
+    skip: process.platform !== 'linux'
+  },
+  () => {
+    const f = fixture()
+    const integration = { ...emulatorById(entry.emulatorId)!.esde!, emulatorId: entry.emulatorId }
+    const roms = join(f.root, 'library/roms')
+    const media = join(f.root, 'library/media')
+    const data = join(f.root, integration.dataDirectory)
+    const settings = join(f.root, integration.settings[0])
+    for (const directory of [
+      join(roms, entry.system),
+      media,
+      join(data, 'settings'),
+      join(data, 'gamelists'),
+      dirname(settings),
+      join(f.root, 'tools', integration.launcherDirectory)
+    ])
+      mkdirSync(directory, { recursive: true })
+    writeFileSync(
+      settings,
+      `${integration.romsKey}="${roms}"\n${integration.toolsKey}="${f.root}/tools"\n`
+    )
+    const xml = join(data, 'settings/es_settings.xml')
+    writeFileSync(
+      xml,
+      `<string name="ROMDirectory" value="${roms}"/>\n<string name="MediaDirectory" value="${media}"/>`
+    )
+    const launchPath = join(roms, entry.system, 'Game.cue')
+    writeFileSync(launchPath, 'FILE "Game.bin" BINARY')
+    const request = {
+      home: f.root,
+      integration,
+      job: { entry: { ...entry, launchPath }, fields: esdeFields(rom) }
+    }
+    const call = (action: string) =>
+      esdeResult(
+        JSON.parse(
+          execFileSync(
+            'python3',
+            ['-I', fileURLToPath(new URL('./esde/enrich.py', import.meta.url))],
+            { input: JSON.stringify({ ...request, action }), encoding: 'utf8' }
+          )
+        )
+      )
+    assert.equal(call('probe').state, 'ready')
+    assert.equal(call('publish').state, 'done')
+    const gamelist = join(data, 'gamelists', entry.system, 'gamelist.xml')
+    const before = readFileSync(gamelist)
+    writeFileSync(
+      xml,
+      `<string name="ROMDirectory" value="${f.root}"/>\n<string name="MediaDirectory" value="${media}"/>`
+    )
+    assert.deepEqual(call('publish'), { state: 'blocked', reason: 'settings.esdeMismatch' })
+    assert.deepEqual(readFileSync(gamelist), before)
+  }
+)
 
 test('metadata excludes user curation, normalizes date and score', () => {
   assert.deepEqual(esdeFields(rom), {
@@ -204,6 +313,10 @@ test('incomplete video stays pending and a complete retry publishes and cleans s
   f.answer({ state: 'done', needed: ['videos'] })
   await f.worker.completed({ ...rom, path_video: 'roms/8/video.mp4' }, entry)
   await until(async () => !!(await f.worker.status()).reason)
+  setLanguage('fr')
+  assert.equal((await f.worker.status()).reason, t('error.esdeMediaIncomplete'))
+  setLanguage('de')
+  assert.equal((await f.worker.status()).reason, t('error.esdeMediaIncomplete'))
   const queue = join(f.root, 'config/esde-pending')
   assert.equal(attempts, 1)
   assert.equal(existsSync(join(queue, '8.json')), true)
@@ -242,7 +355,7 @@ test('a corrupt queue entry does not starve later completed downloads', async ()
   f.answer({ state: 'done' })
   await f.worker.drain()
   assert.deepEqual(readdirSync(queue), ['1.json'])
-  assert.match((await f.worker.status()).reason!, /JSON|property/i)
+  assert.equal((await f.worker.status()).reason, t('settings.esdeFailed'))
 })
 
 test('a failed media request does not starve the next queued game', async () => {
@@ -254,7 +367,7 @@ test('a failed media request does not starve the next queued game', async () => 
   f.store.updateSettings({ enrichEsde: true, romStorage: 'emulator' })
   f.answer({ state: 'done', needed: ['videos'] })
   await f.worker.completed({ ...rom, path_video: 'roms/8/video.mp4' }, entry)
-  await until(async () => (await f.worker.status()).reason === 'offline media')
+  await until(async () => (await f.worker.status()).reason === t('settings.esdeFailed'))
   const next = { ...entry, romId: 9 }
   f.store.addInstalled(next)
   await f.worker.completed({ ...rom, id: 9 }, next)

@@ -4,7 +4,9 @@ import unittest
 from unittest.mock import patch
 import shutil
 from xml.dom import minidom
-from enrich import discover, merge, publish, settings_values
+from enrich import EnrichmentError, discover, main, merge, publish, settings_values
+import io
+import json
 
 
 class EnrichmentTests(unittest.TestCase):
@@ -14,12 +16,15 @@ class EnrichmentTests(unittest.TestCase):
         self.home = Path(self.temp.name).resolve()
         self.roms = self.home / 'SD card/roms'
         self.media = self.home / 'SD card/media'
-        self.data = self.home / 'ES-DE'
+        self.data = self.home / 'frontend'
+        self.integration = {'emulatorId': 'test-suite', 'settings': ['suite/settings.sh', '.config/suite/settings.sh'],
+                            'romsKey': 'libraryPath', 'toolsKey': 'scriptsPath',
+                            'launcherDirectory': 'launchers', 'dataDirectory': 'frontend'}
         for directory in [self.roms / 'psx', self.media, self.data / 'gamelists',
-                          self.data / 'settings', self.home / 'emudeck', self.home / 'tools/launchers']:
+                          self.data / 'settings', self.home / 'suite', self.home / 'tools/launchers']:
             directory.mkdir(parents=True, exist_ok=True)
-        (self.home / 'emudeck/settings.sh').write_text(
-            'emulationPath="$HOME"/"SD card"\nromsPath="$emulationPath/roms"\ntoolsPath="$HOME/tools"\n')
+        (self.home / 'suite/settings.sh').write_text(
+            'emulationPath="$HOME"/"SD card"\nlibraryPath="$emulationPath/roms"\nscriptsPath="$HOME/tools"\n')
         self.config = self.data / 'settings/es_settings.xml'
         self.config.write_text(f'<?xml version="1.0"?>\n<string name="ROMDirectory" value="{self.roms}"/>\n'
                                f'<string name="MediaDirectory" value="{self.media}"/>\n'
@@ -27,7 +32,7 @@ class EnrichmentTests(unittest.TestCase):
         self.game = self.roms / 'psx/Game.cue'
         self.game.write_text('FILE "Game.bin" BINARY')
         self.target = self.data / 'gamelists/psx/gamelist.xml'
-        self.job = {'entry': {'emulatorId': 'emudeck', 'system': 'psx', 'launchPath': str(self.game)},
+        self.job = {'entry': {'emulatorId': 'test-suite', 'system': 'psx', 'launchPath': str(self.game)},
                     'fields': {'name': 'Server name', 'desc': 'A & B <story>', 'genre': 'Action'}}
 
     def staged(self, kind, extension, data):
@@ -38,27 +43,59 @@ class EnrichmentTests(unittest.TestCase):
         return {'kind': kind, 'extension': extension, 'source': str(file), 'size': len(data)}
 
     def test_verified_custom_drive_and_rootless_settings(self):
-        self.assertEqual(discover(self.home)['roms'], str(self.roms))
+        self.assertEqual(discover(self.home, self.integration)['roms'], str(self.roms))
+
+    def test_conflicting_sources_do_not_pick_a_library(self):
+        alternate = self.home / self.integration['settings'][1]
+        alternate.parent.mkdir(parents=True)
+        alternate.write_text('libraryPath="$HOME"\nscriptsPath="$HOME/tools"\n')
+        with self.assertRaises(EnrichmentError) as error:
+            discover(self.home, self.integration)
+        self.assertEqual(error.exception.code, 'roms')
+
+    def test_publication_rereads_integration_settings(self):
+        discover(self.home, self.integration)
+        (self.home / self.integration['settings'][0]).write_text(
+            'libraryPath="$HOME"\nscriptsPath="$HOME/tools"\n')
+        with self.assertRaises(EnrichmentError) as error:
+            publish(self.home, self.job, self.integration, lambda: False)
+        self.assertEqual(error.exception.code, 'mismatch')
+        self.assertFalse(self.target.exists())
+
+    def test_protocol_returns_codes_and_requires_trusted_configuration(self):
+        request = {'action': 'probe', 'home': str(self.home), 'integration': self.integration}
+        cases = [(request, 'ready', 'running'),
+                 ({'action': 'probe', 'home': str(self.home)}, 'blocked', 'configuration')]
+        for payload, state, code in cases:
+            output = io.StringIO()
+            with patch('enrich.sys.stdin', io.StringIO(json.dumps(payload))), \
+                    patch('enrich.sys.stdout', output), patch('enrich.running', return_value=True):
+                main()
+            result = json.loads(output.getvalue())
+            self.assertEqual(result['state'], state)
+            self.assertEqual(result['reasonCode'], code)
+            self.assertNotIn('reason', result)
+        self.assertFalse(self.target.exists())
 
     def test_does_not_execute_shell_settings(self):
-        p = self.home / 'emudeck/settings.sh'
-        p.write_text('romsPath="$(touch /tmp/not-allowed)"\n')
-        self.assertNotIn('romsPath', settings_values(p, self.home))
+        p = self.home / 'suite/settings.sh'
+        p.write_text('libraryPath="$(touch /tmp/not-allowed)"\n')
+        self.assertNotIn('libraryPath', settings_values(p, self.home))
 
     def test_single_quotes_do_not_expand_home(self):
-        p = self.home / 'emudeck/settings.sh'
-        p.write_text("romsPath='$HOME/roms'\ntoolsPath=~/tools # comment\n")
+        p = self.home / 'suite/settings.sh'
+        p.write_text("libraryPath='$HOME/roms'\nscriptsPath=~/tools # comment\n")
         values = settings_values(p, self.home)
-        self.assertNotIn('romsPath', values)
-        self.assertEqual(Path(values['toolsPath']), self.home / 'tools')
+        self.assertNotIn('libraryPath', values)
+        self.assertEqual(Path(values['scriptsPath']), self.home / 'tools')
 
     def test_mismatching_roots_block(self):
         self.config.write_text(self.config.read_text().replace(str(self.roms), str(self.home)))
-        with self.assertRaises(ValueError): discover(self.home)
+        with self.assertRaises(ValueError): discover(self.home, self.integration)
 
     def test_legacy_locations_block(self):
         self.config.write_text(self.config.read_text().replace('value="false"', 'value="true"'))
-        with self.assertRaises(ValueError): discover(self.home)
+        with self.assertRaises(ValueError): discover(self.home, self.integration)
 
     def test_owner_values_unknown_fields_and_comments_survive(self):
         data = b'<gameList><!--keep--><game custom="yes"><path>./Game.cue</path><name>Owner</name><favorite>true</favorite><playcount>12</playcount><altemulator>standalone</altemulator><private><x/></private></game></gameList>'
@@ -86,56 +123,56 @@ class EnrichmentTests(unittest.TestCase):
                 merge(data.encode(encoding), './Game.cue', {})
 
     def test_only_completed_launch_target_is_published_and_repeat_unchanged(self):
-        result = publish(self.home, self.job, lambda: False)
+        result = publish(self.home, self.job, self.integration, lambda: False)
         self.assertEqual(result['state'], 'done')
         self.assertIn(b'<path>./Game.cue</path>', self.target.read_bytes())
         self.assertNotIn(b'Game.bin', self.target.read_bytes())
         before = self.target.stat().st_mtime_ns
-        self.assertFalse(publish(self.home, self.job, lambda: False)['changed'])
+        self.assertFalse(publish(self.home, self.job, self.integration, lambda: False)['changed'])
         self.assertEqual(before, self.target.stat().st_mtime_ns)
 
     def test_existing_absolute_path_is_not_duplicated(self):
         self.target.parent.mkdir()
         self.target.write_text(f'<gameList><game><path>{self.game}</path><name>Owner</name></game></gameList>')
-        publish(self.home, self.job, lambda: False)
+        publish(self.home, self.job, self.integration, lambda: False)
         self.assertEqual(len(minidom.parse(str(self.target)).getElementsByTagName('game')), 1)
 
     def test_running_esde_defers_all_writes(self):
-        self.assertEqual(publish(self.home, self.job, lambda: True)['state'], 'deferred')
+        self.assertEqual(publish(self.home, self.job, self.integration, lambda: True)['state'], 'deferred')
         self.assertFalse(self.target.exists())
 
     def test_esde_start_before_replace_defers(self):
         calls = iter([False, True])
-        self.assertEqual(publish(self.home, self.job, lambda: next(calls))['state'], 'deferred')
+        self.assertEqual(publish(self.home, self.job, self.integration, lambda: next(calls))['state'], 'deferred')
         self.assertFalse(self.target.exists())
         self.assertEqual(list(self.target.parent.iterdir()), [])
 
     def test_foreign_emulator_and_missing_launch_are_rejected(self):
-        self.job['entry']['emulatorId'] = 'retrodeck'
-        with self.assertRaises(ValueError): publish(self.home, self.job, lambda: False)
-        self.job['entry']['emulatorId'] = 'emudeck'
+        self.job['entry']['emulatorId'] = 'other-suite'
+        with self.assertRaises(ValueError): publish(self.home, self.job, self.integration, lambda: False)
+        self.job['entry']['emulatorId'] = 'test-suite'
         self.game.unlink()
-        with self.assertRaises(ValueError): publish(self.home, self.job, lambda: False)
+        with self.assertRaises(ValueError): publish(self.home, self.job, self.integration, lambda: False)
 
     def test_symlink_escape_is_rejected(self):
         outside = self.home / 'outside.cue'
         outside.write_text('outside')
         self.game.unlink()
         self.game.symlink_to(outside)
-        with self.assertRaises(ValueError): publish(self.home, self.job, lambda: False)
+        with self.assertRaises(ValueError): publish(self.home, self.job, self.integration, lambda: False)
 
     def test_custom_system_path_is_rejected(self):
         custom = self.data / 'custom_systems/es_systems.xml'
         custom.parent.mkdir()
         custom.write_text('<systemList><system><name>psx</name><path>/other</path></system></systemList>')
-        with self.assertRaises(ValueError): publish(self.home, self.job, lambda: False)
+        with self.assertRaises(ValueError): publish(self.home, self.job, self.integration, lambda: False)
 
     def test_owner_art_is_not_replaced(self):
         cover = self.media / 'psx/covers/Game.jpg'
         cover.parent.mkdir(parents=True)
         cover.write_bytes(b'owner')
         self.job['media'] = [self.staged('covers', '.png', b'server')]
-        publish(self.home, self.job, lambda: False, self.home / '.pending')
+        publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
         self.assertEqual(cover.read_bytes(), b'owner')
         self.assertFalse(cover.with_suffix('.png').exists())
 
@@ -147,7 +184,7 @@ class EnrichmentTests(unittest.TestCase):
             copy(source, destination, length)
             cover.write_bytes(b'owner')
         with patch('enrich.shutil.copyfileobj', concurrent_copy):
-            publish(self.home, self.job, lambda: False, self.home / '.pending')
+            publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
         self.assertEqual(cover.read_bytes(), b'owner')
         self.assertFalse(cover.with_suffix('.png').exists())
 
@@ -157,12 +194,12 @@ class EnrichmentTests(unittest.TestCase):
         launch.write_text('disc.cue')
         self.job['entry']['launchPath'] = str(launch)
         self.job['media'] = [self.staged('screenshots', '.png', b'image')]
-        publish(self.home, self.job, lambda: False, self.home / '.pending')
+        publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
         self.assertEqual((self.media / 'psx/screenshots/Bundle/Game.png').read_bytes(), b'image')
 
     def test_video_and_manual_are_copied_completely(self):
         self.job['media'] = [self.staged('videos', '.mp4', b'video' * 300000), self.staged('manuals', '.pdf', b'%PDF-1.7')]
-        publish(self.home, self.job, lambda: False, self.home / '.pending')
+        publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
         self.assertEqual((self.media / 'psx/videos/Game.mp4').stat().st_size, 1500000)
         self.assertEqual((self.media / 'psx/manuals/Game.pdf').read_bytes(), b'%PDF-1.7')
 
@@ -170,7 +207,7 @@ class EnrichmentTests(unittest.TestCase):
         media = self.staged('videos', '.mp4', b'partial')
         media['size'] = 9000
         self.job['media'] = [media]
-        with self.assertRaises(ValueError): publish(self.home, self.job, lambda: False, self.home / '.pending')
+        with self.assertRaises(ValueError): publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
         self.assertFalse((self.media / 'psx/videos/Game.mp4').exists())
 
 

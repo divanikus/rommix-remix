@@ -6,11 +6,13 @@ import { extname, join } from 'node:path'
 import type { InstalledRom, RommRom } from '@shared/types'
 import type { Store } from './store.ts'
 import type { RommClient } from './romm/index.ts'
+import { EMULATORS, emulatorById } from '@config/emulators'
+import { localize, type Text } from '@shared/i18n'
 import { romResourcePath } from '@shared/romm-resource'
 import { rootPaths } from './root.ts'
 import { realHome } from './xdg.ts'
 import { log } from './log.ts'
-import { t } from './i18n.ts'
+import { i18n } from './i18n.ts'
 
 export interface EsdeStatus {
   state: 'ready' | 'blocked' | 'deferred' | 'done'
@@ -20,6 +22,68 @@ export interface EsdeStatus {
   media?: string
   pending?: number
   needed?: string[]
+}
+
+/** Keep pending diagnostics translatable until they cross IPC. */
+export interface EsdeResult extends Omit<EsdeStatus, 'reason'> {
+  reason?: Text
+}
+
+const REASONS = {
+  paths: 'settings.esdePaths',
+  roms: 'settings.esdeRoms',
+  launchers: 'settings.esdeLaunchers',
+  legacy: 'settings.esdeLegacy',
+  mismatch: 'settings.esdeMismatch',
+  directories: 'settings.esdeDirectories',
+  writable: 'settings.esdeWritable',
+  outside: 'settings.esdeOutside',
+  xml: 'settings.esdeXml',
+  duplicates: 'settings.esdeDuplicates',
+  mediaType: 'settings.esdeMediaType',
+  eligibility: 'settings.esdeEligibility',
+  launchMissing: 'settings.esdeLaunchMissing',
+  layout: 'settings.esdeLayout',
+  customSystem: 'settings.esdeCustomSystem',
+  staging: 'settings.esdeStaging',
+  incomplete: 'error.esdeMediaIncomplete',
+  running: 'settings.esdeRunning',
+  changed: 'settings.esdeChanged',
+  configuration: 'settings.esdeUnavailable'
+} as const satisfies Record<string, Text>
+
+/** Only known helper codes become UI text; raw exceptions stay in the log. */
+export function esdeResult(value: unknown): EsdeResult {
+  const blocked: EsdeResult = { state: 'blocked', reason: 'settings.esdeUnavailable' }
+  if (!value || typeof value !== 'object') return blocked
+  const wire = value as Record<string, unknown>
+  if (!['ready', 'blocked', 'deferred', 'done'].includes(wire.state as string)) return blocked
+  if (typeof wire.detail === 'string')
+    log.warn('esde', 'helper diagnostic', { detail: wire.detail })
+  const result: EsdeResult = { state: wire.state as EsdeResult['state'] }
+  if (wire.reasonCode !== undefined) {
+    result.reason =
+      typeof wire.reasonCode === 'string' && Object.hasOwn(REASONS, wire.reasonCode)
+        ? REASONS[wire.reasonCode as keyof typeof REASONS]
+        : 'settings.esdeUnavailable'
+  } else if (
+    wire.reason !== undefined ||
+    result.state === 'blocked' ||
+    result.state === 'deferred'
+  ) {
+    result.reason = 'settings.esdeUnavailable'
+  }
+  for (const key of ['roms', 'data', 'media'] as const)
+    if (typeof wire[key] === 'string') result[key] = wire[key]
+  if (Array.isArray(wire.needed) && wire.needed.every((item) => typeof item === 'string'))
+    result.needed = wire.needed
+  return result
+}
+
+class EsdeFailure extends Error {
+  constructor(readonly reason: Text) {
+    super(localize(reason, i18n()))
+  }
 }
 
 interface MediaFile {
@@ -83,9 +147,15 @@ export function esdeFields(rom: RommRom): Record<string, string> {
 }
 
 /** Optional Python stdlib XML helper, isolated from credentials and emulators. */
-export function esdeHelper(action: string, job?: Job): Promise<EsdeStatus> {
+export function esdeHelper(action: string, job?: Job): Promise<EsdeResult> {
   if (process.platform !== 'linux')
-    return Promise.resolve({ state: 'blocked', reason: 'Linux is required' })
+    return Promise.resolve({ state: 'blocked', reason: 'settings.esdeLinux' })
+  const candidates = EMULATORS.filter(
+    (emulator) => emulator.esde && (!job || emulator.id === job.entry.emulatorId)
+  )
+  if (candidates.length !== 1)
+    return Promise.resolve({ state: 'blocked', reason: 'settings.esdeEligibility' })
+  const integration = { ...candidates[0].esde, emulatorId: candidates[0].id }
   const script = app.isPackaged
     ? join(process.resourcesPath, 'esde-enrich.py')
     : join(app.getAppPath(), 'src/main/esde/enrich.py')
@@ -93,13 +163,11 @@ export function esdeHelper(action: string, job?: Job): Promise<EsdeStatus> {
     const child = spawn('python3', ['-I', script], { stdio: ['pipe', 'pipe', 'pipe'] })
     let output = ''
     const timer = setTimeout(() => child.kill(), 20_000)
-    const done = (result: EsdeStatus): void => {
+    const done = (result: EsdeResult): void => {
       clearTimeout(timer)
       resolve(result)
     }
-    child.on('error', () =>
-      done({ state: 'blocked', reason: 'Python 3 is required for ES-DE enrichment' })
-    )
+    child.on('error', () => done({ state: 'blocked', reason: 'settings.esdePython' }))
     child.stdout.on('data', (part: Buffer) => {
       output += part.toString()
       if (output.length > 65536) child.kill()
@@ -110,16 +178,16 @@ export function esdeHelper(action: string, job?: Job): Promise<EsdeStatus> {
       JSON.stringify({
         action,
         home: realHome(),
+        integration,
         job,
         cache: join(rootPaths().config, 'esde-pending/media')
       })
     )
     child.on('close', (code) => {
       try {
-        if (code !== 0) throw new Error(t('settings.esdeUnavailable'))
-        done(JSON.parse(output) as EsdeStatus)
+        done(code === 0 ? esdeResult(JSON.parse(output)) : esdeResult(null))
       } catch {
-        done({ state: 'blocked', reason: 'ES-DE configuration could not be verified' })
+        done(esdeResult(null))
       }
     })
   })
@@ -129,7 +197,7 @@ export function esdeHelper(action: string, job?: Job): Promise<EsdeStatus> {
 export class EsdeEnrichment {
   private busy = false
   private stopped = false
-  private lastReason: string | undefined
+  private lastReason: Text | undefined
   private readonly directory = join(rootPaths().config, 'esde-pending')
   private readonly timer: ReturnType<typeof setInterval>
   constructor(
@@ -179,19 +247,22 @@ export class EsdeEnrichment {
     if (this.store.settings.romStorage !== 'emulator') {
       return {
         state: 'blocked',
-        reason: 'Choose emulator ROM folders to use the verified EmuDeck library'
+        reason: localize('settings.esdeStorage', i18n())
       }
     }
     const result = await this.helper('probe')
-    result.reason ??= this.lastReason
-    result.pending = (await readdir(this.directory).catch(() => [])).filter((n) =>
+    const pending = (await readdir(this.directory).catch(() => [])).filter((n) =>
       n.endsWith('.json')
     ).length
-    return result
+    return {
+      ...result,
+      reason: localize(result.reason ?? this.lastReason, i18n()) ?? undefined,
+      pending
+    }
   }
 
   async completed(rom: RommRom, entry: InstalledRom): Promise<void> {
-    if (!this.enabled() || entry.emulatorId !== 'emudeck') return
+    if (!this.enabled() || !emulatorById(entry.emulatorId)?.esde) return
     const server = this.store.server?.baseUrl
     if (!server) return
     const artwork = esdeArtwork(rom)
@@ -256,12 +327,14 @@ export class EsdeEnrichment {
           }
         } catch (error) {
           // A damaged job or a failed asset must not starve unrelated downloads.
-          this.lastReason = (error as Error).message
-          log.warn('esde', 'queued publication did not finish', { reason: this.lastReason })
+          this.lastReason = error instanceof EsdeFailure ? error.reason : 'settings.esdeFailed'
+          log.warn('esde', 'queued publication did not finish', {
+            reason: (error as Error).message
+          })
         }
       }
     } catch (error) {
-      this.lastReason = (error as Error).message
+      this.lastReason = error instanceof EsdeFailure ? error.reason : 'settings.esdeFailed'
       log.warn('esde', 'metadata publication did not finish', { reason: (error as Error).message })
     } finally {
       this.busy = false
@@ -295,7 +368,7 @@ export class EsdeEnrichment {
     }
     if (!response.ok) {
       await response.body?.cancel()
-      throw new Error(t('error.esdeMedia', { status: response.status }))
+      throw new EsdeFailure({ key: 'error.esdeMedia', params: { status: response.status } })
     }
     const allowed =
       art.kind === 'videos'
@@ -332,12 +405,12 @@ export class EsdeEnrichment {
         const { done, value } = await reader.read()
         if (done) break
         size += value.length
-        if (size > 512 * 1024 * 1024) throw new Error(t('error.esdeMediaSize'))
+        if (size > 512 * 1024 * 1024) throw new EsdeFailure('error.esdeMediaSize')
         await output.writeFile(value)
       }
       const expected = response.headers.get('content-length')
       if (expected && !response.headers.has('content-encoding') && size !== Number(expected))
-        throw new Error(t('error.esdeMediaIncomplete'))
+        throw new EsdeFailure('error.esdeMediaIncomplete')
       await output.sync()
       complete = true
     } finally {

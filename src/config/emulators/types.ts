@@ -409,6 +409,18 @@ export interface RequiredCore {
   readonly buildbotUrl: string | null
 }
 
+/** Strict ES-DE export discovery, independent of normal launcher path fallbacks. */
+export interface EsdeIntegration {
+  /** Literal shell settings files, relative to the real home directory. */
+  readonly settings: readonly string[]
+  readonly romsKey: string
+  readonly toolsKey: string
+  /** Directory below the explicitly configured tools path. */
+  readonly launcherDirectory: string
+  /** Standard ES-DE data location relative to home; custom --home is not guessed. */
+  readonly dataDirectory: string
+}
+
 interface EmulatorFields {
   // -- identity ------------------------------------------------------------------
 
@@ -455,6 +467,8 @@ interface EmulatorFields {
    * has been run at least once and that layout exists.
    */
   readonly ownsLibrary: boolean
+  /** Opt-in metadata export is available only for explicitly verified integrations. */
+  readonly esde: EsdeIntegration | undefined
   /**
    * True when this emulator's game list reads one directory and does not
    * descend into it.

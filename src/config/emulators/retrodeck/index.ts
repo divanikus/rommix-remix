@@ -87,6 +87,7 @@ export const retrodeck: EmulatorDescriptor = {
   // configuration, so RomMix has nothing to offer a choice between.
   variants: undefined,
   ownsLibrary: true,
+  esde: undefined,
   dirs: {},
   /**
    * `retrodeck.json`, inside RetroDECK's own flatpak tree — which is what the

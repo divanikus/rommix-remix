@@ -11,6 +11,13 @@ from xml.dom import minidom, Node
 from xml.parsers import expat
 
 
+class EnrichmentError(ValueError):
+    """Stable UI code plus technical detail for the main-process log."""
+    def __init__(self, code, detail):
+        super().__init__(detail)
+        self.code = code
+
+
 def shell_value(raw, values, home):
     """Read literal shell assignments; never evaluate commands or expansion operators."""
     result, quote, index = '', None, 0
@@ -56,11 +63,11 @@ def settings_values(path, home):
 
 def parse_xml(data):
     if len(data) > 64 * 1024 * 1024:
-        raise ValueError("Gamelist is too large")
+        raise EnrichmentError('xml', 'Gamelist is too large')
     # Let the XML parser recognize encodings, including UTF-16. A byte search
     # misses declarations with NUL separators and permits entity expansion.
     def reject_doctype(*_args):
-        raise ValueError("XML declarations with entities are not supported")
+        raise EnrichmentError('xml', 'XML declarations with entities are not supported')
     parser = expat.ParserCreate()
     parser.StartDoctypeDeclHandler = reject_doctype
     parser.Parse(data, True)
@@ -93,24 +100,25 @@ def resolve_value(value, home):
     if value.startswith('~/'):
         value = str(home / value[2:])
     if not value or '$' in value or '%' in value or not Path(value).is_absolute():
-        raise ValueError('ES-DE paths must be explicitly configured and absolute')
+        raise EnrichmentError('paths', 'ES-DE paths must be explicitly configured and absolute')
     return Path(value).resolve(strict=True)
 
 
-def discover(home):
+def discover(home, integration):
     home = Path(home).resolve(strict=True)
-    sources = [home / 'emudeck/settings.sh', home / '.config/EmuDeck/settings.sh']
+    sources = [home / path for path in integration['settings']]
     found = [settings_values(p, home) for p in sources if p.is_file()]
-    roots = {resolve_value(v['romsPath'], home) for v in found if v.get('romsPath')}
+    roms_key, tools_key = integration['romsKey'], integration['toolsKey']
+    roots = {resolve_value(v[roms_key], home) for v in found if v.get(roms_key)}
     if len(roots) != 1:
-        raise ValueError('A unique EmuDeck ROM path could not be verified')
+        raise EnrichmentError('roms', 'A unique configured ROM path could not be verified')
     roms = roots.pop()
-    if not any(v.get('toolsPath') and (resolve_value(v['toolsPath'], home) / 'launchers').is_dir()
+    if not any(v.get(tools_key) and (resolve_value(v[tools_key], home) / integration['launcherDirectory']).is_dir()
                for v in found):
-        raise ValueError('EmuDeck launcher directory is missing')
-    # Standard EmuDeck data location, including a symlink to an external drive.
+        raise EnrichmentError('launchers', 'The configured launcher directory is missing')
+    # The integration declares its standard data location, including symlinks.
     # An installation using --home elsewhere is deliberately not guessed.
-    data = (home / 'ES-DE').resolve(strict=True)
+    data = (home / integration['dataDirectory']).resolve(strict=True)
     config = data / 'settings/es_settings.xml'
     # ES-DE's settings file is an XML fragment with several top-level elements.
     fragment = re.sub(br'<\?xml[^?]*\?>', b'', config.read_bytes(), count=1)
@@ -118,15 +126,15 @@ def discover(home):
     values = {n.getAttribute('name'): n.getAttribute('value') for n in doc.getElementsByTagName('string')}
     if any(n.getAttribute('name') == 'LegacyGamelistFileLocation' and n.getAttribute('value') == 'true'
            for n in doc.getElementsByTagName('bool')):
-        raise ValueError('Legacy ES-DE gamelist locations are not supported')
+        raise EnrichmentError('legacy', 'Legacy ES-DE gamelist locations are not supported')
     if resolve_value(values.get('ROMDirectory', ''), home) != roms:
-        raise ValueError('ES-DE and EmuDeck use different ROM directories')
+        raise EnrichmentError('mismatch', 'ES-DE and the integration use different ROM directories')
     media = resolve_value(values.get('MediaDirectory', ''), home)
     if not roms.is_dir() or not media.is_dir() or not (data / 'gamelists').is_dir():
-        raise ValueError('ES-DE ROM, media or gamelist directory is missing')
+        raise EnrichmentError('directories', 'ES-DE ROM, media or gamelist directory is missing')
     for p in (data / 'gamelists', media):
         if not os.access(p, os.W_OK):
-            raise ValueError('ES-DE metadata directory is not writable')
+            raise EnrichmentError('writable', 'ES-DE metadata directory is not writable')
     # Refuse a custom system path rather than publish into the wrong library.
     return {'roms': str(roms), 'data': str(data), 'media': str(media)}
 
@@ -134,7 +142,7 @@ def discover(home):
 def inside(path, root):
     result = Path(path).resolve()
     if result == root or root not in result.parents:
-        raise ValueError('Path leaves the verified directory')
+        raise EnrichmentError('outside', 'Path leaves the verified directory')
     return result
 
 
@@ -150,7 +158,7 @@ def merge(data, relative, fields, system_root=None):
     doc = parse_xml(data) if data else minidom.parseString('<gameList/>')
     root = doc.documentElement
     if root.tagName != 'gameList':
-        raise ValueError('Not an ES-DE gamelist')
+        raise EnrichmentError('xml', 'Not an ES-DE gamelist')
     matches = []
     for game in children(root, 'game'):
         paths = children(game, 'path')
@@ -163,7 +171,7 @@ def merge(data, relative, fields, system_root=None):
         if same:
             matches.append(game)
     if len(matches) > 1:
-        raise ValueError('Ambiguous duplicate ES-DE entry')
+        raise EnrichmentError('duplicates', 'Ambiguous duplicate ES-DE entry')
     game = matches[0] if matches else doc.createElement('game')
     changed = not matches
     if not matches:
@@ -196,7 +204,7 @@ MEDIA['videos'] = ('.mp4', '.mkv', '.avi', '.wmv', '.mov', '.webm', '.m4v')
 
 def media_destination(paths, system, launch, system_root, kind, extension):
     if kind not in MEDIA or extension not in MEDIA[kind]:
-        raise ValueError('Unsupported ES-DE media type')
+        raise EnrichmentError('mediaType', 'Unsupported ES-DE media type')
     root = Path(paths['media'])
     stem = launch.relative_to(system_root).with_suffix('')
     destination = inside(root / system / kind / (str(stem) + extension), root)
@@ -206,21 +214,21 @@ def media_destination(paths, system, launch, system_root, kind, extension):
     return destination
 
 
-def publish(home, job, is_running=running, cache=None):
-    paths = discover(home)
+def publish(home, job, integration, is_running=running, cache=None):
+    paths = discover(home, integration)
     if is_running():
-        return {'state': 'deferred', 'reason': 'Close ES-DE to publish pending metadata'}
+        return {'state': 'deferred', 'reasonCode': 'running'}
     entry = job['entry']
-    if entry.get('emulatorId') != 'emudeck' or not re.fullmatch(r'[a-z0-9_-]+', entry['system']):
-        raise ValueError('Only completed EmuDeck downloads are eligible')
+    if entry.get('emulatorId') != integration['emulatorId'] or not re.fullmatch(r'[a-z0-9_-]+', entry['system']):
+        raise EnrichmentError('eligibility', 'The download does not match the configured integration')
     system = entry['system']
     roms = Path(paths['roms'])
     system_root = inside(roms / system, roms)
     launch = inside(entry['launchPath'], system_root)
     if not launch.is_file():
-        raise ValueError('The completed launch file is missing')
+        raise EnrichmentError('launchMissing', 'The completed launch file is missing')
     if (system_root / 'flatten.txt').exists() or any(p.suffix == launch.suffix for p in launch.parents if p != system_root and system_root in p.parents):
-        raise ValueError('Flattened or directory-as-file ES-DE layouts require explicit support')
+        raise EnrichmentError('layout', 'Flattened or directory-as-file ES-DE layouts require explicit support')
     # Custom systems can override the root, even when ROMDirectory agrees.
     custom = Path(paths['data']) / 'custom_systems/es_systems.xml'
     if custom.is_file():
@@ -228,7 +236,7 @@ def publish(home, job, is_running=running, cache=None):
         for node in custom_doc.getElementsByTagName('system'):
             names = children(node, 'name')
             if names and text_of(names[0]) == system and children(node, 'path'):
-                raise ValueError('Custom ES-DE system paths require explicit support')
+                raise EnrichmentError('customSystem', 'Custom ES-DE system paths require explicit support')
     target = inside(Path(paths['data']) / 'gamelists' / system / 'gamelist.xml', Path(paths['data']) / 'gamelists')
     before = target.read_bytes() if target.exists() else b''
     relative = './' + launch.relative_to(system_root).as_posix()
@@ -243,7 +251,7 @@ def publish(home, job, is_running=running, cache=None):
                 os.fsync(output.fileno())
             # Reread immediately before replace; never overwrite a concurrent edit.
             if is_running() or (target.read_bytes() if target.exists() else b'') != before:
-                return {'state': 'deferred', 'reason': 'ES-DE or its metadata changed; retry later'}
+                return {'state': 'deferred', 'reasonCode': 'changed'}
             if target.exists():
                 os.chmod(temp, target.stat().st_mode & 0o777)
             os.replace(temp, target)
@@ -253,16 +261,16 @@ def publish(home, job, is_running=running, cache=None):
     # ES-DE looks up media by the ROM's relative filename, without extension.
     for media in job.get('media', []):
         if is_running():
-            return {'state': 'deferred', 'reason': 'Close ES-DE to publish pending artwork'}
+            return {'state': 'deferred', 'reasonCode': 'running'}
         image_path = media_destination(paths, system, launch, system_root, media['kind'], media['extension'])
         if image_path is None:
             continue
         if cache is None:
-            raise ValueError('Media staging directory is missing')
+            raise EnrichmentError('staging', 'Media staging directory is missing')
         source = inside(media['source'], Path(cache).resolve(strict=True))
         size = source.stat().st_size
         if size != media['size'] or size <= 0 or size > 512 * 1024 * 1024:
-            raise ValueError('Incomplete or oversized staged media')
+            raise EnrichmentError('incomplete', 'Incomplete or oversized staged media')
         image_path.parent.mkdir(parents=True, exist_ok=True)
         fd, temp = tempfile.mkstemp(prefix='.rommix-remix-', dir=image_path.parent)
         try:
@@ -271,7 +279,7 @@ def publish(home, job, is_running=running, cache=None):
                 output.flush()
                 os.fsync(output.fileno())
             if is_running():
-                return {'state': 'deferred', 'reason': 'ES-DE opened before artwork publication'}
+                return {'state': 'deferred', 'reasonCode': 'running'}
             # Curation may have arrived under another extension during the copy.
             if media_destination(paths, system, launch, system_root, media['kind'], media['extension']) is None:
                 continue
@@ -288,18 +296,19 @@ def publish(home, job, is_running=running, cache=None):
 
 
 def main():
-    request = json.load(sys.stdin)
     try:
+        request = json.load(sys.stdin)
         if request['action'] == 'probe':
-            result = {'state': 'ready', **discover(request['home'])}
+            result = {'state': 'ready', **discover(request['home'], request['integration'])}
             if running():
-                result['reason'] = 'ES-DE is running; publication will wait until it closes'
+                result['reasonCode'] = 'running'
         elif request['action'] == 'publish':
-            result = publish(request['home'], request['job'], cache=request.get('cache'))
+            result = publish(request['home'], request['job'], request['integration'], cache=request.get('cache'))
         else:
             raise ValueError('Unknown action')
     except Exception as error:
-        result = {'state': 'blocked', 'reason': str(error)}
+        result = {'state': 'blocked', 'reasonCode': error.code if isinstance(error, EnrichmentError)
+                  else 'configuration', 'detail': str(error)}
     print(json.dumps(result))
 
 

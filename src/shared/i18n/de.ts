@@ -15,6 +15,37 @@ import type { Catalog } from './catalog.ts'
  * überall gleich sein soll.
  */
 export const de: Catalog = {
+  'settings.esdeLinux': 'Die ES-DE-Ergänzung erfordert Linux.',
+  'settings.esdePython': 'Die ES-DE-Ergänzung erfordert Python 3.',
+  'settings.esdeStorage':
+    'Wähle die ROM-Ordner der Emulatoren, um die geprüfte Bibliothek zu verwenden.',
+  'settings.esdePaths': 'Konfiguriere ausdrückliche, absolute ROM- und Medienpfade in ES-DE.',
+  'settings.esdeRoms':
+    'In den Einstellungen der Integration konnte kein eindeutiger ROM-Ordner bestätigt werden.',
+  'settings.esdeLaunchers': 'Der konfigurierte Launcher-Ordner fehlt.',
+  'settings.esdeLegacy': 'Alte Speicherorte für ES-DE-Spielelisten werden nicht unterstützt.',
+  'settings.esdeMismatch':
+    'ES-DE und die gewählte Integration verwenden unterschiedliche ROM-Ordner.',
+  'settings.esdeDirectories': 'Ein ROM-, Medien- oder Spielelistenordner für ES-DE fehlt.',
+  'settings.esdeWritable': 'Der ES-DE-Metadatenordner ist nicht beschreibbar.',
+  'settings.esdeOutside':
+    'Eine Datei liegt außerhalb der geprüften Bibliothek oder des Zwischenablageordners.',
+  'settings.esdeXml': 'Die ES-DE-XML-Datei ist ungültig, nicht unterstützt oder zu groß.',
+  'settings.esdeDuplicates': 'Die ES-DE-Spieleliste enthält doppelte Einträge für dieses Spiel.',
+  'settings.esdeMediaType': 'Dieser ES-DE-Medientyp wird nicht unterstützt.',
+  'settings.esdeEligibility':
+    'Für diesen Download ist keine eindeutige, geprüfte ES-DE-Integration verfügbar.',
+  'settings.esdeLaunchMissing': 'Die Startdatei des heruntergeladenen Spiels fehlt.',
+  'settings.esdeLayout':
+    'Abgeflachte ES-DE-Strukturen und als Dateien behandelte Ordner werden noch nicht unterstützt.',
+  'settings.esdeCustomSystem':
+    'Benutzerdefinierte ES-DE-Systempfade werden noch nicht unterstützt.',
+  'settings.esdeStaging': 'Der Zwischenablageordner für ES-DE-Medien fehlt.',
+  'settings.esdeRunning': 'Schließe ES-DE, um ausstehende Metadaten und Medien zu veröffentlichen.',
+  'settings.esdeChanged':
+    'ES-DE oder seine Metadaten wurden geändert. Die Veröffentlichung wird erneut versucht.',
+  'settings.esdeFailed':
+    'Die ES-DE-Ergänzung konnte nicht abgeschlossen werden. Details stehen im Anwendungsprotokoll.',
   'error.esdeMedia': 'ES-DE-Medienanfrage fehlgeschlagen ({status})',
   'error.esdeMediaSize': 'Diese ES-DE-Mediendatei überschreitet die Grenze von 512 MiB.',
   'error.esdeMediaIncomplete':

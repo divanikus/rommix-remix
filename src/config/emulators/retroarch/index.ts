@@ -47,6 +47,7 @@ export const retroarch: EmulatorDescriptor = {
   // The cores it can run a system with. See `retroArchCores`.
   variants: retroArchCores,
   ownsLibrary: false,
+  esde: undefined,
   dirs: {
     roms: { base: 'rommix', path: 'roms' },
     saves: { base: 'config', path: 'retroarch/saves' },

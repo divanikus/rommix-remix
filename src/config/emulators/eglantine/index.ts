@@ -50,6 +50,7 @@ export const eglantine: EmulatorDescriptor = {
   // One Switch 2 emulator, one way to run a game.
   variants: undefined,
   ownsLibrary: false,
+  esde: undefined,
   dirs: {
     // Like Eden it ships no ROM folder of its own and lists the directories it
     // is given, so RomMix's folder is the one to add there.

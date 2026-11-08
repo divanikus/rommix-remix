@@ -146,6 +146,9 @@ export const example: EmulatorDescriptor = {
    * standalone emulator that just needs a folder to read is false.
    */
   ownsLibrary: false,
+  // Declare strict ES-DE discovery only after verifying this integration's layout.
+  // Normal launcher defaults and user overrides must never authorize metadata writes.
+  esde: undefined,
   /**
    * Fixed path templates. Set these *or* `layout`, never both — the registry
    * test enforces it.

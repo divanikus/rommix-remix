@@ -48,6 +48,7 @@ export const shadps4: EmulatorDescriptor = {
   systems: ['ps4'],
   variants: undefined,
   ownsLibrary: false,
+  esde: undefined,
   dirs: {
     // shadPS4 has no ROM folder of its own: its game list is the directories
     // the user adds to it. RomMix's own folder is the honest answer, and one
