@@ -150,51 +150,76 @@ function rom(fields: Partial<RommRom> = {}): RommRom {
 }
 
 for (const perFile of [true, false]) {
-  for (const [set, bodies] of Object.entries<Record<string, string>>({
-    sf2: { 'sf2.zip': 'program', 'readme.txt': 'notes' },
-    mslug: { 'mslug.zip': 'program', 'neogeo.zip': 'larger BIOS bytes' },
-    kinst2: {
-      'kinst2.zip': 'program',
-      'kinst2/kinst2.chd': 'much larger disk bytes',
-      'kinst2.m3u': 'owner playlist'
-    }
-  })) {
-    test(`arcade ${set} preserves its package and selects the program via ${perFile ? 'files' : 'archive'}`, async () => {
-      const game = rom({
-        fs_name: set,
-        fs_name_no_ext: set,
-        fs_path: 'roms/arcade',
-        fs_extension: '',
-        platform_slug: 'arcade',
-        platform_fs_slug: 'arcade',
-        // A nested CHD can accompany one top-level ZIP despite a false summary flag.
-        has_multiple_files: set !== 'kinst2',
-        files: Object.entries(bodies).map(([name, body], id) => ({
-          id,
-          file_name: name.split('/').at(-1)!,
-          file_path:
-            'roms/arcade/' +
-            set +
-            (name.includes('/') ? '/' + name.slice(0, name.lastIndexOf('/')) : ''),
-          file_size_bytes: Buffer.byteLength(body)
-        }))
-      } as Partial<RommRom>)
-      const f = manager({
-        perFile,
-        zip: bodies,
-        fileBodies: Object.fromEntries(
-          Object.entries(bodies).map(([name, body]) => ['roms/arcade/' + set + '/' + name, body])
+  for (const enrichEsde of [false, true]) {
+    for (const [set, bodies] of Object.entries<Record<string, string>>({
+      sf2: { 'sf2.zip': 'program', 'readme.txt': 'notes' },
+      mslug: { 'mslug.zip': 'program', 'neogeo.zip': 'larger BIOS bytes' },
+      kinst2: {
+        'kinst2.zip': 'program',
+        'kinst2/kinst2.chd': 'much larger disk bytes',
+        'kinst2.m3u': 'owner playlist'
+      }
+    })) {
+      test(`arcade ${set} preserves its package via ${perFile ? 'files' : 'archive'} with ES-DE ${enrichEsde}`, async () => {
+        const game = rom({
+          fs_name: set,
+          fs_name_no_ext: set,
+          fs_path: 'roms/arcade',
+          fs_extension: '',
+          platform_slug: 'arcade',
+          platform_fs_slug: 'arcade',
+          // A nested CHD can accompany one top-level ZIP despite a false summary flag.
+          has_multiple_files: set !== 'kinst2',
+          files: Object.entries(bodies).map(([name, body], id) => ({
+            id,
+            file_name: name.split('/').at(-1)!,
+            file_path:
+              'roms/arcade/' +
+              set +
+              (name.includes('/') ? '/' + name.slice(0, name.lastIndexOf('/')) : ''),
+            file_size_bytes: Buffer.byteLength(body)
+          }))
+        } as Partial<RommRom>)
+        const emulator = {
+          id: 'emudeck',
+          name: 'EmuDeck',
+          install: null,
+          paths: { roms: join(scratch(), 'roms') }
+        } as unknown as EmulatorState
+        let completed: InstalledRom | undefined
+        const f = manager({
+          shared: false,
+          emulator,
+          perFile,
+          zip: bodies,
+          fileBodies: Object.fromEntries(
+            Object.entries(bodies).map(([name, body]) => ['roms/arcade/' + set + '/' + name, body])
+          ),
+          onCompleted: async (_rom, entry) => {
+            completed = entry
+          }
+        })
+        f.store.updateSettings({ enrichEsde })
+        await f.downloads.enqueue(game)
+        assert.equal((await settled(f.downloads, 1)).state, 'done')
+        const installed = f.store.getInstalled(1)!
+        assert.equal(
+          installed.path,
+          join(emulator.paths.roms!, 'arcade', set + (enrichEsde ? '.zip' : ''))
         )
+        assert.equal(installed.launchPath, join(installed.path, set + '.zip'))
+        assert.equal(completed?.path, installed.path)
+        assert.equal(await f.library.launchTarget(installed), installed.launchPath)
+        for (const [name, body] of Object.entries(bodies))
+          assert.equal(readFileSync(join(installed.path, name), 'utf8'), body)
+        assert.equal(installed.playlist, undefined)
+        f.store.removeInstalled(1)
+        await f.library.adopt([game])
+        assert.equal(f.store.getInstalled(1)?.launchPath, installed.launchPath)
+        await f.library.uninstall(1)
+        assert.equal(existsSync(installed.path), false)
       })
-      await f.downloads.enqueue(game)
-      assert.equal((await settled(f.downloads, 1)).state, 'done')
-      const installed = f.store.getInstalled(1)!
-      assert.equal(installed.launchPath, join(installed.path, set + '.zip'))
-      assert.equal(await f.library.launchTarget(installed), installed.launchPath)
-      for (const [name, body] of Object.entries(bodies))
-        assert.equal(readFileSync(join(installed.path, name), 'utf8'), body)
-      assert.equal(installed.playlist, undefined)
-    })
+    }
   }
 }
 

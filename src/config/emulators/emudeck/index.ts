@@ -376,7 +376,8 @@ export const emudeck: EmulatorDescriptor = {
     romsKey: 'romsPath',
     toolsKey: 'toolsPath',
     launcherDirectory: 'launchers',
-    dataDirectory: 'ES-DE'
+    dataDirectory: 'ES-DE',
+    directoryExtensions: ['.m3u', '.zip', '.7z']
   },
   // Discovered from EmuDeck's settings rather than declared: every one of them
   // is a path the user chose, and an SD card is the usual reason.

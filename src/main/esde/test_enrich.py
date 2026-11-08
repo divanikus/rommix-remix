@@ -19,7 +19,8 @@ class EnrichmentTests(unittest.TestCase):
         self.data = self.home / 'frontend'
         self.integration = {'emulatorId': 'test-suite', 'settings': ['suite/settings.sh', '.config/suite/settings.sh'],
                             'romsKey': 'libraryPath', 'toolsKey': 'scriptsPath',
-                            'launcherDirectory': 'launchers', 'dataDirectory': 'frontend'}
+                            'launcherDirectory': 'launchers', 'dataDirectory': 'frontend',
+                            'directoryExtensions': ['.m3u', '.zip', '.7z']}
         for directory in [self.roms / 'psx', self.media, self.data / 'gamelists',
                           self.data / 'settings', self.home / 'suite', self.home / 'tools/launchers']:
             directory.mkdir(parents=True, exist_ok=True)
@@ -279,6 +280,42 @@ class EnrichmentTests(unittest.TestCase):
         launch = folder / 'Game.m3u'
         launch.write_text('disc.cue\n')
         self.job['entry'].update(path=str(folder), launchPath=str(launch), isDirectory=True)
+        with self.assertRaises(EnrichmentError):
+            publish(self.home, self.job, self.integration, lambda: False)
+        self.assertFalse(self.target.exists())
+
+    def test_archive_directory_has_one_entry_and_preserves_owner_metadata(self):
+        folder = self.game.parent / 'set.zip'
+        folder.mkdir()
+        launch = folder / 'set.zip'
+        launch.write_bytes(b'program')
+        (folder / 'set').mkdir()
+        (folder / 'set/set.chd').write_bytes(b'disk')
+        self.job['entry'].update(path=str(folder), launchPath=str(launch), isDirectory=True)
+        self.job['media'] = [self.staged('covers', '.png', b'cover')]
+        self.target.parent.mkdir(parents=True)
+        self.target.write_text('<gameList><game><path>./set.zip</path><name>Owner name</name>'
+                               '<altemulator>Owner runner</altemulator><playcount>7</playcount>'
+                               '</game></gameList>')
+        before = self.target.read_bytes()
+        self.assertEqual(publish(self.home, self.job, self.integration, lambda: True)['state'], 'deferred')
+        self.assertEqual(self.target.read_bytes(), before)
+        publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
+        doc = minidom.parse(str(self.target))
+        self.assertEqual(len(doc.getElementsByTagName('game')), 1)
+        self.assertIn(b'<path>./set.zip</path>', self.target.read_bytes())
+        self.assertIn(b'<name>Owner name</name>', self.target.read_bytes())
+        self.assertIn(b'<altemulator>Owner runner</altemulator>', self.target.read_bytes())
+        self.assertIn(b'<playcount>7</playcount>', self.target.read_bytes())
+        self.assertEqual((self.media / 'psx/covers/set.zip.png').read_bytes(), b'cover')
+
+    def test_directory_extension_requires_integration_support(self):
+        folder = self.game.parent / 'set.zip'
+        folder.mkdir()
+        launch = folder / 'set.zip'
+        launch.write_bytes(b'program')
+        self.job['entry'].update(path=str(folder), launchPath=str(launch), isDirectory=True)
+        self.integration['directoryExtensions'] = ['.m3u']
         with self.assertRaises(EnrichmentError):
             publish(self.home, self.job, self.integration, lambda: False)
         self.assertFalse(self.target.exists())

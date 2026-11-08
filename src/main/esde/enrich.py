@@ -264,7 +264,8 @@ def publish(home, job, integration, is_running=running, cache=None):
                and p.suffix.lower() == launch.suffix.lower()]
     display = launch
     if special:
-        if (len(special) != 1 or special[0] != launch.parent or launch.suffix.lower() != '.m3u'
+        if (len(special) != 1 or special[0] != launch.parent
+                or launch.suffix.lower() not in integration.get('directoryExtensions', [])
                 or launch.parent.name != launch.name or not entry.get('isDirectory')
                 or Path(entry.get('path', '')).resolve() != launch.parent):
             raise EnrichmentError('layout', 'Unsupported directory-as-file layout')

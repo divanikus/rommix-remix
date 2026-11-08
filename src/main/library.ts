@@ -12,8 +12,10 @@ import {
 } from '@shared/gamefiles'
 import { emulatorById, emulatorsForSystem } from '@config/emulators'
 import { m3uFormats } from '@config/emulators/playlists'
+import { ROMSET_ARCHIVE_EXTENSIONS } from '@config/romfiles'
 import { usableVariants } from './emulators.ts'
 import { prepareMultidisc } from './multidisc.ts'
+import { groupLaunchDirectory } from './launch-directory.ts'
 import { resolveSystem } from '@config/systems'
 import { hasMorePages, SHARED_LIBRARY } from '@shared/types'
 import type { EmulatorState, InstalledRom, LibrarySyncResult, RommRom } from '@shared/types'
@@ -435,15 +437,18 @@ export class Library extends EventEmitter {
         continue
       }
 
-      // A generated multidisc install keeps a predictable sibling directory.
-      const playlistDirectory = await safeJoin(target.dir, rom.fs_name_no_ext + '.m3u')
-      if (
-        playlistDirectory &&
-        (
-          await stat(join(playlistDirectory, rom.fs_name_no_ext + '.m3u')).catch(() => null)
-        )?.isFile()
-      ) {
-        await record(playlistDirectory, true)
+      // Single-entry frontend packages retain matching directory/file names.
+      const extensions = archiveIsTheRom(target.system) ? ROMSET_ARCHIVE_EXTENSIONS : ['.m3u']
+      const launchDirectories: string[] = []
+      for (const extension of extensions) {
+        const expected = rom.fs_name_no_ext + extension
+        const name = present.byName.get(expected.toLowerCase())?.name ?? expected
+        const directory = await safeJoin(target.dir, name)
+        if (directory && (await stat(join(directory, name)).catch(() => null))?.isFile())
+          launchDirectories.push(directory)
+      }
+      if (launchDirectories.length) {
+        if (launchDirectories.length === 1) await record(launchDirectories[0], true)
         continue
       }
 
@@ -628,10 +633,18 @@ export class Library extends EventEmitter {
   async prepareDownload(installed: InstallResult, system: string): Promise<InstallResult> {
     const emulator = this.getEmulator(system)
     const esde = emulator && emulatorById(emulator.id)?.esde
+    const directoryAsFile = !this.shared && this.store.settings.enrichEsde && !!esde
+    if (directoryAsFile && archiveIsTheRom(system))
+      return groupLaunchDirectory(
+        installed,
+        ROMSET_ARCHIVE_EXTENSIONS.filter((extension) =>
+          esde.directoryExtensions.includes(extension)
+        )
+      )
     return prepareMultidisc(
       installed,
       this.playlistFormats(system),
-      !this.shared && this.store.settings.enrichEsde && !!esde
+      directoryAsFile && esde.directoryExtensions.includes('.m3u')
     )
   }
 

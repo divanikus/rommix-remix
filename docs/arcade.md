@@ -35,6 +35,23 @@ again at launch, so a previously recorded CHD, M3U or BIOS target can be correct
 without renaming, removing or rewriting any game file. Ambiguous sets report a
 translated error. The Files tab shows the installed entry's local path.
 
+With ES-DE enrichment enabled in emulator storage, a fresh package whose program
+archive matches its directory name becomes one ES-DE entry:
+
+```text
+arcade/kinst2.zip/
+  kinst2.zip
+  kinst2/kinst2.chd
+```
+
+Both frontends launch the inner archive. The gamelist addresses `./kinst2.zip`
+and media uses that directory name, for example `covers/kinst2.zip.png`.
+The integration declares supported directory extensions; matching ZIP and 7z
+packages are enabled. Single archives remain ordinary files. Other layouts and
+existing destination collisions keep their original folders. A lost index can
+rediscover the matching package; removal stays confined to that package.
+Existing installs and owner XML/artwork are not migrated or deleted automatically.
+
 EmuDeck's standalone MAME launcher forwards a per-launch `-rompath` containing
 the program archive's directory and the paths from `~/.mame/mame.ini`. When that
 file declares no ROM path, discovered EmuDeck ROM and BIOS directories provide
@@ -63,5 +80,7 @@ per-game runner overrides are outside this change.
 - [MAME search paths and command-line options](https://docs.mamedev.org/commandline/commandline-all.html)
   and [ROM and disk image search](https://docs.mamedev.org/usingmame/assetsearch.html).
 - [Flycast NAOMI ZIP and CHD layout](https://docs.libretro.com/library/flycast/#how-to-play-naomi-games).
+- [ES-DE directories interpreted as files](https://gitlab.com/es-de/emulationstation-de/-/blob/master/USERGUIDE.md#directories-interpreted-as-files)
+  and [launch path expansion](https://gitlab.com/es-de/emulationstation-de/-/blob/master/es-app/src/FileData.cpp).
 
 These are behavior references; no source code was copied from them.

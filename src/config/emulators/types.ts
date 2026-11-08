@@ -423,6 +423,8 @@ export interface EsdeIntegration {
   readonly launcherDirectory: string
   /** Standard ES-DE data location relative to home; custom --home is not guessed. */
   readonly dataDirectory: string
+  /** Verified matching directory/file extensions for single-entry export. */
+  readonly directoryExtensions: readonly string[]
 }
 
 interface EmulatorFields {
