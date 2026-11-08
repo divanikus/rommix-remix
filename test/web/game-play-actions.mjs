@@ -123,6 +123,21 @@ try {
   await mkdir(shotDir, { recursive: true })
   await page.screenshot({ path: `${shotDir}/game-play-menu.png` })
   await page.keyboard.press('Escape')
+  // An action row near the bottom must open upward without moving the row.
+  await page.evaluate(() => {
+    document.querySelector('.game-play').style.marginTop = '160px'
+  })
+  const lowButton = await page.locator('[data-action=play]').boundingBox()
+  const rowOffset = await page.locator('.game-play').evaluate((element) => element.offsetTop)
+  await page.locator('[data-action=run-with]').click()
+  await focusIs('variant-second')
+  const upward = await page.locator('.launch-menu').boundingBox()
+  assert.ok(upward.y + upward.height <= lowButton.y, 'the menu should open above the row')
+  assert.equal(await page.locator('.game-play').evaluate((element) => element.offsetTop), rowOffset)
+  await page.keyboard.press('Escape')
+  await page.evaluate(() => {
+    document.querySelector('.game-play').style.marginTop = ''
+  })
   await page.locator('[data-action=uninstall]').click()
   await page.locator('[data-action=keep-game]').click()
   assert.equal(await page.evaluate(() => window.removals), 0)
