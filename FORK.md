@@ -30,6 +30,9 @@ against current upstream and omit fork identity and distribution policy.
 
 ## Keeping changes ready for upstream
 
+- Follow the current upstream [CONTRIBUTING.md](CONTRIBUTING.md): emulator rules
+  belong in `src/config/`, UI wording in the shared language catalogs, and shared
+  behavior in testable modules. Keep its checks intact when adapting a feature.
 - Merge upstream release tags into the published fork branch. Preserve its commits
   and release tags; do not rebase published `main` for routine updates.
 - Keep each feature or fix with its tests in a separate commit. Keep branding,
@@ -43,6 +46,12 @@ against current upstream and omit fork identity and distribution policy.
 The initial feature map above is a starting point for extraction. Later fixes
 remain ordinary commits so an upstream contribution can include them without
 pulling in unrelated fork changes.
+
+Before proposing ES-DE export upstream, move its direct EmuDeck eligibility/path
+rules behind the configuration boundary and localize the remaining diagnostic
+reasons shown in Settings. The existing source checks do not catch every returned
+message or enforce that architectural boundary; passing CI does not close these
+two gaps.
 
 ## Distribution boundaries
 
