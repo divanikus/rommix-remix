@@ -4,6 +4,14 @@ Newest first. `npm run release` adds the entry for a version, falling back to th
 commit subjects and ids since the previous tag — so write the section by hand
 before releasing if you want prose instead. See [Releasing](README.md#releasing).
 
+## 0.24.0-remix.2 — 2026-11-09
+
+- Version choices now show distinct titles from RomM, with the ROM filename
+  underneath. When titles are shared or missing, filenames keep region,
+  revision and translation differences visible. This works across platforms.
+- The pending-save notice now points to Push saves without incorrectly blaming
+  the confirmation setting after an upload fails.
+
 ## 0.24.0-remix.1 — 2026-11-09
 
 - Updated to RomMix 0.24.0, including upstream Switch 2/Eglantine integration

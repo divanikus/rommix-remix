@@ -4,7 +4,7 @@ This is a source fork of [leclercb/rommix](https://github.com/leclercb/rommix),
 with the original MIT license and Git history preserved. `main` carries the fork;
 an `upstream` remote tracks the original project.
 
-The current fork version is **0.24.0-remix.1**, based on upstream **0.24.0**
+The current fork version is **0.24.0-remix.2**, based on upstream **0.24.0**
 (`7b8fbdb`). See the [changelog](CHANGELOG.md) for changes since the previous fork
 release. Changing the source version alone does not publish a release.
 
@@ -91,6 +91,13 @@ the SemVer suffix. Use an explicit version with release-it rather than `minor`.
 The briefly published `0.24.0` was withdrawn to correct its numbering.
 
 ## Checks and remaining work
+
+The 0.24.0-remix.2 changes add readable version labels and clarify the pending-save
+notice. Both feature branches pass the full Linux CI on x86_64 and ARM64. The
+owner accepts the version labels on Bazzite; browser checks cover shared/missing
+titles, delayed details, wrapping and exact version selection. The save change
+only corrects the explanation, not upload behavior. The GitHub API rate-limit
+limitation in update discovery remains a separate follow-up.
 
 The 0.24.0-remix.1 candidate passes the complete Linux checks and packaging on
 x86_64 and ARM64, including 1,736 Node tests, 196 Electron scenarios, 9 input tests
