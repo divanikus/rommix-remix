@@ -32,8 +32,8 @@ const markdown = readFileSync('CHANGELOG.md', 'utf8')
 /**
  * Every version heading in the file, newest first.
  *
- * Read rather than asked of git: the previous release is the section above
- * this one, which is true in a shallow clone and needs no tags fetched.
+ * Read rather than asked of git, so a shallow checkout needs no tags fetched.
+ * Upstream sections are retained too, but their tags do not belong to the fork.
  */
 const headings = [...markdown.matchAll(/^## (\S+).*$/gm)]
 const index = headings.findIndex((heading) => heading[1] === version)
@@ -47,12 +47,9 @@ const to = headings[index + 1]?.index ?? markdown.length
 const entry = markdown.slice(from, to).trim()
 
 // The tag, not the bare version: that is what the compare page is addressed by.
-const previous = headings[index + 1]?.[1]
+const previous = headings.slice(index + 1).find((heading) => heading[1].includes('-remix.'))?.[1]
 // The fork's first release follows upstream history, without importing its tags.
-const previousRef =
-  version === '0.23.0-remix.1'
-    ? 'b5d59c6310b9ad6787fc0af72d2264c64daa1357'
-    : previous && `v${previous}`
+const previousRef = previous ? `v${previous}` : 'b5d59c6310b9ad6787fc0af72d2264c64daa1357'
 
 console.log(`### What's new
 

@@ -4,8 +4,9 @@ This is a source fork of [leclercb/rommix](https://github.com/leclercb/rommix),
 with the original MIT license and Git history preserved. `main` carries the fork;
 an `upstream` remote tracks the original project.
 
-The current source includes upstream **0.24.0** (`7b8fbdb`). The next fork version
-is `0.24.0-remix.1`; changing the source version does not publish a release.
+The current fork version is **0.24.0-remix.1**, based on upstream **0.24.0**
+(`7b8fbdb`). See the [changelog](CHANGELOG.md) for changes since the previous fork
+release. Changing the source version alone does not publish a release.
 
 ## Feature history
 
@@ -90,6 +91,13 @@ the SemVer suffix. Use an explicit version with release-it rather than `minor`.
 The briefly published `0.24.0` was withdrawn to correct its numbering.
 
 ## Checks and remaining work
+
+The 0.24.0-remix.1 candidate passes the complete Linux checks and packaging on
+x86_64 and ARM64, including 1,736 Node tests, 196 Electron scenarios, 9 input tests
+and 33 ES-DE tests. Follow-up Bazzite testing covers multidisc launch and disc-list
+visibility, MAME launch/return and ES-DE package presentation. The owner reports
+that the final candidate works in initial use. This does not establish actual
+disc switching or a new physical Steam Deck acceptance run.
 
 The 0.23.0-remix.1 Linux candidate passes formatting, lint, both TypeScript projects,
 1,451 Node tests, 195 Electron scenarios, 9 input tests, 21 ES-DE tests and AppImage

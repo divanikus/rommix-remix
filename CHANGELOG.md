@@ -4,6 +4,31 @@ Newest first. `npm run release` adds the entry for a version, falling back to th
 commit subjects and ids since the previous tag — so write the section by hand
 before releasing if you want prose instead. See [Releasing](README.md#releasing).
 
+## 0.24.0-remix.1 — 2026-11-09
+
+- Updated to RomMix 0.24.0, including upstream Switch 2/Eglantine integration
+  and save-sync fixes.
+- Multidisc downloads can generate an M3U for compatible launchers. Recognition
+  supports numeric labels (including Disc 0), Roman numerals and letters such as
+  Disc A/Disc B, without game or system-specific rules. Supplied playlists keep
+  their contents and disc order.
+- With experimental EmuDeck/ES-DE enrichment enabled, supported fresh multidisc,
+  single-disc and arcade packages appear as one game with metadata and artwork.
+  This includes supplied root M3U files, CUE/BIN and GDI discs, and ZIP/CHD sets.
+  Existing ES-DE edits and emulator selections are preserved; writes still wait
+  until ES-DE is closed.
+- Added EmuDeck MAME launch options and corrected launch-file selection for
+  arcade bundles with BIOS archives or CHD companions.
+- Game cards now have one status action, an emulator-choice menu beside Play,
+  and focus returns to Download after a successful uninstall.
+- Download progress appears once in the transfer panel. Pause, Resume and Cancel
+  keep their icons and labels without repeating the percentage.
+
+The new ES-DE folder layout applies to fresh downloads. Existing installations
+are not renamed automatically, and incomplete or ambiguous packages keep their
+original layout. Separate RomM records are not combined into one multidisc game.
+EmuDeck/ES-DE enrichment remains optional and experimental.
+
 ## 0.24.0 — 2026-11-07
 
 - fix: name the current exit setting in the Eden note (a4b0fe5)
