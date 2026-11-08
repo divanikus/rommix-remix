@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import patch
 import shutil
 from xml.dom import minidom
-from enrich import EnrichmentError, discover, main, merge, publish, settings_values
+from enrich import EnrichmentError, discover, main, merge, parse_gamelist, publish, settings_values
 import io
 import json
 
@@ -112,6 +112,49 @@ class EnrichmentTests(unittest.TestCase):
     def test_duplicate_paths_block_without_writing(self):
         data = b'<gameList><game><path>./Game.cue</path></game><game><path>Game.cue</path></game></gameList>'
         with self.assertRaises(ValueError): merge(data, './Game.cue', self.job['fields'])
+
+    def test_alternative_emulator_sibling_is_preserved_and_publication_is_repeatable(self):
+        self.target.parent.mkdir()
+        owner = (b'<?xml version="1.0"?>\n<!--owner--><?keep data?>\n'
+                 b'<alternativeEmulator custom="yes"><label>Owner runner</label></alternativeEmulator>\n'
+                 b'<gameList><game><path>./Game.cue</path><name>Owner name</name>'
+                 b'<altemulator>Per-game runner</altemulator></game></gameList>')
+        self.target.write_bytes(owner)
+        self.assertEqual(publish(self.home, self.job, self.integration, lambda: True)['state'], 'deferred')
+        self.assertEqual(self.target.read_bytes(), owner)
+        self.assertEqual(publish(self.home, self.job, self.integration, lambda: False)['state'], 'done')
+        result = self.target.read_bytes()
+        doc, root, fragment = parse_gamelist(result)
+        self.assertTrue(fragment)
+        self.assertIn(b'<!--owner--><?keep data?>', result)
+        self.assertIn(b'<alternativeEmulator custom="yes"><label>Owner runner</label></alternativeEmulator>', result)
+        self.assertIn(b'<name>Owner name</name>', result)
+        self.assertIn(b'<altemulator>Per-game runner</altemulator>', result)
+        self.assertIn(b'A &amp; B &lt;story&gt;', result)
+        self.assertNotIn(b'esdeFragment', result)
+        self.assertEqual(len(root.getElementsByTagName('game')), 1)
+        self.assertFalse(publish(self.home, self.job, self.integration, lambda: False)['changed'])
+        self.assertEqual(self.target.read_bytes(), result)
+
+    def test_nested_alternative_emulator_in_newer_format_is_preserved(self):
+        data = b'<gameList><alternativeEmulator><label>Owner</label></alternativeEmulator></gameList>'
+        result = merge(data, './Game.cue', self.job['fields'])
+        doc = minidom.parseString(result)
+        self.assertEqual(doc.documentElement.tagName, 'gameList')
+        self.assertEqual(doc.getElementsByTagName('label')[0].firstChild.data, 'Owner')
+
+    def test_ambiguous_or_malformed_fragments_report_xml_without_writing(self):
+        self.target.parent.mkdir()
+        for data in (b'<gameList/><gameList/>',
+                     b'<alternativeEmulator/><alternativeEmulator/><gameList/>',
+                     b'<other/><gameList/>', b'<alternativeEmulator/><gameList>',
+                     b'<alternativeEmulator/><!DOCTYPE gameList [<!ENTITY a "bad">]><gameList>&a;</gameList>'):
+            with self.subTest(data=data):
+                self.target.write_bytes(data)
+                with self.assertRaises(EnrichmentError) as error:
+                    publish(self.home, self.job, self.integration, lambda: False)
+                self.assertEqual(error.exception.code, 'xml')
+                self.assertEqual(self.target.read_bytes(), data)
 
     def test_external_entities_rejected(self):
         with self.assertRaises(ValueError): merge(b'<!DOCTYPE x [<!ENTITY a SYSTEM "file:///etc/passwd">]><gameList/>', './Game.cue', {})

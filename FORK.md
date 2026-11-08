@@ -56,6 +56,12 @@ the feature for upstream. [Multidisc downloads](docs/multidisc.md) add generic
 file-based recognition, runner capabilities and narrowly scoped directory-as-file
 export. They introduce no platform allowlist or emulator rules outside configuration.
 
+The exporter preserves ES-DE's system-wide `alternativeEmulator` entry, including
+the UTF-8 format where it is a sibling of `gameList`. ES-DE documents this format
+in [its XML compatibility issue](https://gitlab.com/es-de/emulationstation-de/-/work_items/2117).
+The temporary parser wrapper is never written; malformed or ambiguous documents
+remain untouched and report an XML diagnostic.
+
 [Arcade launchers](docs/arcade.md) extend the existing system-wide runner choice
 with MAME, select the program archive in ZIP/BIOS/CHD bundles and preserve the
 user's emulator configuration. They introduce no per-game runner preference.

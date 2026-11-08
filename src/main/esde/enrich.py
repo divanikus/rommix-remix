@@ -70,8 +70,35 @@ def parse_xml(data):
         raise EnrichmentError('xml', 'XML declarations with entities are not supported')
     parser = expat.ParserCreate()
     parser.StartDoctypeDeclHandler = reject_doctype
-    parser.Parse(data, True)
-    return minidom.parseString(data)
+    try:
+        parser.Parse(data, True)
+        return minidom.parseString(data)
+    except expat.ExpatError as error:
+        raise EnrichmentError('xml', str(error)) from error
+
+
+def parse_gamelist(data):
+    """ES-DE also writes a UTF-8 alternativeEmulator sibling before gameList."""
+    try:
+        doc = parse_xml(data)
+        fragment = False
+    except EnrichmentError as error:
+        cause = error.__cause__
+        if not isinstance(cause, expat.ExpatError) or cause.code != expat.errors.codes[expat.errors.XML_ERROR_JUNK_AFTER_DOC_ELEMENT]:
+            raise
+        try:
+            text = data.decode('utf-8-sig')
+        except UnicodeDecodeError as decode_error:
+            raise EnrichmentError('xml', 'ES-DE gamelist fragments must be UTF-8') from decode_error
+        text = re.sub(r'\A<\?xml\s[^?]*\?>', '', text, count=1)
+        doc = parse_xml(('<esdeFragment>' + text + '</esdeFragment>').encode('utf-8'))
+        fragment = True
+    roots = [n for n in doc.documentElement.childNodes if n.nodeType == Node.ELEMENT_NODE] if fragment else [doc.documentElement]
+    games = [n for n in roots if n.tagName == 'gameList']
+    if (len(games) != 1 or sum(n.tagName == 'alternativeEmulator' for n in roots) > 1
+            or any(n.tagName not in ('gameList', 'alternativeEmulator') for n in roots)):
+        raise EnrichmentError('xml', 'Not an unambiguous ES-DE gamelist')
+    return doc, games[0], fragment
 
 
 def running(proc=Path('/proc')):
@@ -155,10 +182,7 @@ def children(node, tag):
 
 
 def merge(data, relative, fields, system_root=None):
-    doc = parse_xml(data) if data else minidom.parseString('<gameList/>')
-    root = doc.documentElement
-    if root.tagName != 'gameList':
-        raise EnrichmentError('xml', 'Not an ES-DE gamelist')
+    doc, root, fragment = parse_gamelist(data or b'<gameList/>')
     matches = []
     for game in children(root, 'game'):
         paths = children(game, 'path')
@@ -192,7 +216,14 @@ def merge(data, relative, fields, system_root=None):
             continue
         target.appendChild(doc.createTextNode(value))
         changed = True
-    return doc.toxml(encoding='utf-8') if changed else data
+    if not changed:
+        return data
+    if fragment:
+        # Keep the owner's sibling nodes in their original order. The temporary
+        # parser container is never written to ES-DE's file.
+        return b'<?xml version="1.0" encoding="utf-8"?>' + b''.join(
+            node.toxml(encoding='utf-8') for node in doc.documentElement.childNodes)
+    return doc.toxml(encoding='utf-8')
 
 
 IMAGE_EXTENSIONS = ('.png', '.jpg', '.webp')
