@@ -167,7 +167,8 @@ for (const perFile of [true, false]) {
         fs_extension: '',
         platform_slug: 'arcade',
         platform_fs_slug: 'arcade',
-        has_multiple_files: true,
+        // A nested CHD can accompany one top-level ZIP despite a false summary flag.
+        has_multiple_files: set !== 'kinst2',
         files: Object.entries(bodies).map(([name, body], id) => ({
           id,
           file_name: name.split('/').at(-1)!,

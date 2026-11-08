@@ -193,7 +193,9 @@ export class Library extends EventEmitter {
     // making that demand, and a directory is the shape that keeps a disc set
     // together for whichever one arrives later.
     const flat = emulator ? emulatorById(emulator.id)?.flatLibrary === true : false
-    const asDirectory = rom.has_multiple_files && !flat
+    // A set can expose one top-level ZIP plus nested CHDs while its summary
+    // flag remains false. The actual file list must still keep its directories.
+    const asDirectory = (rom.has_multiple_files || rom.files.length > 1) && !flat
     const dir = join(library.root, system)
 
     // The name is the server's, and it is what decides where this lands. One

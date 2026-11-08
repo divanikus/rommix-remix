@@ -20,7 +20,9 @@ the game directory name wins; otherwise a single archive is accepted. Multiple
 unmatched archives are ambiguous and are not ranked by size. A BIOS archive can
 be larger than the game. Non-archive alternatives such as `.neo` keep working.
 
-Both download methods preserve relative BIOS and CHD paths. For example:
+Both download methods preserve relative BIOS and CHD paths. The actual file list
+also identifies multifile packages when RomM's `has_multiple_files` summary is
+false but a ZIP has nested disk companions. For example:
 
 ```text
 arcade/kinst2/
