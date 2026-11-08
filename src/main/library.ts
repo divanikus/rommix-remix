@@ -8,11 +8,12 @@ import {
   gameFolderOf,
   isLaunchable,
   localFileNames,
+  romFileName,
   type GameFile
 } from '@shared/gamefiles'
 import { emulatorById, emulatorsForSystem } from '@config/emulators'
 import { m3uFormats } from '@config/emulators/playlists'
-import { ROMSET_ARCHIVE_EXTENSIONS } from '@config/romfiles'
+import { DISC_DIRECTORY_EXTENSIONS, ROMSET_ARCHIVE_EXTENSIONS } from '@config/romfiles'
 import { usableVariants } from './emulators.ts'
 import { prepareMultidisc } from './multidisc.ts'
 import { groupLaunchDirectory } from './launch-directory.ts'
@@ -438,14 +439,45 @@ export class Library extends EventEmitter {
       }
 
       // Single-entry frontend packages retain matching directory/file names.
-      const extensions = archiveIsTheRom(target.system) ? ROMSET_ARCHIVE_EXTENSIONS : ['.m3u']
+      const extensions = archiveIsTheRom(target.system)
+        ? ROMSET_ARCHIVE_EXTENSIONS
+        : DISC_DIRECTORY_EXTENSIONS
+      const expectedNames = new Set(extensions.map((extension) => rom.fs_name_no_ext + extension))
+      const sourceFiles = rom.files
+        .map((file) => ({
+          name: romFileName(file, rom),
+          sizeBytes: file.file_size_bytes
+        }))
+        .filter((file): file is GameFile => file.name !== null)
+      const sourceLaunch = chooseLaunchFile(sourceFiles, target.system, rom.fs_name_no_ext)
+      // A supplied root descriptor may have a different name from its package.
+      // Its exact server file set must also match before adopting that directory.
+      if (
+        sourceLaunch &&
+        !sourceLaunch.includes('/') &&
+        extensions.some((extension) => sourceLaunch.toLowerCase().endsWith(extension))
+      )
+        expectedNames.add(sourceLaunch)
       const launchDirectories: string[] = []
-      for (const extension of extensions) {
-        const expected = rom.fs_name_no_ext + extension
+      for (const expected of expectedNames) {
         const name = present.byName.get(expected.toLowerCase())?.name ?? expected
         const directory = await safeJoin(target.dir, name)
-        if (directory && (await stat(join(directory, name)).catch(() => null))?.isFile())
-          launchDirectories.push(directory)
+        if (!directory || !(await stat(join(directory, name)).catch(() => null))?.isFile()) continue
+        if (
+          expected === sourceLaunch &&
+          !extensions.some((extension) => expected === rom.fs_name_no_ext + extension)
+        ) {
+          if (sourceFiles.length !== rom.files.length) continue
+          const matches = await Promise.all(
+            sourceFiles.map(async (file) => {
+              const path = await safeJoin(directory, file.name)
+              const info = path && (await stat(path).catch(() => null))
+              return info && info.isFile() && (file.sizeBytes <= 0 || info.size === file.sizeBytes)
+            })
+          )
+          if (!matches.every(Boolean)) continue
+        }
+        if (!launchDirectories.includes(directory)) launchDirectories.push(directory)
       }
       if (launchDirectories.length) {
         if (launchDirectories.length === 1) await record(launchDirectories[0], true)
@@ -641,11 +673,8 @@ export class Library extends EventEmitter {
           esde.directoryExtensions.includes(extension)
         )
       )
-    return prepareMultidisc(
-      installed,
-      this.playlistFormats(system),
-      directoryAsFile && esde.directoryExtensions.includes('.m3u')
-    )
+    const prepared = await prepareMultidisc(installed, this.playlistFormats(system))
+    return directoryAsFile ? groupLaunchDirectory(prepared, esde.directoryExtensions) : prepared
   }
 
   private async sizesOf(dir: string, files: string[]): Promise<GameFile[]> {

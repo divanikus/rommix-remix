@@ -130,6 +130,98 @@ for (const perFile of [true, false]) {
   })
 }
 
+for (const perFile of [true, false]) {
+  const packages: Record<string, Record<string, string>> = {
+    'Server order.m3u': {
+      'Server order.m3u': '#EXTM3U\r\n./Disc 2/Game.chd\r\n./Disc 1/Game.chd\r\n',
+      'Disc 1/Game.chd': 'first',
+      'Disc 2/Game.chd': 'second'
+    },
+    'Bundle.cue': { 'Bundle.cue': 'FILE "tracks/track.bin" BINARY\n', 'tracks/track.bin': 'track' },
+    'bundle.cue': { 'bundle.cue': 'FILE "track.bin" BINARY\n', 'track.bin': 'track' },
+    'Bundle.gdi': { 'Bundle.gdi': '1\n1 0 4 2352 track01.bin 0\n', 'track01.bin': 'track' },
+    'Bundle.chd': { 'Bundle.chd': 'image', 'manual.pdf': 'manual' }
+  }
+  for (const [launch, bodies] of Object.entries(packages)) {
+    test(`fresh ${launch} is one ES-DE entry through ${perFile ? 'files' : 'archive'}`, async () => {
+      const game = rom({
+        id: 23,
+        name: 'Bundle',
+        fs_name: 'Bundle',
+        fs_name_no_ext: 'Bundle',
+        fs_extension: '',
+        fs_path: 'roms/saturn',
+        platform_slug: 'saturn',
+        platform_fs_slug: 'saturn',
+        has_multiple_files: true,
+        files: Object.entries(bodies).map(([name, body], index) => ({
+          id: index + 1,
+          rom_id: 23,
+          file_name: name.split('/').at(-1)!,
+          file_path:
+            'roms/saturn/Bundle' +
+            (name.includes('/') ? '/' + name.slice(0, name.lastIndexOf('/')) : ''),
+          file_size_bytes: Buffer.byteLength(body!),
+          crc_hash: null,
+          md5_hash: null,
+          sha1_hash: null
+        }))
+      } as Partial<RommRom>)
+      const emulator = {
+        id: 'emudeck',
+        name: 'EmuDeck',
+        install: null,
+        paths: { roms: join(scratch(), 'roms') }
+      } as unknown as EmulatorState
+      const f = manager({
+        shared: false,
+        emulator,
+        perFile,
+        zip: bodies,
+        fileBodies: Object.fromEntries(
+          Object.entries(bodies).map(([name, body]) => ['roms/saturn/Bundle/' + name, body])
+        ),
+        roms: { 23: game }
+      })
+      f.store.updateSettings({ enrichEsde: true })
+      await f.downloads.enqueue(game)
+      assert.equal((await settled(f.downloads, 23)).state, 'done')
+      const entry = f.store.getInstalled(23)!
+      assert.equal(entry.path, join(emulator.paths.roms!, 'saturn', launch))
+      assert.equal(entry.launchPath, join(entry.path, launch))
+      assert.equal(
+        entry.playlist,
+        undefined,
+        'supplied files are not claimed as a generated playlist'
+      )
+      for (const [name, body] of Object.entries(bodies))
+        assert.equal(readFileSync(join(entry.path, name), 'utf8'), body)
+      assert.equal(await f.library.launchTarget(entry), entry.launchPath)
+      f.store.removeInstalled(23)
+      if (launch === 'Server order.m3u') {
+        await f.library.adopt([
+          {
+            ...game,
+            files: game.files.map((file) => ({
+              ...file,
+              file_size_bytes: file.file_size_bytes + 1
+            }))
+          }
+        ])
+        assert.equal(
+          f.store.getInstalled(23),
+          undefined,
+          'a differently named package needs matching server files'
+        )
+      }
+      await f.library.adopt([game])
+      assert.equal(f.store.getInstalled(23)?.launchPath, entry.launchPath)
+      await f.library.uninstall(23)
+      assert.equal(existsSync(entry.path), false)
+    })
+  }
+}
+
 function rom(fields: Partial<RommRom> = {}): RommRom {
   return {
     id: 1,

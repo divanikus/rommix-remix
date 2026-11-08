@@ -94,11 +94,12 @@ function numbered(
   }
 }
 
-export function recognizeDiscs(files: readonly DiscFile[], supported: readonly string[]): DiscSet {
+/** Disc roots and their dependencies, before numbering or runner support matters. */
+export function inspectDiscs(files: readonly DiscFile[]): DiscSet {
   if (files.some((file) => /\.m3u8?$/i.test(file.name)))
     return { state: 'skip', reason: 'playlist' }
   const candidates = files.filter((file) => DISC_EXTENSIONS.includes(extension(file.name)))
-  if (candidates.length < 2) return { state: 'skip', reason: 'single' }
+  if (candidates.length === 0) return { state: 'skip', reason: 'single' }
   if (files.some((file) => !discPath(file.name))) return { state: 'skip', reason: 'ambiguous' }
   // ZIP/BIOS/CHD combinations and executable/update bundles are not disc sets.
   const names = new Set(files.map((file) => file.name))
@@ -114,9 +115,6 @@ export function recognizeDiscs(files: readonly DiscFile[], supported: readonly s
     references.forEach((track) => used.add(track!))
   }
   const discs = candidates.filter((file) => !used.has(file.name))
-  if (discs.length < 2) return { state: 'skip', reason: 'single' }
-  if (discs.some((file) => !supported.includes(extension(file.name))))
-    return { state: 'skip', reason: 'unsupported' }
   // Anything beyond discs, their tracks and descriptive sidecars needs its own interpretation.
   if (
     files.some(
@@ -127,6 +125,16 @@ export function recognizeDiscs(files: readonly DiscFile[], supported: readonly s
     )
   )
     return { state: 'skip', reason: 'ambiguous' }
+  return { state: 'ready', discs: discs.map((file) => file.name) }
+}
+
+export function recognizeDiscs(files: readonly DiscFile[], supported: readonly string[]): DiscSet {
+  const inspected = inspectDiscs(files)
+  if (inspected.state !== 'ready') return inspected
+  if (inspected.discs.length < 2) return { state: 'skip', reason: 'single' }
+  const discs = files.filter((file) => inspected.discs.includes(file.name))
+  if (discs.some((file) => !supported.includes(extension(file.name))))
+    return { state: 'skip', reason: 'unsupported' }
   let result: string[] | undefined
   for (const numbering of ['roman', 'letter'] as const) {
     const ordered = discs.map((file) => ({ file, order: numbered(file.name, numbering) }))

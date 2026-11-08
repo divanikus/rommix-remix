@@ -274,6 +274,25 @@ class EnrichmentTests(unittest.TestCase):
         self.assertEqual(cover.read_bytes(), b'owner')
         self.assertFalse(cover.with_suffix('.png').exists())
 
+    def test_single_disc_directories_use_outer_game_and_media_paths(self):
+        for extension in ('.cue', '.gdi', '.chd', '.iso', '.cdi'):
+            with self.subTest(extension=extension):
+                self.target.unlink(missing_ok=True)
+                self.integration['directoryExtensions'] = [extension]
+                name = 'Single' + extension
+                folder = self.game.parent / name
+                folder.mkdir()
+                launch = folder / name
+                launch.write_bytes(b'original disc or descriptor')
+                self.job['entry'].update(path=str(folder), launchPath=str(launch), isDirectory=True)
+                self.job['media'] = [self.staged('covers', '.png', b'cover')]
+                publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
+                doc = minidom.parse(str(self.target))
+                self.assertEqual(len(doc.getElementsByTagName('game')), 1)
+                self.assertEqual(doc.getElementsByTagName('path')[0].firstChild.data, './' + name)
+                self.assertEqual((self.media / 'psx/covers' / (name + '.png')).read_bytes(), b'cover')
+                self.assertEqual(launch.read_bytes(), b'original disc or descriptor')
+
     def test_unmatched_directory_as_file_still_blocks(self):
         folder = self.game.parent / 'Wrong.m3u'
         folder.mkdir()

@@ -39,7 +39,9 @@ deliberately replaced. No existing library migration or background repair runs.
 ## ES-DE
 
 When ES-DE enrichment is enabled for a declared integration and downloads use its
-emulator folders, the completed unit uses ES-DE's directory-as-file convention:
+emulator folders, grouping the completed unit is separate from generating a
+playlist. A supplied root M3U with valid relative references keeps its bytes,
+comments and order and can use the same directory-as-file convention:
 
 ```text
 Game.m3u/
@@ -62,6 +64,26 @@ multidisc game, confirm one ES-DE entry with its artwork, launch through both
 frontends and switch discs in the emulator. Automated fixtures cover download,
 resume, index persistence, adoption after index loss, removal and export; they
 do not establish actual emulator disc swapping or controller behavior.
+
+A single complete CUE/BIN or GDI/track disc, or one CHD/ISO/CDI with descriptive
+sidecars, can also be one entry without generating a playlist:
+
+```text
+Game.cue/
+  Game.cue
+  tracks/track.bin
+```
+
+The directory takes the selected root launch file's exact name, even if the
+server package has a different name. Internal file names and references remain
+unchanged. Metadata targets `./Game.cue` and its cover is `covers/Game.cue.png`.
+Adoption can rediscover a differently named package from its exact server file
+paths and sizes. Multiple playlists or unrecognised disc sets, missing or external
+references, nested launch targets and occupied destinations keep their layout.
+An existing M3U8 is preserved; it is not in the verified ES-DE directory-extension
+list. Adding files and adopting existing directories do not rename anything.
+When a generated playlist cannot claim an occupied ES-DE directory name, it stays
+usable inside the fresh ordinary game folder.
 
 ## References
 

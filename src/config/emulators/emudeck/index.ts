@@ -1,6 +1,7 @@
 import { emuDeckSavePaths } from './saves.ts'
 import { mameArguments } from './mame.ts'
 import { coreM3u, DUCKSTATION_M3U } from '../playlists.ts'
+import { DISC_DIRECTORY_EXTENSIONS, ROMSET_ARCHIVE_EXTENSIONS } from '../../romfiles.ts'
 import type { DirSpec, EmulatorDescriptor, LaunchVariant, LayoutSource } from '../types.ts'
 
 /**
@@ -377,7 +378,7 @@ export const emudeck: EmulatorDescriptor = {
     toolsKey: 'toolsPath',
     launcherDirectory: 'launchers',
     dataDirectory: 'ES-DE',
-    directoryExtensions: ['.m3u', '.zip', '.7z']
+    directoryExtensions: [...DISC_DIRECTORY_EXTENSIONS, ...ROMSET_ARCHIVE_EXTENSIONS]
   },
   // Discovered from EmuDeck's settings rather than declared: every one of them
   // is a path the user chose, and an SD card is the usual reason.

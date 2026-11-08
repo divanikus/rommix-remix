@@ -63,3 +63,86 @@ test('unsupported, unmatched, nested or missing launch files keep the package un
   await rm(input.launchPath)
   assert.equal(await groupLaunchDirectory(input, ['.7z']), input)
 })
+
+async function discFixture(
+  files: Record<string, string>,
+  launch = Object.keys(files)[0]
+): Promise<InstallResult> {
+  const root = await mkdtemp(join(tmpdir(), 'rommix-disc-dir-'))
+  roots.push(root)
+  const path = join(root, 'Package')
+  for (const [name, body] of Object.entries(files)) {
+    await mkdir(join(path, name, '..'), { recursive: true })
+    await writeFile(join(path, name), body)
+  }
+  return {
+    path,
+    launchPath: join(path, launch),
+    isDirectory: true,
+    files: Object.keys(files),
+    sizeBytes: Object.values(files).reduce((sum, body) => sum + Buffer.byteLength(body), 0)
+  }
+}
+
+test('existing playlist bytes, comments and order survive a differently named package', async () => {
+  const body = '\uFEFF#EXTM3U\r\n# owner order\r\n./Disc 2.chd\r\nDisc 1.chd\r\n'
+  const input = await discFixture({
+    'Launch.m3u': body,
+    'Disc 1.chd': 'first',
+    'Disc 2.chd': 'second'
+  })
+  const result = await groupLaunchDirectory(input, ['.m3u'])
+  assert.equal(result.path, join(input.path, '../Launch.m3u'))
+  assert.equal(await readFile(result.launchPath, 'utf8'), body)
+  assert.deepEqual(result.files, input.files)
+  assert.equal(result.sizeBytes, input.sizeBytes)
+})
+
+test('a single CUE groups without changing track references or needing M3U', async () => {
+  const input = await discFixture({
+    'Disc.cue': 'FILE "tracks/track.bin" BINARY',
+    'tracks/track.bin': 'track'
+  })
+  const output = await groupLaunchDirectory(input, ['.cue'])
+  assert.equal(output.launchPath, join(input.path, '../Disc.cue/Disc.cue'))
+  assert.equal(await readFile(join(output.path, 'tracks/track.bin'), 'utf8'), 'track')
+  assert.deepEqual(output.files, input.files)
+})
+
+for (const reference of [
+  'missing.chd',
+  '../outside.chd',
+  '/absolute/Game.chd',
+  'https://example.com/game.chd',
+  'Game.m3u'
+]) {
+  test(`playlist reference ${reference} prevents moving the package`, async () => {
+    const input = await discFixture({ 'Game.m3u': reference, 'Game.chd': 'disc' })
+    assert.equal(await groupLaunchDirectory(input, ['.m3u']), input)
+  })
+}
+
+test('ambiguous disc sets, broken tracks, nested launchers and unsupported formats stay visible', async () => {
+  const cases: Record<string, string>[] = [
+    { 'One.m3u': 'Game.chd', 'Two.m3u': 'Game.chd', 'Game.chd': 'disc' },
+    {
+      'One.cue': 'FILE "one.bin" BINARY',
+      'one.bin': 'one',
+      'Two.cue': 'FILE "two.bin" BINARY',
+      'two.bin': 'two'
+    },
+    { 'Game.cue': 'FILE "missing.bin" BINARY' },
+    { 'Nested/Game.m3u': 'Game.chd', 'Nested/Game.chd': 'disc' }
+  ]
+  for (const files of cases) {
+    const input = await discFixture(files)
+    assert.equal(await groupLaunchDirectory(input, ['.m3u', '.cue']), input)
+  }
+  const unsupported = await discFixture({
+    'Game.cue': 'FILE "track.bin" BINARY',
+    'track.bin': 'track'
+  })
+  assert.equal(await groupLaunchDirectory(unsupported, ['.m3u']), unsupported)
+  await writeFile(join(unsupported.path, '../Game.cue'), 'owner file')
+  assert.equal(await groupLaunchDirectory(unsupported, ['.cue']), unsupported)
+})

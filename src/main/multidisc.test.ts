@@ -4,6 +4,7 @@ import { mkdtemp, mkdir, writeFile, readFile, rm, stat } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { prepareMultidisc } from './multidisc.ts'
+import { groupLaunchDirectory } from './launch-directory.ts'
 import { directorySize, installedFiles, type InstallResult } from './install.ts'
 
 const roots: string[] = []
@@ -42,7 +43,7 @@ async function fixture(
 
 test('generated playlist, index, sizes and all relative tracks agree after ES-DE grouping', async () => {
   const input = await fixture()
-  const output = await prepareMultidisc(input, ['.cue'], true)
+  const output = await groupLaunchDirectory(await prepareMultidisc(input, ['.cue']), ['.m3u'])
   assert.equal(output.path, input.path + '.m3u')
   assert.equal(output.launchPath, join(output.path, 'Game.m3u'))
   assert.equal(await readFile(output.launchPath, 'utf8'), './Disc 1/Game.cue\n./Disc 2/Game.cue\n')
@@ -63,7 +64,7 @@ for (const labels of [
 ]) {
   test(`playlist generation retains every disc in ${labels.join(', ')} order`, async () => {
     const input = await fixture({}, labels.toReversed())
-    const output = await prepareMultidisc(input, ['.cue'], true)
+    const output = await prepareMultidisc(input, ['.cue'])
     const discs = labels.map((label) => `Disc ${label}/Game.cue`)
     assert.deepEqual(output.playlist?.discs, discs)
     assert.equal(
@@ -76,7 +77,7 @@ for (const labels of [
 
 test('ordinary library gets a playlist without an ES-DE directory change', async () => {
   const input = await fixture()
-  const output = await prepareMultidisc(input, ['.cue'], false)
+  const output = await prepareMultidisc(input, ['.cue'])
   assert.equal(output.path, input.path)
   assert.equal(await readFile(output.launchPath, 'utf8'), './Disc 1/Game.cue\n./Disc 2/Game.cue\n')
 })
@@ -85,7 +86,7 @@ test('existing playlists and conflicting owner directories stay untouched', asyn
   const existing = await fixture({
     'Owner.m3u': '# owner order\nDisc 2/Game.cue\nDisc 1/Game.cue\n'
   })
-  assert.equal(await prepareMultidisc(existing, ['.cue'], true), existing)
+  assert.equal(await prepareMultidisc(existing, ['.cue']), existing)
   assert.equal(
     await readFile(join(existing.path, 'Owner.m3u'), 'utf8'),
     '# owner order\nDisc 2/Game.cue\nDisc 1/Game.cue\n'
@@ -93,15 +94,19 @@ test('existing playlists and conflicting owner directories stay untouched', asyn
   const input = await fixture()
   await mkdir(input.path + '.m3u')
   await writeFile(join(input.path + '.m3u', 'owner.txt'), 'keep')
-  assert.equal(await prepareMultidisc(input, ['.cue'], true), input)
+  const prepared = await prepareMultidisc(input, ['.cue'])
+  assert.equal(await groupLaunchDirectory(prepared, ['.m3u']), prepared)
   assert.equal(await readFile(join(input.path + '.m3u', 'owner.txt'), 'utf8'), 'keep')
-  assert.equal(await stat(join(input.path, 'Game.m3u')).catch(() => null), null)
+  assert.equal(
+    await readFile(join(input.path, 'Game.m3u'), 'utf8'),
+    './Disc 1/Game.cue\n./Disc 2/Game.cue\n'
+  )
 })
 
 test('incomplete and unsupported disc sets do not get a playlist', async () => {
   const input = await fixture()
-  assert.equal(await prepareMultidisc(input, [], true), input)
+  assert.equal(await prepareMultidisc(input, []), input)
   await rm(join(input.path, 'Disc 2/track.bin'))
-  assert.equal(await prepareMultidisc(input, ['.cue'], true), input)
+  assert.equal(await prepareMultidisc(input, ['.cue']), input)
   assert.equal(await stat(join(input.path, 'Game.m3u')).catch(() => null), null)
 })

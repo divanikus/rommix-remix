@@ -18,13 +18,16 @@ export const SIDECAR_EXTENSIONS: readonly string[] = [
   '.xml',
   '.dat',
   '.md5',
+  '.sha1',
   '.sfv',
   '.sbi',
   '.sub',
   '.ccd',
   '.jpg',
   '.jpeg',
-  '.png'
+  '.png',
+  '.webp',
+  '.pdf'
 ]
 
 /**
@@ -118,12 +121,11 @@ export const DESCRIPTOR_EXTENSIONS: readonly string[] = ['.m3u', '.cue', '.gdi']
 
 /** Disc formats understood by playlist generation, before runner capability checks. */
 export const DISC_EXTENSIONS: readonly string[] = ['.cue', '.gdi', '.chd', '.iso', '.cdi']
-export const DISC_SIDECAR_EXTENSIONS: readonly string[] = [
-  ...SIDECAR_EXTENSIONS.filter((extension) => extension !== '.ccd'),
-  '.sha1',
-  '.webp',
-  '.pdf'
-]
+/** Disc entries supported by ES-DE's matching directory/file convention. */
+export const DISC_DIRECTORY_EXTENSIONS: readonly string[] = ['.m3u', ...DISC_EXTENSIONS]
+export const DISC_SIDECAR_EXTENSIONS: readonly string[] = SIDECAR_EXTENSIONS.filter(
+  (extension) => extension !== '.ccd'
+)
 
 /**
  * Systems whose emulators are handed the disc image, never a descriptor.
