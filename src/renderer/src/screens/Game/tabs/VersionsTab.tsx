@@ -4,7 +4,7 @@ import { StatusBadge } from '../../../components'
 import { Icon } from '../../../icons'
 import { useFocusable } from '../../../input/focus'
 import { useI18n } from '../../../state'
-import { markedVersion, pickedVersion, pickQuery } from './versions'
+import { markedVersion, pickedVersion, pickQuery, versionRows } from './versions'
 
 /**
  * Every dump of this game, this one included.
@@ -22,11 +22,10 @@ import { markedVersion, pickedVersion, pickQuery } from './versions'
  * requests, made only when somebody looks — and the rows are drawn from the
  * names first, so the list is never a spinner.
  *
- * Each row is named by its file rather than by the tags that distinguish it.
- * The tags are the shorter label and were the obvious one, until a dump that
- * carries none — which is most base releases — left a row with nothing to be
- * called: one row read as a label and the next as a filename. The file name is
- * a thing every dump has, and the chips beside it say what it is.
+ * Distinct metadata titles describe versions whose filenames are short codes.
+ * The filename remains underneath. Where the titles are shared, filenames stay
+ * the main labels, retaining tags that distinguish regions and revisions. Both
+ * names arrive with the sibling, so labels do not wait for detail requests.
  *
  * One row is the version standing for the game — the one a grouped grid shows
  * and opens — and it says why: marked by this user in RomM, or picked by RomM
@@ -87,10 +86,7 @@ export function VersionsTab({
    * the order has to stay put as the tab is walked back into from a version it
    * opened, or the list reshuffles itself under whoever is choosing.
    */
-  const rows = [
-    { id: rom.id, fsNameNoExt: rom.fs_name_no_ext },
-    ...siblings.map((sibling) => ({ id: sibling.id, fsNameNoExt: sibling.fs_name_no_ext }))
-  ].sort((one, other) => one.fsNameNoExt.localeCompare(other.fsNameNoExt))
+  const rows = versionRows(rom, siblings)
 
   return (
     <ul className="asset-list">
@@ -98,7 +94,8 @@ export function VersionsTab({
         <VersionRow
           key={row.id}
           romId={row.id}
-          fsNameNoExt={row.fsNameNoExt}
+          title={row.title}
+          filename={row.filename}
           detail={row.id === rom.id ? rom : details.get(row.id)}
           current={row.id === rom.id}
           standing={row.id === marked ? 'marked' : row.id === picked ? 'picked' : null}
@@ -121,7 +118,8 @@ export function VersionsTab({
  */
 function VersionRow({
   romId,
-  fsNameNoExt,
+  title,
+  filename,
   detail,
   current,
   standing,
@@ -129,7 +127,8 @@ function VersionRow({
   onSelect
 }: {
   romId: number
-  fsNameNoExt: string
+  title: string
+  filename: string | null
   /** The record behind this dump, absent until it arrives. */
   detail: RommRom | undefined
   current: boolean
@@ -184,7 +183,10 @@ function VersionRow({
           {formatBytes(detail.fs_size_bytes)}
         </span>
       ) : null}
-      <span className="asset__name">{fsNameNoExt}</span>
+      <span className="asset__name version__name">
+        <span>{title}</span>
+        {filename ? <span className="version__filename">{filename}</span> : null}
+      </span>
       {/* At the end of the row, where a row's own state belongs: in front it
           stood among the chips describing the file and pushed them out of line
           with every other row. */}

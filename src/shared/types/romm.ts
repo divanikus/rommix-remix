@@ -291,9 +291,9 @@ export interface RommRomMetadata {
  * none marked, it still returns one, by RomM's own order — which no field
  * names. See `RommRomUser.is_main_sibling`.
  *
- * `fs_name_no_ext` and `fs_name_no_tags` are both here because the difference
- * between them is the only thing that tells two versions apart on screen: what
- * is left after the shared name is the region and revision this copy carries.
+ * `name` can distinguish versions even when filenames are short codes.
+ * `fs_name_no_ext` preserves region and revision tags when metadata names are
+ * shared; `fs_name_no_tags` is the base filename without those tags.
  */
 export interface RommSiblingRom {
   id: number

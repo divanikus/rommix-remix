@@ -131,6 +131,20 @@
   word-break: break-all;
 }
 
+.version__name {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  word-break: normal;
+  overflow-wrap: anywhere;
+}
+
+.version__filename {
+  color: var(--text-dim);
+  font-size: calc(13px * var(--type-scale));
+}
+
 .asset__meta {
   font-size: calc(13px * var(--type-scale));
   color: var(--text-faint);

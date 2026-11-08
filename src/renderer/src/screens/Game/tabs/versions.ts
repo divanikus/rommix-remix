@@ -1,5 +1,33 @@
 import type { RomQuery, RommRom, RommSiblingRom } from '@shared/types'
 
+type VersionName = Pick<RommSiblingRom, 'id' | 'name' | 'fs_name_no_ext'>
+
+/**
+ * Metadata names help distinguish short ROM names when the server gives each
+ * version its own title. A shared title adds nothing to the choice, so those
+ * groups keep filenames, including their region, revision and translation tags.
+ * Keep the filename visible even when the metadata supplies the main label.
+ */
+export function versionRows(rom: VersionName, siblings: readonly VersionName[]) {
+  const versions = [rom, ...siblings]
+  const normalize = (name: string): string => name.trim().replace(/\s+/g, ' ').toLowerCase()
+  const names = new Set(versions.map((row) => normalize(row.name ?? '')).filter(Boolean))
+  return (
+    versions
+      .map((row) => {
+        const title = (names.size > 1 && row.name?.trim()) || row.fs_name_no_ext
+        return {
+          id: row.id,
+          fsNameNoExt: row.fs_name_no_ext,
+          title,
+          filename: normalize(title) === normalize(row.fs_name_no_ext) ? null : row.fs_name_no_ext
+        }
+      })
+      // Metadata loading and selecting another version must not reshuffle rows.
+      .sort((one, other) => one.fsNameNoExt.localeCompare(other.fsNameNoExt))
+  )
+}
+
 /**
  * Which version stands for a game, and who chose it.
  *
