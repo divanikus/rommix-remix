@@ -39,7 +39,7 @@ export function GameHero({
     enabled: versionCount > 1,
     actionLabel: t('game.changeVersion')
   })
-  const added = entry ? newFilesOf(rom.files, entry) : []
+  const added = entry ? newFilesOf(rom.files, entry, rom) : []
 
   return (
     <div className="game-hero">

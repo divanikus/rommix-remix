@@ -197,6 +197,49 @@ class EnrichmentTests(unittest.TestCase):
         publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
         self.assertEqual((self.media / 'psx/screenshots/Bundle/Game.png').read_bytes(), b'image')
 
+    def test_playlist_directory_has_one_game_entry_and_directory_media_name(self):
+        folder = self.game.parent / 'Game.m3u'
+        folder.mkdir()
+        launch = folder / 'Game.m3u'
+        launch.write_text('Disc 1/Game.cue\nDisc 2/Game.cue\n')
+        self.job['entry'].update(path=str(folder), launchPath=str(launch), isDirectory=True)
+        self.job['media'] = [self.staged('covers', '.png', b'cover')]
+        publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
+        self.assertIn(b'<path>./Game.m3u</path>', self.target.read_bytes())
+        self.assertNotIn(b'Game.m3u/Game.m3u', self.target.read_bytes())
+        self.assertEqual((self.media / 'psx/covers/Game.m3u.png').read_bytes(), b'cover')
+        before = self.target.read_bytes()
+        publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
+        self.assertEqual(self.target.read_bytes(), before)
+        self.assertEqual(len(minidom.parse(str(self.target)).getElementsByTagName('game')), 1)
+
+    def test_playlist_directory_preserves_owner_art_and_waits_for_esde(self):
+        folder = self.game.parent / 'Game.m3u'
+        folder.mkdir()
+        launch = folder / 'Game.m3u'
+        launch.write_text('Disc 1.cue\nDisc 2.cue\n')
+        self.job['entry'].update(path=str(folder), launchPath=str(launch), isDirectory=True)
+        self.job['media'] = [self.staged('covers', '.png', b'server')]
+        cover = self.media / 'psx/covers/Game.m3u.jpg'
+        cover.parent.mkdir(parents=True)
+        cover.write_bytes(b'owner')
+        result = publish(self.home, self.job, self.integration, lambda: True, self.home / '.pending')
+        self.assertEqual(result['state'], 'deferred')
+        self.assertFalse(self.target.exists())
+        publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')
+        self.assertEqual(cover.read_bytes(), b'owner')
+        self.assertFalse(cover.with_suffix('.png').exists())
+
+    def test_unmatched_directory_as_file_still_blocks(self):
+        folder = self.game.parent / 'Wrong.m3u'
+        folder.mkdir()
+        launch = folder / 'Game.m3u'
+        launch.write_text('disc.cue\n')
+        self.job['entry'].update(path=str(folder), launchPath=str(launch), isDirectory=True)
+        with self.assertRaises(EnrichmentError):
+            publish(self.home, self.job, self.integration, lambda: False)
+        self.assertFalse(self.target.exists())
+
     def test_video_and_manual_are_copied_completely(self):
         self.job['media'] = [self.staged('videos', '.mp4', b'video' * 300000), self.staged('manuals', '.pdf', b'%PDF-1.7')]
         publish(self.home, self.job, self.integration, lambda: False, self.home / '.pending')

@@ -1,12 +1,13 @@
 import { EventEmitter } from 'node:events'
-import { mkdir, rm, stat } from 'node:fs/promises'
+import { lstat, mkdir, rm, stat } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import {
   archiveIsTheRom,
   bytesOf,
   chooseLaunchFile,
   gameFolderOf,
-  newFilesOf
+  newFilesOf,
+  romFileName
 } from '@shared/gamefiles'
 import { isStopped, type DownloadItem, type InstalledRom, type RommRom } from '@shared/types'
 import { fits, spaceOf } from './disk.ts'
@@ -57,6 +58,13 @@ import type { Store } from './store.ts'
  * tens of thousands one per chunk would produce.
  */
 const PROGRESS_INTERVAL_MS = 250
+
+/** The verified relative name in a multi-file ROM, or its flat-library basename. */
+function downloadName(rom: RommRom, file: RommRom['files'][number], directory: boolean): string {
+  const name = directory ? romFileName(file, rom) : file.file_name
+  if (!name) throw new RommError(t('error.unsafeName', { name: file.file_name }))
+  return name
+}
 
 /**
  * What a transfer in progress is holding on disk.
@@ -256,7 +264,7 @@ export class DownloadManager extends EventEmitter {
       platformName: rom.platform_display_name,
       state: 'queued',
       receivedBytes: 0,
-      totalBytes: entry ? bytesOf(newFilesOf(rom.files, entry)) : rom.fs_size_bytes,
+      totalBytes: entry ? bytesOf(newFilesOf(rom.files, entry, rom)) : rom.fs_size_bytes,
       error: null,
       ...(adding ? { adding: true } : {})
     }
@@ -701,6 +709,13 @@ export class DownloadManager extends EventEmitter {
 
     try {
       const { dir, path, system, emulatorId, asDirectory, flat } = await this.library.plan(rom)
+      const folder = asDirectory ? path : await safeJoin(dir, rom.fs_name_no_ext)
+      const prior = this.store.pending.find((held) => held.romId === rom.id)
+      const fresh =
+        !!folder &&
+        (!(await lstat(folder).catch(() => null)) ||
+          (prior?.freshFolder === folder && prior.fileName === rom.fs_name)) &&
+        !this.library.installedNow(rom.id)
 
       /**
        * One file at a time, where the server will do it.
@@ -733,13 +748,13 @@ export class DownloadManager extends EventEmitter {
       holding = adding
         ? {
             targetPath: gameFolderOf(adding.entry),
-            files: adding.wanted.map((file) => file.file_name),
+            files: adding.wanted.map((file) => downloadName(rom, file, adding.entry.isDirectory)),
             ownsFolder: false
           }
         : perFile.available
           ? {
               targetPath: asDirectory ? path : dir,
-              files: rom.files.map((file) => file.file_name),
+              files: rom.files.map((file) => downloadName(rom, file, asDirectory)),
               ownsFolder: asDirectory
             }
           : { targetPath: asDirectory ? `${path}.zip` : path, files: [], ownsFolder: false }
@@ -812,6 +827,7 @@ export class DownloadManager extends EventEmitter {
         targetPath: holding.targetPath,
         files: holding.files,
         ownsFolder: holding.ownsFolder,
+        ...(fresh && !adding ? { freshFolder: folder } : {}),
         ...(adding ? { adding: true } : {}),
         fileName: rom.fs_name,
         totalBytes: adding ? item.totalBytes : rom.fs_size_bytes
@@ -828,7 +844,7 @@ export class DownloadManager extends EventEmitter {
       })
 
       const transfer = { resume, resumable, controller }
-      const fetched =
+      let fetched =
         adding || perFile.available
           ? await this.fetchFileByFile(
               rom,
@@ -842,6 +858,12 @@ export class DownloadManager extends EventEmitter {
               transfer
             )
           : await this.fetchWhole(rom, item, { dir, path, system, asDirectory, flat }, transfer)
+
+      if (!adding && fresh) {
+        // Both transport routes converge here, after every file has completed.
+        // Existing libraries and add-file operations never get renamed or rewritten.
+        fetched = await this.library.prepareDownload(fetched, system)
+      }
 
       // The bytes are in the game now, and nothing is left to pick up.
       this.store.removePending(rom.id)
@@ -858,7 +880,7 @@ export class DownloadManager extends EventEmitter {
       const installed = adding
         ? await this.library.withFiles(
             adding.entry,
-            adding.added.map((file) => file.file_name)
+            adding.added.map((file) => downloadName(rom, file, adding.entry.isDirectory))
           )
         : await this.library.entryFor(rom, system, emulatorId, fetched)
       this.library.record(installed)
@@ -1015,7 +1037,7 @@ export class DownloadManager extends EventEmitter {
     const entry = this.library.installedNow(rom.id)
     if (!entry) return null
 
-    const added = newFilesOf(rom.files, entry)
+    const added = newFilesOf(rom.files, entry, rom)
     const moves = added.length > 0 && asDirectory && !entry.isDirectory
     const folder = moves
       ? await safeJoin(dirname(entry.path), rom.fs_name_no_ext)
@@ -1025,9 +1047,10 @@ export class DownloadManager extends EventEmitter {
     const recorded = this.store.pending.find((held) => held.romId === rom.id)
     const wanted: RommRom['files'] = []
     for (const file of added) {
-      const destination = await safeJoin(folder, file.file_name)
+      const destination = await safeJoin(folder, downloadName(rom, file, asDirectory))
       const found = destination ? await stat(destination).catch(() => null) : null
-      if (!found || recorded?.files.includes(file.file_name)) wanted.push(file)
+      if (!found || recorded?.files.includes(downloadName(rom, file, asDirectory)))
+        wanted.push(file)
     }
 
     // An archive is the whole game again, over the copy being added to.
@@ -1062,7 +1085,7 @@ export class DownloadManager extends EventEmitter {
       // RomM chose one by one. A name that climbs out of the game's folder is
       // refused here rather than followed, which is also what keeps the list
       // recorded against the game safe to walk when it is deleted again.
-      const destination = await safeJoin(where.dir, file.file_name)
+      const destination = await safeJoin(where.dir, downloadName(rom, file, where.asDirectory))
       if (!destination) {
         log.error('download', 'refused a file name that leaves the game folder', undefined, {
           romId: rom.id,
@@ -1112,7 +1135,7 @@ export class DownloadManager extends EventEmitter {
 
       const size = (await stat(destination).catch(() => null))?.size ?? file.file_size_bytes
       done += size
-      sized.push({ name: file.file_name, sizeBytes: size })
+      sized.push({ name: downloadName(rom, file, where.asDirectory), sizeBytes: size })
       item.receivedBytes = done
       this.emitUpdate()
     }

@@ -161,6 +161,8 @@ export interface PendingDownload {
    * own folder goes, a shared one obviously cannot.
    */
   ownsFolder: boolean
+  /** Absent before this download: only this folder may gain a generated playlist on resume. */
+  freshFolder?: string
   /**
    * New files for a game already installed. See `DownloadItem.adding`: the
    * record outlives the row, and without this a restart reads an installed

@@ -269,6 +269,8 @@ export interface LaunchVariant {
   label: string
   /** Short qualifier shown beside the label, e.g. 'RetroArch'. */
   note?: string
+  /** Disc formats this runner can load through M3U. Absent means unverified. */
+  m3u?: readonly string[]
   /**
    * A file this variant needs, below the install directory.
    *

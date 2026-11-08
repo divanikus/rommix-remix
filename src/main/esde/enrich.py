@@ -206,7 +206,9 @@ def media_destination(paths, system, launch, system_root, kind, extension):
     if kind not in MEDIA or extension not in MEDIA[kind]:
         raise EnrichmentError('mediaType', 'Unsupported ES-DE media type')
     root = Path(paths['media'])
-    stem = launch.relative_to(system_root).with_suffix('')
+    relative = launch.relative_to(system_root)
+    # ES-DE retains the extension of a directory interpreted as a file.
+    stem = relative if launch.is_dir() else relative.with_suffix('')
     destination = inside(root / system / kind / (str(stem) + extension), root)
     existing = MEDIA[kind] + (('.jpeg',) if kind not in ('videos', 'manuals') else ())
     if any(destination.with_suffix(ext).exists() for ext in existing):
@@ -227,8 +229,17 @@ def publish(home, job, integration, is_running=running, cache=None):
     launch = inside(entry['launchPath'], system_root)
     if not launch.is_file():
         raise EnrichmentError('launchMissing', 'The completed launch file is missing')
-    if (system_root / 'flatten.txt').exists() or any(p.suffix == launch.suffix for p in launch.parents if p != system_root and system_root in p.parents):
-        raise EnrichmentError('layout', 'Flattened or directory-as-file ES-DE layouts require explicit support')
+    special = [p for p in launch.parents if p != system_root and system_root in p.parents
+               and p.suffix.lower() == launch.suffix.lower()]
+    display = launch
+    if special:
+        if (len(special) != 1 or special[0] != launch.parent or launch.suffix.lower() != '.m3u'
+                or launch.parent.name != launch.name or not entry.get('isDirectory')
+                or Path(entry.get('path', '')).resolve() != launch.parent):
+            raise EnrichmentError('layout', 'Unsupported directory-as-file layout')
+        display = launch.parent
+    if (system_root / 'flatten.txt').exists():
+        raise EnrichmentError('layout', 'Flattened ES-DE layouts require explicit support')
     # Custom systems can override the root, even when ROMDirectory agrees.
     custom = Path(paths['data']) / 'custom_systems/es_systems.xml'
     if custom.is_file():
@@ -239,7 +250,7 @@ def publish(home, job, integration, is_running=running, cache=None):
                 raise EnrichmentError('customSystem', 'Custom ES-DE system paths require explicit support')
     target = inside(Path(paths['data']) / 'gamelists' / system / 'gamelist.xml', Path(paths['data']) / 'gamelists')
     before = target.read_bytes() if target.exists() else b''
-    relative = './' + launch.relative_to(system_root).as_posix()
+    relative = './' + display.relative_to(system_root).as_posix()
     after = merge(before, relative, job['fields'], system_root)
     if after != before:
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -262,7 +273,7 @@ def publish(home, job, integration, is_running=running, cache=None):
     for media in job.get('media', []):
         if is_running():
             return {'state': 'deferred', 'reasonCode': 'running'}
-        image_path = media_destination(paths, system, launch, system_root, media['kind'], media['extension'])
+        image_path = media_destination(paths, system, display, system_root, media['kind'], media['extension'])
         if image_path is None:
             continue
         if cache is None:
@@ -281,7 +292,7 @@ def publish(home, job, integration, is_running=running, cache=None):
             if is_running():
                 return {'state': 'deferred', 'reasonCode': 'running'}
             # Curation may have arrived under another extension during the copy.
-            if media_destination(paths, system, launch, system_root, media['kind'], media['extension']) is None:
+            if media_destination(paths, system, display, system_root, media['kind'], media['extension']) is None:
                 continue
             try:
                 # Link is atomic and refuses to replace existing owner artwork.
@@ -291,7 +302,7 @@ def publish(home, job, integration, is_running=running, cache=None):
         finally:
             os.unlink(temp)
     needed = [a['kind'] for a in job.get('artwork', []) if a['kind'] in MEDIA and
-              media_destination(paths, system, launch, system_root, a['kind'], MEDIA[a['kind']][0]) is not None]
+              media_destination(paths, system, display, system_root, a['kind'], MEDIA[a['kind']][0]) is not None]
     return {'state': 'done', 'changed': after != before, 'needed': needed, **paths}
 
 

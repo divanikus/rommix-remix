@@ -55,6 +55,7 @@ export async function pickLaunchFile(dir: string, system: string): Promise<strin
 export interface InstallResult {
   path: string
   launchPath: string
+  playlist?: { file: string; discs: string[] }
   sizeBytes: number
   isDirectory: boolean
   /**

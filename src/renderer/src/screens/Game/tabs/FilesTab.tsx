@@ -78,7 +78,7 @@ export function FilesTab({
 }): JSX.Element {
   const { t, formatBytes } = useI18n()
   const rows = merge(rom, entry)
-  const added = entry ? newFilesOf(rom.files, entry).length : 0
+  const added = entry ? newFilesOf(rom.files, entry, rom).length : 0
   /**
    * What the copies on this disk weigh, by lowercased name.
    *

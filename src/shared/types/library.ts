@@ -30,6 +30,8 @@ export interface InstalledRom {
    * directory, because emulators cannot be given a directory.
    */
   launchPath: string
+  /** Client-generated M3U and ordered disc paths relative to the owned game folder. */
+  playlist?: { file: string; discs: string[] }
   /**
    * The game's name as RomM knows it. Recorded at install time because the
    * Downloads screen has only this index to work from — it never fetches the

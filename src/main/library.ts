@@ -10,6 +10,9 @@ import {
   type GameFile
 } from '@shared/gamefiles'
 import { emulatorById, emulatorsForSystem } from '@config/emulators'
+import { m3uFormats } from '@config/emulators/playlists'
+import { usableVariants } from './emulators.ts'
+import { prepareMultidisc } from './multidisc.ts'
 import { resolveSystem } from '@config/systems'
 import { hasMorePages, SHARED_LIBRARY } from '@shared/types'
 import type { EmulatorState, InstalledRom, LibrarySyncResult, RommRom } from '@shared/types'
@@ -221,6 +224,7 @@ export class Library extends EventEmitter {
       emulatorId,
       path: installed.path,
       launchPath: installed.launchPath,
+      ...(installed.playlist ? { playlist: installed.playlist } : {}),
       name: rom.name ?? rom.fs_name,
       coverPath: rom.path_cover_small ?? rom.path_cover_large,
       files: installed.files ?? [basename(installed.path)],
@@ -423,6 +427,18 @@ export class Library extends EventEmitter {
         continue
       }
 
+      // A generated multidisc install keeps a predictable sibling directory.
+      const playlistDirectory = await safeJoin(target.dir, rom.fs_name_no_ext + '.m3u')
+      if (
+        playlistDirectory &&
+        (
+          await stat(join(playlistDirectory, rom.fs_name_no_ext + '.m3u')).catch(() => null)
+        )?.isFile()
+      ) {
+        await record(playlistDirectory, true)
+        continue
+      }
+
       /**
        * Last resort: the same game under a different extension.
        *
@@ -539,7 +555,16 @@ export class Library extends EventEmitter {
    * playlist stopped winning has an `.m3u` written into it that Eden cannot
    * load. Choosing again from disk fixes those without a reinstall.
    */
-  async launchTarget(entry: InstalledRom): Promise<string> {
+  async launchTarget(entry: InstalledRom, variant?: string): Promise<string> {
+    if (
+      entry.playlist &&
+      !entry.playlist.discs.every((disc) =>
+        this.playlistFormats(entry.system, variant).includes(
+          disc.slice(disc.lastIndexOf('.')).toLowerCase()
+        )
+      )
+    )
+      throw new RommError(t('error.playlistUnsupported'))
     if (existsSync(entry.launchPath) && isLaunchable(entry.launchPath, entry.system)) {
       return entry.launchPath
     }
@@ -574,6 +599,26 @@ export class Library extends EventEmitter {
     // Loose in the system folder: the entry's names are siblings of `path`,
     // not children of it.
     return this.sizesOf(gameFolderOf(entry), entry.files)
+  }
+
+  /** Capabilities of the recorded runner, or the common subset before a choice. */
+  playlistFormats(system: string, variant?: string): readonly string[] {
+    const emulator = this.getEmulator(system)
+    const descriptor = emulator && emulatorById(emulator.id)
+    if (!emulator || !descriptor) return []
+    const options = usableVariants(descriptor, system, emulator.install)
+    const selected = variant ?? this.store.settings.systemLaunchers[`${emulator.id}:${system}`]
+    return m3uFormats(options, selected)
+  }
+
+  async prepareDownload(installed: InstallResult, system: string): Promise<InstallResult> {
+    const emulator = this.getEmulator(system)
+    const esde = emulator && emulatorById(emulator.id)?.esde
+    return prepareMultidisc(
+      installed,
+      this.playlistFormats(system),
+      !this.shared && this.store.settings.enrichEsde && !!esde
+    )
   }
 
   private async sizesOf(dir: string, files: string[]): Promise<GameFile[]> {

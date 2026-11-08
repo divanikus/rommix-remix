@@ -106,6 +106,15 @@ export const ROMSET_SYSTEMS: readonly string[] = [
  */
 export const DESCRIPTOR_EXTENSIONS: readonly string[] = ['.m3u', '.cue', '.gdi']
 
+/** Disc formats understood by playlist generation, before runner capability checks. */
+export const DISC_EXTENSIONS: readonly string[] = ['.cue', '.gdi', '.chd', '.iso', '.cdi']
+export const DISC_SIDECAR_EXTENSIONS: readonly string[] = [
+  ...SIDECAR_EXTENSIONS.filter((extension) => extension !== '.ccd'),
+  '.sha1',
+  '.webp',
+  '.pdf'
+]
+
 /**
  * Systems whose emulators are handed the disc image, never a descriptor.
  *

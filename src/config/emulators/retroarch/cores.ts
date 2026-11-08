@@ -1,6 +1,7 @@
 import { coreForSystem } from '../../systems.ts'
 import { coreLibraryName } from '../libretro.ts'
 import type { LaunchVariant } from '../types.ts'
+import { coreM3u } from '../playlists.ts'
 
 /**
  * Cores worth offering beside the built-in one, by the systems they run.
@@ -69,10 +70,15 @@ export function retroArchCores(system: string): LaunchVariant[] {
 
   const others = ALTERNATIVES.find((group) => group.systems.includes(system))?.cores ?? {}
   return [
-    { id: builtIn, label: coreLibraryName(builtIn) ?? builtIn, default: true },
+    {
+      id: builtIn,
+      label: coreLibraryName(builtIn) ?? builtIn,
+      default: true,
+      m3u: coreM3u(builtIn)
+    },
     ...Object.entries(others)
       .filter(([core]) => core !== builtIn)
-      .map(([core, label]) => ({ id: core, label }))
+      .map(([core, label]) => ({ id: core, label, m3u: coreM3u(core) }))
   ]
 }
 

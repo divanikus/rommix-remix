@@ -11,6 +11,23 @@ import {
 } from '../config/romfiles.ts'
 import type { ContainerFormat } from '../config/romfiles.ts'
 
+/** RomM's file_path is the parent on the server; retain subfolders below this ROM. */
+export function romFileName(
+  file: { file_name: string; file_path?: string },
+  rom?: { fs_path?: string; fs_name: string }
+): string | null {
+  if (!file.file_path || !rom?.fs_path) return file.file_name
+  const root = `${rom.fs_path.replace(/\/$/, '')}/${rom.fs_name}`
+  const parent = file.file_path.replace(/\/$/, '')
+  if (parent === root || parent === rom.fs_path.replace(/\/$/, '')) return file.file_name
+  if (!parent.startsWith(root + '/')) return null
+  const name = `${parent.slice(root.length + 1)}/${file.file_name}`
+  return /[\\\0]/.test(name) ||
+    name.split('/').some((part) => !part || part === '.' || part === '..')
+    ? null
+    : name
+}
+
 /**
  * The file at the end of a path.
  *
@@ -65,19 +82,27 @@ export function bytesOf(files: readonly { file_size_bytes: number }[]): number {
  * has nothing left to fetch and its name is no evidence: RomM's `game.zip` is
  * unpacked to a `game.sfc` here. The same goes for that archive once a second
  * file joins it, so an archive whose stem is on this disk is taken as unpacked.
- * By file name alone and whatever the case, since an archive can carry a game a
- * folder deeper than the server's list says it is.
+ * By relative name, ignoring case and allowing one unambiguous archive wrapper.
+ * Distinct disc folders may contain tracks with the same basename.
  */
-export function newFilesOf<File extends { file_name: string }>(
+export function newFilesOf<File extends { file_name: string; file_path?: string }>(
   serverFiles: readonly File[],
-  entry: { path: string; files?: string[] }
+  entry: { path: string; files?: string[]; isDirectory?: boolean },
+  rom?: { fs_path?: string; fs_name: string }
 ): File[] {
   if (serverFiles.length < 2) return []
-  const here = new Set(localFileNames(entry).map((name) => fileNameOf(name).toLowerCase()))
+  const here = new Set(
+    localFileNames(entry).map((name) => name.replaceAll('\\', '/').toLowerCase())
+  )
   const stems = new Set([...here].map(stemOf))
   return serverFiles.filter((file) => {
-    const name = file.file_name.toLowerCase()
+    const relative = entry.isDirectory === false ? file.file_name : romFileName(file, rom)
+    if (relative === null) return true
+    const name = relative.toLowerCase()
     if (here.has(name)) return false
+    // Archives can add a wrapper folder. A unique suffix is still this file;
+    // two discs with the same basename must never stand in for one another.
+    if ([...here].filter((local) => local.endsWith('/' + name)).length === 1) return false
     return !(ARCHIVE_EXTENSIONS.includes(extensionOf(name)) && stems.has(stemOf(name)))
   })
 }

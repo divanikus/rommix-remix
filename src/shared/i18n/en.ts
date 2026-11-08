@@ -23,6 +23,8 @@
  */
 
 export const en = {
+  'error.playlistUnsupported':
+    'The selected launcher does not support this game’s generated disc playlist. Choose a compatible launcher.',
   'settings.esdeLinux': 'ES-DE enrichment requires Linux.',
   'settings.esdePython': 'ES-DE enrichment requires Python 3.',
   'settings.esdeStorage': 'Choose emulator ROM folders to use the verified library.',
@@ -40,7 +42,7 @@ export const en = {
   'settings.esdeEligibility':
     'No unique verified ES-DE integration is available for this download.',
   'settings.esdeLaunchMissing': 'The completed game’s launch file is missing.',
-  'settings.esdeLayout': 'Flattened and directory-as-file ES-DE layouts are not yet supported.',
+  'settings.esdeLayout': 'This ES-DE directory layout is not supported.',
   'settings.esdeCustomSystem': 'Custom ES-DE system paths are not yet supported.',
   'settings.esdeStaging': 'The ES-DE media staging directory is missing.',
   'settings.esdeRunning': 'Close ES-DE to publish pending metadata and artwork.',

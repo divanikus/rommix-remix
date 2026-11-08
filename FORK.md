@@ -52,7 +52,9 @@ descriptor in `src/config/`. The helper receives that trusted configuration
 separately from queued downloads and verifies the actual files before publishing.
 Its diagnostic codes resolve through the shared catalogs before reaching Settings;
 technical exception details stay in the log. Keep these boundaries when extracting
-the feature for upstream. Generated multidisc playlists remain separate work.
+the feature for upstream. [Multidisc downloads](docs/multidisc.md) add generic
+file-based recognition, runner capabilities and narrowly scoped directory-as-file
+export. They introduce no platform allowlist or emulator rules outside configuration.
 
 ## Distribution boundaries
 

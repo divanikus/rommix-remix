@@ -1,4 +1,5 @@
 import { emuDeckSavePaths } from './saves.ts'
+import { coreM3u, DUCKSTATION_M3U } from '../playlists.ts'
 import type { DirSpec, EmulatorDescriptor, LaunchVariant, LayoutSource } from '../types.ts'
 
 /**
@@ -60,11 +61,14 @@ function launcher(
 
 /** `retroarch.sh -L <core>_libretro.so <rom>`, EmuDeck's most common shape. */
 function core(id: string, label: string, name: string): EmuDeckLauncher {
-  return launcher(id, label, 'RetroArch', 'retroarch.sh', [
-    '-L',
-    `${name}_libretro.so`,
-    ROM_PLACEHOLDER
-  ])
+  return {
+    ...launcher(id, label, 'RetroArch', 'retroarch.sh', [
+      '-L',
+      `${name}_libretro.so`,
+      ROM_PLACEHOLDER
+    ]),
+    m3u: coreM3u(name)
+  }
 }
 
 /**
@@ -87,7 +91,10 @@ function standalone(
   script: string,
   args: readonly string[] = [ROM_PLACEHOLDER]
 ): EmuDeckLauncher {
-  return launcher(id, label, 'Standalone', script, args)
+  return {
+    ...launcher(id, label, 'Standalone', script, args),
+    m3u: script === 'duckstation.sh' ? DUCKSTATION_M3U : undefined
+  }
 }
 
 /**

@@ -78,7 +78,7 @@ export function registerGameIpc(rommix: RomMixApp, handle: Handle): void {
         rom,
         // Never `installed.path`: for a multi-file game that is the directory,
         // and an emulator can only be given a file.
-        romPath: await library.launchTarget(installed),
+        romPath: await library.launchTarget(installed, chosen),
         system: installed.system,
         emulator,
         variant: chosen,

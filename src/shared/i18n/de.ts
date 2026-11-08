@@ -15,6 +15,8 @@ import type { Catalog } from './catalog.ts'
  * überall gleich sein soll.
  */
 export const de: Catalog = {
+  'error.playlistUnsupported':
+    'Der gewählte Launcher unterstützt die erzeugte Disc-Playlist dieses Spiels nicht. Wähle einen kompatiblen Launcher.',
   'settings.esdeLinux': 'Die ES-DE-Ergänzung erfordert Linux.',
   'settings.esdePython': 'Die ES-DE-Ergänzung erfordert Python 3.',
   'settings.esdeStorage':
@@ -36,8 +38,7 @@ export const de: Catalog = {
   'settings.esdeEligibility':
     'Für diesen Download ist keine eindeutige, geprüfte ES-DE-Integration verfügbar.',
   'settings.esdeLaunchMissing': 'Die Startdatei des heruntergeladenen Spiels fehlt.',
-  'settings.esdeLayout':
-    'Abgeflachte ES-DE-Strukturen und als Dateien behandelte Ordner werden noch nicht unterstützt.',
+  'settings.esdeLayout': 'Diese ES-DE-Ordnerstruktur wird nicht unterstützt.',
   'settings.esdeCustomSystem':
     'Benutzerdefinierte ES-DE-Systempfade werden noch nicht unterstützt.',
   'settings.esdeStaging': 'Der Zwischenablageordner für ES-DE-Medien fehlt.',

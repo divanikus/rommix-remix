@@ -12,6 +12,8 @@ import type { Catalog } from './catalog.ts'
  * en anglais.
  */
 export const fr: Catalog = {
+  'error.playlistUnsupported':
+    'Le lanceur sélectionné ne prend pas en charge la liste de disques générée pour ce jeu. Choisissez un lanceur compatible.',
   'settings.esdeLinux': 'L’enrichissement ES-DE nécessite Linux.',
   'settings.esdePython': 'L’enrichissement ES-DE nécessite Python 3.',
   'settings.esdeStorage':
@@ -34,8 +36,7 @@ export const fr: Catalog = {
   'settings.esdeEligibility':
     'Aucune intégration ES-DE vérifiée et unique n’est disponible pour ce téléchargement.',
   'settings.esdeLaunchMissing': 'Le fichier de lancement du jeu téléchargé est introuvable.',
-  'settings.esdeLayout':
-    'Les structures ES-DE aplaties ou avec des dossiers traités comme des fichiers ne sont pas encore prises en charge.',
+  'settings.esdeLayout': 'Cette structure de dossiers ES-DE n’est pas prise en charge.',
   'settings.esdeCustomSystem':
     'Les chemins de systèmes ES-DE personnalisés ne sont pas encore pris en charge.',
   'settings.esdeStaging': 'Le dossier temporaire des médias ES-DE est introuvable.',

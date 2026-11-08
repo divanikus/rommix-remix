@@ -14,6 +14,8 @@ import type { Catalog } from './catalog.ts'
  * Se tutea, que es como habla el resto de una interfaz de salón.
  */
 export const es: Catalog = {
+  'error.playlistUnsupported':
+    'El lanzador seleccionado no admite la lista de discos generada para este juego. Elige un lanzador compatible.',
   'settings.esdeLinux': 'El enriquecimiento de ES-DE requiere Linux.',
   'settings.esdePython': 'El enriquecimiento de ES-DE requiere Python 3.',
   'settings.esdeStorage':
@@ -35,8 +37,7 @@ export const es: Catalog = {
   'settings.esdeMediaType': 'Este tipo de archivo multimedia de ES-DE no es compatible.',
   'settings.esdeEligibility': 'No hay una única integración ES-DE verificada para esta descarga.',
   'settings.esdeLaunchMissing': 'Falta el archivo de inicio del juego descargado.',
-  'settings.esdeLayout':
-    'Las estructuras ES-DE aplanadas o con carpetas tratadas como archivos aún no son compatibles.',
+  'settings.esdeLayout': 'Esta estructura de carpetas ES-DE no es compatible.',
   'settings.esdeCustomSystem': 'Las rutas de sistemas ES-DE personalizadas aún no son compatibles.',
   'settings.esdeStaging': 'Falta la carpeta temporal de archivos multimedia de ES-DE.',
   'settings.esdeRunning':

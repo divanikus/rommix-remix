@@ -61,6 +61,75 @@ function scratch(): string {
   return dir
 }
 
+for (const perFile of [true, false]) {
+  test(`multidisc download uses one launch unit through ${perFile ? 'individual files' : 'archive'}`, async () => {
+    const bodies = {
+      'Disc 2/Game.cue': 'FILE "track.bin" BINARY',
+      'Disc 2/track.bin': 'second',
+      'Disc 1/Game.cue': 'FILE "track.bin" BINARY',
+      'Disc 1/track.bin': 'first'
+    }
+    const game = rom({
+      id: 21,
+      name: 'Game',
+      fs_name: 'Game',
+      fs_name_no_ext: 'Game',
+      fs_extension: '',
+      fs_path: 'roms/saturn',
+      platform_slug: 'saturn',
+      platform_fs_slug: 'saturn',
+      has_multiple_files: true,
+      files: Object.entries(bodies).map(([name, body], index) => ({
+        id: index + 1,
+        rom_id: 21,
+        file_name: name.split('/').at(-1)!,
+        file_path: 'roms/saturn/Game/' + name.slice(0, name.lastIndexOf('/')),
+        file_size_bytes: Buffer.byteLength(body),
+        crc_hash: null,
+        md5_hash: null,
+        sha1_hash: null
+      }))
+    } as Partial<RommRom>)
+    const emulator = {
+      id: 'emudeck',
+      name: 'EmuDeck',
+      install: null,
+      paths: { roms: join(scratch(), 'roms') }
+    } as unknown as EmulatorState
+    let completed: InstalledRom | undefined
+    const f = manager({
+      shared: false,
+      emulator,
+      perFile,
+      zip: bodies,
+      fileBodies: Object.fromEntries(
+        Object.entries(bodies).map(([name, body]) => ['roms/saturn/Game/' + name, body])
+      ),
+      roms: { 21: game },
+      onCompleted: async (_rom, entry) => {
+        completed = entry
+      }
+    })
+    f.store.updateSettings({ enrichEsde: true })
+    await f.downloads.enqueue(game)
+    assert.equal((await settled(f.downloads, 21)).state, 'done')
+    const entry = f.store.getInstalled(21)!
+    assert.equal(entry.path, join(emulator.paths.roms!, 'saturn/Game.m3u'))
+    assert.equal(readFileSync(entry.launchPath, 'utf8'), './Disc 1/Game.cue\n./Disc 2/Game.cue\n')
+    assert.equal(readFileSync(join(entry.path, 'Disc 1/track.bin'), 'utf8'), 'first')
+    assert.equal(readFileSync(join(entry.path, 'Disc 2/track.bin'), 'utf8'), 'second')
+    assert.equal(completed?.launchPath, entry.launchPath)
+    assert.equal(await f.library.launchTarget(entry), entry.launchPath)
+    assert.deepEqual(f.store.pending, [])
+    // Read-only rediscovery after loss of the index recognises the new layout.
+    f.store.removeInstalled(21)
+    await f.library.adopt([game])
+    assert.equal(f.store.getInstalled(21)?.launchPath, entry.launchPath)
+    await f.library.uninstall(21)
+    assert.equal(existsSync(entry.path), false)
+  })
+}
+
 function rom(fields: Partial<RommRom> = {}): RommRom {
   return {
     id: 1,
@@ -80,6 +149,95 @@ function rom(fields: Partial<RommRom> = {}): RommRom {
   } as RommRom
 }
 
+for (const legacy of [false, true]) {
+  test(`resumed CHD set ${legacy ? 'preserves an older unowned folder' : 'generates once and checks a changed runner'}`, async () => {
+    const game = rom({
+      id: 22,
+      fs_name: 'Bundle',
+      fs_name_no_ext: 'Bundle',
+      fs_extension: '',
+      platform_slug: 'psx',
+      platform_fs_slug: 'psx',
+      has_multiple_files: true,
+      files: ['Bundle (Disc 2).chd', 'Bundle (Disc 1).chd'].map((file_name, id) => ({
+        id,
+        file_name,
+        file_size_bytes: 8
+      }))
+    } as Partial<RommRom>)
+    const emulator = {
+      id: 'retroarch',
+      name: 'RetroArch',
+      install: null,
+      paths: { roms: join(scratch(), 'roms') }
+    } as unknown as EmulatorState
+    const f = manager({ emulator, perFile: true, breakAfter: 2 })
+    await f.downloads.enqueue(game)
+    assert.equal((await settled(f.downloads, 22)).state, 'paused')
+    const path = f.store.pending[0].targetPath
+    assert.equal(existsSync(join(path, 'Bundle.m3u')), false)
+    assert.equal(new Store(join(f.root, 'config')).pending[0].freshFolder, path)
+    if (legacy) {
+      const held = f.store.pending[0]
+      delete held.freshFolder
+      f.store.setPending(held)
+    }
+    await f.downloads.enqueue(game)
+    assert.equal((await settled(f.downloads, 22)).state, 'done')
+    const entry = f.store.getInstalled(22)!
+    if (legacy) {
+      assert.equal(entry.path, path)
+      assert.equal(entry.playlist, undefined)
+      assert.equal(existsSync(join(path, 'Bundle.m3u')), false)
+      return
+    }
+    assert.equal(
+      readFileSync(entry.launchPath, 'utf8'),
+      './Bundle (Disc 1).chd\n./Bundle (Disc 2).chd\n'
+    )
+    assert.deepEqual(new Store(join(f.root, 'config')).getInstalled(22)?.playlist, entry.playlist)
+    await assert.rejects(f.library.launchTarget(entry, 'unverified-runner'))
+    assert.equal(await f.library.launchTarget(entry, 'swanstation'), entry.launchPath)
+  })
+}
+
+test('adoption and additions preserve the existing game folder and launch target', async () => {
+  const game = rom({
+    id: 23,
+    fs_name: 'Old',
+    fs_name_no_ext: 'Old',
+    fs_extension: '',
+    platform_slug: 'psx',
+    platform_fs_slug: 'psx',
+    has_multiple_files: true,
+    files: ['Old (Disc 1).chd', 'Old (Disc 2).chd'].map((file_name, id) => ({
+      id,
+      file_name,
+      file_size_bytes: 8
+    }))
+  } as Partial<RommRom>)
+  const emulator = {
+    id: 'emudeck',
+    name: 'EmuDeck',
+    install: null,
+    paths: { roms: join(scratch(), 'roms') }
+  } as unknown as EmulatorState
+  const f = manager({ shared: false, emulator, perFile: true })
+  f.store.updateSettings({ enrichEsde: true })
+  const folder = join(emulator.paths.roms!, 'psx/Old')
+  mkdirSync(folder, { recursive: true })
+  writeFileSync(join(folder, 'Old (Disc 1).chd'), 'owner disc')
+  await f.library.adopt([game])
+  const original = f.store.getInstalled(23)!
+  await f.downloads.enqueue(game, true)
+  assert.equal((await settled(f.downloads, 23)).state, 'done')
+  assert.equal(f.store.getInstalled(23)?.path, folder)
+  assert.equal(f.store.getInstalled(23)?.launchPath, original.launchPath)
+  assert.equal(readFileSync(join(folder, 'Old (Disc 1).chd'), 'utf8'), 'owner disc')
+  assert.equal(existsSync(join(folder, 'Old.m3u')), false)
+  assert.equal(existsSync(folder + '.m3u'), false)
+})
+
 /**
  * A client that answers with the ROM it is handed and writes the bytes asked
  * for.
@@ -91,6 +249,7 @@ function rom(fields: Partial<RommRom> = {}): RommRom {
 function fakeClient(
   options: {
     contents?: string
+    fileBodies?: Record<string, string>
     roms?: Record<number, RommRom>
     breakAfter?: number
     /** How the break reads: an unreachable server, or something else. */
@@ -129,7 +288,7 @@ function fakeClient(
       return { available: options.perFile === true, resumable: options.ranges !== false }
     },
     async downloadRomFile(
-      file: { file_name: string; file_size_bytes: number },
+      file: { file_name: string; file_path?: string; file_size_bytes: number },
       destination: string,
       onProgress: (progress: { received: number; total: number }) => void,
       _signal: AbortSignal,
@@ -146,7 +305,9 @@ function fakeClient(
         await writeFile(`${destination}.part`, '0'.repeat(options.breakAfter))
         throw new (options.breakReason ?? RommError)('the transfer from RomM kept breaking off')
       }
-      const contents = '0'.repeat(file.file_size_bytes)
+      const contents =
+        options.fileBodies?.[`${file.file_path}/${file.file_name}`] ??
+        '0'.repeat(file.file_size_bytes)
       await rm(`${destination}.part`, { force: true })
       await writeFile(destination, contents)
       onProgress({ received: contents.length, total: contents.length })
@@ -200,6 +361,7 @@ function fakeClient(
       if (options.zip) {
         const inside = scratch()
         for (const [name, body] of Object.entries(options.zip)) {
+          mkdirSync(join(inside, name, '..'), { recursive: true })
           writeFileSync(join(inside, name), body)
         }
         const bytes = await zipDirectory(inside, destination)
@@ -230,6 +392,7 @@ function manager(
     emulator?: EmulatorState | null
     shared?: boolean
     contents?: string
+    fileBodies?: Record<string, string>
     breakAfter?: number
     ranges?: boolean
     perFile?: boolean
