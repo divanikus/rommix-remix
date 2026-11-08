@@ -252,14 +252,14 @@ test('a failed media request does not starve the next queued game', async () => 
     }
   } as unknown as RommClient)
   f.store.updateSettings({ enrichEsde: true, romStorage: 'emulator' })
+  f.answer({ state: 'done', needed: ['videos'] })
   await f.worker.completed({ ...rom, path_video: 'roms/8/video.mp4' }, entry)
-  await quiet()
+  await until(async () => (await f.worker.status()).reason === 'offline media')
   const next = { ...entry, romId: 9 }
   f.store.addInstalled(next)
   await f.worker.completed({ ...rom, id: 9 }, next)
-  await quiet()
-  f.answer({ state: 'done', needed: ['videos'] })
-  await f.worker.drain()
+  // completed starts a background drain; another drain call may return while it is busy.
+  await until(() => !existsSync(join(f.root, 'config/esde-pending/9.json')))
   assert.equal(existsSync(join(f.root, 'config/esde-pending/8.json')), true)
   assert.equal(existsSync(join(f.root, 'config/esde-pending/9.json')), false)
 })
