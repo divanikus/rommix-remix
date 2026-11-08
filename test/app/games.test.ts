@@ -490,6 +490,21 @@ describe('pausing a download and picking it up again', () => {
       'the transfer to be under way'
     )
 
+    await app.waitFor(
+      `document.querySelector('.game-screen .download__percent')`,
+      'one progress figure'
+    )
+    assert.equal(
+      await app.read<number>(`document.querySelectorAll('.game-screen .download__percent').length`),
+      1
+    )
+    assert.equal(
+      await app.read<boolean>(
+        `[...document.querySelectorAll('[data-action="pause"], [data-action="cancel-download"]')].some(button => button.textContent.includes('%'))`
+      ),
+      false
+    )
+
     await app.choose('[data-action="pause"]')
     await app.waitFor(
       `(await window.rommix.downloads.list()).some(
@@ -500,6 +515,12 @@ describe('pausing a download and picking it up again', () => {
 
     const stopped = await app.read<{ receivedBytes: number; totalBytes: number }>(
       `(await window.rommix.downloads.list()).find((one) => one.romId === 5)`
+    )
+    assert.equal(
+      await app.read<boolean>(
+        `document.querySelector('[data-action="download"]')?.textContent.includes('%') ?? true`
+      ),
+      false
     )
     assert.ok(stopped.receivedBytes > 0, 'it should have kept what had arrived')
     assert.ok(

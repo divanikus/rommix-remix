@@ -496,7 +496,7 @@ function GameContent({
           onSelect={() => void window.rommix.downloads.pause(romId)}
           autoFocus={focus}
         >
-          {t('game.pauseDownload', { percent: progress })}
+          {t('game.pauseDownload')}
         </FocusButton>
       ) : null}
       <FocusButton
@@ -506,7 +506,7 @@ function GameContent({
         onSelect={() => void window.rommix.downloads.cancel(romId)}
         autoFocus={download?.resumable === false && focus}
       >
-        {t('game.cancelDownload', { percent: progress })}
+        {t('game.cancelDownload')}
       </FocusButton>
     </>
   )
@@ -560,7 +560,7 @@ function GameContent({
                 a second decision to make. How far it got is on the button, as
                 it is on the two that stopped it. */}
                 {isStopped(download?.state ?? 'downloading')
-                  ? t('game.resumeDownload', { percent: progress })
+                  ? t('game.resumeDownload')
                   : t('action.download')}
               </FocusButton>
             )}
@@ -576,7 +576,7 @@ function GameContent({
                 variant="danger"
                 onSelect={() => void window.rommix.downloads.cancel(romId)}
               >
-                {t('game.cancelDownload', { percent: progress })}
+                {t('game.cancelDownload')}
               </FocusButton>
             ) : null}
 
@@ -707,6 +707,11 @@ function GameContent({
               queue row has them — the two screens show the same transfer. */}
             <div className="download__figures">
               <DownloadBadge state={download?.state ?? 'downloading'} />
+              {(download?.totalBytes ?? 0) > 0 ? (
+                <span className="download__percent">
+                  {t('value.percent', { percent: progress })}
+                </span>
+              ) : null}
               <span className="download__size">
                 {t('value.progressBytes', {
                   received: formatBytes(download?.receivedBytes ?? 0),
