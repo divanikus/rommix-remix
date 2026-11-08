@@ -465,7 +465,8 @@ function rom(
     fs_name_no_ext: fsName.replace(/\.[^.]+$/, ''),
     fs_name_no_tags: fsName.replace(/\.[^.]+$/, ''),
     fs_extension: fsName.split('.').pop() ?? '',
-    fs_path: `${host.fs_slug}/${fsName}`,
+    // RomM joins fs_path and fs_name; fs_path is the parent, not the full path.
+    fs_path: host.fs_slug,
     fs_size_bytes: ROM_BYTES.length,
     path_cover_small: art ? coverPath(id, 'small') : null,
     path_cover_large: art ? coverPath(id, 'big') : null,
@@ -572,10 +573,11 @@ function rom(
  */
 function discSet(id: number, name: string, host: RommPlatform, folder: string): RommRom {
   const parts = [`${folder}.cue`, `${folder} (Track 1).bin`]
-  const whole = rom(id, name, host, `${folder}.cue`)
+  const whole = rom(id, name, host, folder)
   return {
     ...whole,
     fs_name_no_ext: folder,
+    fs_extension: '',
     has_simple_single_file: false,
     has_multiple_files: true,
     // No digest on the game itself: what the content endpoint would serve for
