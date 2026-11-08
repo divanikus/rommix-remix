@@ -4,6 +4,9 @@ This is a source fork of [leclercb/rommix](https://github.com/leclercb/rommix),
 with the original MIT license and Git history preserved. `main` carries the fork;
 an `upstream` remote tracks the original project.
 
+The current source includes upstream **0.24.0** (`7b8fbdb`). The next fork version
+is `0.24.0-remix.1`; changing the source version does not publish a release.
+
 ## Feature history
 
 The initial fork changes are grouped by feature for review and upstream reuse.
@@ -24,6 +27,22 @@ The original history through `7b411da` and all three upstream improvements throu
 UI features build on earlier groups; these are review boundaries, not a promise of
 independent cherry-picks. For an upstream PR, extract one feature with its tests
 against current upstream and omit fork identity and distribution policy.
+
+## Keeping changes ready for upstream
+
+- Merge upstream release tags into the published fork branch. Preserve its commits
+  and release tags; do not rebase published `main` for routine updates.
+- Keep each feature or fix with its tests in a separate commit. Keep branding,
+  profile defaults, update endpoints and publication workflows separate from them.
+- Prepare each upstream PR on a fresh `codex/` branch from the current upstream
+  tip. Apply only the relevant feature and its follow-up fixes, adapting any UI
+  dependencies explicitly. Do not submit the entire fork diff as one feature.
+- Run upstream's checks against that extracted branch. Describe the behavior,
+  dependencies and actual test coverage; agree the scope before expanding a PR.
+
+The initial feature map above is a starting point for extraction. Later fixes
+remain ordinary commits so an upstream contribution can include them without
+pulling in unrelated fork changes.
 
 ## Distribution boundaries
 
