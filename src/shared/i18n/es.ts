@@ -756,7 +756,7 @@ export const es: Catalog = {
   'saves.waitingConflict':
     'Algunas partidas guardadas no se enviaron a RomM porque hay conflictos con las que ya están allí.',
   'saves.waitingConfirm':
-    'Algunas partidas guardadas no se enviaron a RomM porque «Preguntar antes de enviar partidas a RomM» está activado.',
+    'Algunas partidas guardadas aún no se han enviado a RomM. Usa {action} para revisarlas y enviarlas.',
   'saves.sentAutomatically_one': 'Partidas guardadas de {count} juego subidas a RomM',
   'saves.sentAutomatically_other': 'Partidas guardadas de {count} juegos subidas a RomM',
   'saves.sentAutomaticallyOne': 'Partidas guardadas subidas a RomM',
