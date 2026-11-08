@@ -10,15 +10,20 @@ const roots: string[] = []
 afterEach(async () => {
   for (const root of roots.splice(0)) await rm(root, { recursive: true, force: true })
 })
-async function fixture(extra: Record<string, string> = {}): Promise<InstallResult> {
+async function fixture(
+  extra: Record<string, string> = {},
+  labels: (number | string)[] = [1, 2]
+): Promise<InstallResult> {
   const root = await mkdtemp(join(tmpdir(), 'rommix-m3u-'))
   roots.push(root)
   const path = join(root, 'Game')
   const files = {
-    'Disc 1/Game.cue': 'FILE "track.bin" BINARY',
-    'Disc 1/track.bin': 'first',
-    'Disc 2/Game.cue': 'FILE "track.bin" BINARY',
-    'Disc 2/track.bin': 'second',
+    ...Object.fromEntries(
+      labels.flatMap((label, index) => [
+        [`Disc ${label}/Game.cue`, 'FILE "track.bin" BINARY'],
+        [`Disc ${label}/track.bin`, index === 0 ? 'first' : 'second']
+      ])
+    ),
     ...extra
   }
   for (const [name, body] of Object.entries(files)) {
@@ -28,7 +33,7 @@ async function fixture(extra: Record<string, string> = {}): Promise<InstallResul
   }
   return {
     path,
-    launchPath: join(path, 'Disc 1/Game.cue'),
+    launchPath: join(path, `Disc ${labels[0]}/Game.cue`),
     isDirectory: true,
     files: await installedFiles(path),
     sizeBytes: await directorySize(path)
@@ -50,6 +55,23 @@ test('generated playlist, index, sizes and all relative tracks agree after ES-DE
   assert.deepEqual(output.playlist?.discs, ['Disc 1/Game.cue', 'Disc 2/Game.cue'])
   assert.equal(await stat(input.path).catch(() => null), null)
 })
+
+for (const labels of [
+  [0, 1, 2, 3],
+  ['I', 'II', 'III']
+]) {
+  test(`playlist generation retains every disc in ${labels.join(', ')} order`, async () => {
+    const input = await fixture({}, labels.toReversed())
+    const output = await prepareMultidisc(input, ['.cue'], true)
+    const discs = labels.map((label) => `Disc ${label}/Game.cue`)
+    assert.deepEqual(output.playlist?.discs, discs)
+    assert.equal(
+      await readFile(output.launchPath, 'utf8'),
+      discs.map((name) => './' + name + '\n').join('')
+    )
+    assert.equal(output.sizeBytes, await directorySize(output.path))
+  })
+}
 
 test('ordinary library gets a playlist without an ES-DE directory change', async () => {
   const input = await fixture()

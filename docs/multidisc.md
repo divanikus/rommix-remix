@@ -10,7 +10,9 @@ Adding support for another runner does not require changing the recognizer.
 - CUE and GDI descriptors identify discs; their BIN/RAW tracks are dependencies.
   Every referenced file must exist. CHD, ISO and CDI images can also be discs.
 - Disc/Disk/CD numbers in filenames or enclosing folders must identify one family,
-  run consecutively from 1, and agree with any stated total. Ordering is numeric.
+  run consecutively from 0 or 1, and agree with any stated total file count.
+  Arabic and canonical Roman numbers (I, II, III, IV, etc.) are supported, including
+  totals and folder labels. Ordering is numeric; a supplied disc zero stays first.
   Unnumbered or ambiguous bundles, missing tracks, mixed versions and arcade
   ZIP/BIOS/CHD packages keep their existing layout and launch selection.
 - The saved runner must support every disc format through M3U. Before a runner

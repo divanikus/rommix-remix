@@ -41,11 +41,44 @@ test('disc numbers in folders and GDI dependencies work without a platform param
   })
 })
 
+test('Roman disc labels and totals sort by value, including subtractive numbers', () => {
+  const labels = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X']
+  const names = labels.map((label) => `Any title (Disk ${label} of X).chd`)
+  assert.deepEqual(recognizeDiscs(files(...names.toReversed()), formats), {
+    state: 'ready',
+    discs: names
+  })
+  assert.deepEqual(
+    recognizeDiscs(files('cd_ii/Game (Disc 2).iso', 'cd_i/Game (Disc 1).iso'), formats),
+    { state: 'ready', discs: ['cd_i/Game (Disc 1).iso', 'cd_ii/Game (Disc 2).iso'] }
+  )
+})
+
+test('a consecutive set may include disc zero, which remains first', () => {
+  const names = [0, 1, 2, 3].map((number) => `Another title (Disc ${number}).chd`)
+  assert.deepEqual(recognizeDiscs(files(...names.toReversed()), formats), {
+    state: 'ready',
+    discs: names
+  })
+  const counted = [0, 1, 2].map((number) => `Game (Disc ${number} of 3).chd`)
+  assert.deepEqual(recognizeDiscs(files(...counted), formats), { state: 'ready', discs: counted })
+})
+
 for (const [label, set] of Object.entries({
   'single multitrack disc': cueSet.filter((file) => !file.name.includes('2')),
   'raw tracks': files('Game (Track 1).bin', 'Game (Track 2).bin'),
   'unnumbered images': files('first.chd', 'second.chd'),
   'missing disc': files('Game (Disc 1).chd', 'Game (Disc 3).chd'),
+  'gap after disc zero': files('Game (Disc 0).chd', 'Game (Disc 2).chd'),
+  'set starting after one': files('Game (Disc II).chd', 'Game (Disc III).chd'),
+  'missing Roman final disc': files('Game (Disc I of III).chd', 'Game (Disc II of III).chd'),
+  'duplicate Roman and Arabic numbers': files('Game (Disc I).chd', 'Game (Disc 1).chd'),
+  'noncanonical Roman label': files('Game (Disc I).chd', 'Game (Disc IIII).chd'),
+  'noncanonical Roman total': files('Game (Disc I of IIX).chd', 'Game (Disc II of IIX).chd'),
+  'conflicting folder and filename numbers': files(
+    'Disc I/Game (Disc II).chd',
+    'Disc II/Game (Disc I).chd'
+  ),
   'known missing final disc': files('Game (Disc 1 of 3).chd', 'Game (Disc 2 of 3).chd'),
   'duplicate versions': files('Game (Disc 1).iso', 'Game (Disc 1).chd'),
   'mixed games': files('One (Disc 1).chd', 'Two (Disc 2).chd'),
