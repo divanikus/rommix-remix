@@ -54,13 +54,18 @@ function tracks(file: DiscFile): string[] | null {
   return parsed.map((match) => match![1] ?? match![2])
 }
 
-/** Reject noncanonical Roman numbers rather than guessing at misspelled labels. */
-function discNumber(label: string): number | null {
+type Numbering = 'roman' | 'letter'
+
+/** The whole set chooses a notation, so alphabetical I cannot become Roman 1. */
+function discNumber(label: string, numbering: Numbering): number | null {
   if (/^\d+$/.test(label)) {
     const number = Number(label)
     return Number.isSafeInteger(number) ? number : null
   }
+  if (numbering === 'letter')
+    return /^[a-z]$/i.test(label) ? label.toUpperCase().charCodeAt(0) - 64 : null
   const roman = label.toUpperCase()
+  // Reject noncanonical Roman numbers rather than guessing at misspelled labels.
   if (!/^(?=.)M{0,3}(CM|CD|D?C{0,3})(XC|XL|L?X{0,3})(IX|IV|V?I{0,3})$/.test(roman)) return null
   const values: Record<string, number> = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 }
   return [...roman].reduce((sum, digit, index) => {
@@ -70,14 +75,17 @@ function discNumber(label: string): number | null {
 }
 
 /** Disc numbers must agree in both filenames and enclosing Disc N folders. */
-function numbered(name: string): { number: number; family: string; total?: number } | null {
+function numbered(
+  name: string,
+  numbering: Numbering
+): { number: number; family: string; total?: number } | null {
   const stem = name.slice(0, -extension(name).length)
-  const pattern = /\b(?:disc|disk|cd)[ _.-]*(\d+|[ivxlcdm]+)(?:\s+of\s+(\d+|[ivxlcdm]+))?\b/gi
+  const pattern = /\b(?:disc|disk|cd)[ _.-]*(\d+|[a-z]+)(?:\s+of\s+(\d+|[a-z]+))?\b/gi
   const marks = [...stem.matchAll(pattern)]
-  const numbers = marks.map((mark) => discNumber(mark[1]))
+  const numbers = marks.map((mark) => discNumber(mark[1], numbering))
   if (!numbers.length || numbers.some((number) => number === null || number !== numbers[0]))
     return null
-  const totals = marks.filter((mark) => mark[2]).map((mark) => discNumber(mark[2]))
+  const totals = marks.filter((mark) => mark[2]).map((mark) => discNumber(mark[2], numbering))
   if (totals.some((total) => total === null || total !== totals[0])) return null
   return {
     number: numbers[0]!,
@@ -119,19 +127,26 @@ export function recognizeDiscs(files: readonly DiscFile[], supported: readonly s
     )
   )
     return { state: 'skip', reason: 'ambiguous' }
-  const ordered = discs.map((file) => ({ file, order: numbered(file.name) }))
-  if (ordered.some(({ order }) => !order)) return { state: 'skip', reason: 'ambiguous' }
-  ordered.sort((a, b) => a.order!.number - b.order!.number)
-  const first = ordered[0].order!.number
-  if (
-    (first !== 0 && first !== 1) ||
-    ordered.some(
-      ({ order }, index) =>
-        order!.number !== index + first ||
-        order!.family !== ordered[0].order!.family ||
-        (order!.total !== undefined && order!.total !== ordered.length)
+  let result: string[] | undefined
+  for (const numbering of ['roman', 'letter'] as const) {
+    const ordered = discs.map((file) => ({ file, order: numbered(file.name, numbering) }))
+    if (ordered.some(({ order }) => !order)) continue
+    ordered.sort((a, b) => a.order!.number - b.order!.number)
+    const first = ordered[0].order!.number
+    if (
+      (first !== 0 && first !== 1) ||
+      ordered.some(
+        ({ order }, index) =>
+          order!.number !== index + first ||
+          order!.family !== ordered[0].order!.family ||
+          (order!.total !== undefined && order!.total !== ordered.length)
+      )
     )
-  )
-    return { state: 'skip', reason: 'ambiguous' }
-  return { state: 'ready', discs: ordered.map(({ file }) => file.name) }
+      continue
+    const discNames = ordered.map(({ file }) => file.name)
+    if (result && result.some((name, index) => name !== discNames[index]))
+      return { state: 'skip', reason: 'ambiguous' }
+    result = discNames
+  }
+  return result ? { state: 'ready', discs: result } : { state: 'skip', reason: 'ambiguous' }
 }

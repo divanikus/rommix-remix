@@ -64,12 +64,30 @@ test('a consecutive set may include disc zero, which remains first', () => {
   assert.deepEqual(recognizeDiscs(files(...counted), formats), { state: 'ready', discs: counted })
 })
 
+test('alphabetical labels use one notation across the set, including the letter I', () => {
+  const names = [...'ABCDEFGHIJ'].map((letter) => `Any game (Disc ${letter} of 10).chd`)
+  assert.deepEqual(recognizeDiscs(files(...names.toReversed()), formats), {
+    state: 'ready',
+    discs: names
+  })
+  assert.deepEqual(
+    recognizeDiscs(files('cd_b/Game (Disc 2).iso', 'cd_a/Game (Disc 1).iso'), formats),
+    {
+      state: 'ready',
+      discs: ['cd_a/Game (Disc 1).iso', 'cd_b/Game (Disc 2).iso']
+    }
+  )
+})
+
 for (const [label, set] of Object.entries({
   'single multitrack disc': cueSet.filter((file) => !file.name.includes('2')),
   'raw tracks': files('Game (Track 1).bin', 'Game (Track 2).bin'),
   'unnumbered images': files('first.chd', 'second.chd'),
   'missing disc': files('Game (Disc 1).chd', 'Game (Disc 3).chd'),
   'gap after disc zero': files('Game (Disc 0).chd', 'Game (Disc 2).chd'),
+  'missing alphabetical disc': files('Game (Disc A).chd', 'Game (Disc C).chd'),
+  'mixed alphabetical and Roman labels': files('Game (Disc A).chd', 'Game (Disc II).chd'),
+  'unknown alphabetical sequence': files('Game (Disc AA).chd', 'Game (Disc AB).chd'),
   'set starting after one': files('Game (Disc II).chd', 'Game (Disc III).chd'),
   'missing Roman final disc': files('Game (Disc I of III).chd', 'Game (Disc II of III).chd'),
   'duplicate Roman and Arabic numbers': files('Game (Disc I).chd', 'Game (Disc 1).chd'),

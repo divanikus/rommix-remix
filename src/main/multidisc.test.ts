@@ -58,7 +58,8 @@ test('generated playlist, index, sizes and all relative tracks agree after ES-DE
 
 for (const labels of [
   [0, 1, 2, 3],
-  ['I', 'II', 'III']
+  ['I', 'II', 'III'],
+  ['A', 'B']
 ]) {
   test(`playlist generation retains every disc in ${labels.join(', ')} order`, async () => {
     const input = await fixture({}, labels.toReversed())
