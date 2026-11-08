@@ -18,6 +18,19 @@ const mark = async (filled) => {
 }
 const status = async (icon) => {
   await page.locator(`[data-action=status] svg.lucide-${icon}`).waitFor()
+  const labels = {
+    'circle-dashed': 'Progress',
+    timer: 'Playing',
+    'flag-triangle-right': 'Finished',
+    trophy: 'Completed',
+    'flag-off': 'Given up',
+    ban: 'Not for me'
+  }
+  assert.equal(await page.locator('[data-action=status]').textContent(), labels[icon])
+  assert.equal(
+    await page.locator('.game-hero__meta .chip--status:not([data-new-files])').count(),
+    0
+  )
 }
 try {
   await page.addInitScript(() => {
@@ -36,6 +49,11 @@ try {
       get: () => bridge,
       set: (value) => {
         bridge = value
+        value.server.onStatus = (listener) => {
+          window.setOffline = async (offline) =>
+            listener({ ...(await value.server.status()), offline })
+          return () => {}
+        }
         const rom = value.library.rom
         value.library.rom = async (id) => {
           if (!firstGame) {
@@ -145,6 +163,13 @@ try {
   await page.keyboard.press('Shift+Tab')
   await status('trophy')
   await mark(true) // State is restored from the server on return to this game.
+  await page.evaluate(() => window.setOffline(true))
+  await page.locator('[data-action=status][data-disabled=true]').waitFor()
+  await status('trophy')
+  await page.locator('[data-action=status]').click()
+  assert.equal(await page.locator('.overlay').count(), 0)
+  await page.evaluate(() => window.setOffline(false))
+  await page.locator('[data-action=status][data-disabled=false]').waitFor()
   await press('[data-action=collections]')
   await press('[data-collection="4"]')
   await mark(false)
@@ -153,7 +178,7 @@ try {
   await page.locator('.library-screen [data-rom][data-focused=true]').waitFor()
   assert.deepEqual(errors, [])
   console.log(
-    'PASS centered header without Back; B/source return; six status icons and rollback; confirmed multi-collection membership, exclusions, failure and neighbor state'
+    'PASS centered header without Back; B/source return; single labelled status action, six values, rollback and offline display; confirmed multi-collection membership, exclusions, failure and neighbor state'
   )
 } finally {
   await browser.close()

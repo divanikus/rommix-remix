@@ -137,10 +137,7 @@
   color: var(--success);
 }
 
-/* And the same again for the progress tag, for the same reason `--on` needs
-   it here: `.game-hero .chip` above puts a dark ground under every chip in the
-   banner, which would otherwise take the colour straight back off this one. A
-   little stronger than the panel version, as the green beside it is. */
+/* Keep persistent notices such as newly available files readable over artwork. */
 .game-hero .chip--status {
   background: color-mix(in srgb, var(--chip-tone) 20%, transparent);
   border-color: color-mix(in srgb, var(--chip-tone) 45%, transparent);

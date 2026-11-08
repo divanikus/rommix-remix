@@ -504,7 +504,6 @@ function GameContent({
         rom={rom}
         entry={entry}
         system={system}
-        status={status}
         versionCount={versions.length + 1}
         onVersions={() => setChoosingVersion(true)}
         facts={<GameFacts rom={rom} played={played} />}
@@ -589,17 +588,16 @@ function GameContent({
               disabled={favourite === null || offline === true}
             />
 
-            {/* And how far through it you are, next to the heart for the same
-            reason: both are a mark on the game rather than on the copy here.
-            Icon only — the answer is already a tag under the title, and the
-            button would have said it a second time. */}
+            {/* Keep the current value on its action, readable even when offline. */}
             <FocusButton
               icon={statusIcon(status)}
               action="status"
               actionLabel={`${t('status.button')}: ${t(status ? `status.${status}` : 'status.none')}`}
               onSelect={() => setChoosingStatus(true)}
               disabled={offline === true}
-            />
+            >
+              {t(status ? `status.${status}` : 'status.button')}
+            </FocusButton>
 
             {/* Collections on RomM. Beside the heart because both mark the game on
             the server rather than touching the copy on this disk — and icon

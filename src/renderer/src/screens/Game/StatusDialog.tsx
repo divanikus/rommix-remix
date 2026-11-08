@@ -43,20 +43,13 @@ const CHOICES: readonly {
   { value: null, label: 'status.none', tone: 'off', icon: 'gameStatus' }
 ]
 
-/** The action, picker and title tag share one status vocabulary. */
+/** The action and picker share one status vocabulary. */
 export function statusIcon(status: RomUserStatus | null): IconName {
   return CHOICES.find((entry) => entry.value === status)?.icon ?? 'gameStatus'
 }
 
-/**
- * How far through a game somebody is, as a word with a colour behind it.
- *
- * Shaped like the chips it sits above — the platform, the year, `Downloaded` —
- * because it belongs to the same line of things said about the game, and a
- * second shape for one of them would read as a different kind of fact. Only the
- * colour changes with the answer.
- */
-export function StatusTag({ status }: { status: RomUserStatus | null }): JSX.Element | null {
+/** A picker choice, with the same word and icon as the game's status action. */
+function StatusTag({ status }: { status: RomUserStatus | null }): JSX.Element | null {
   const { t } = useI18n()
   const choice = CHOICES.find((entry) => entry.value === status)
   if (!choice) return null
@@ -103,7 +96,7 @@ export function StatusDialog({
   )
 }
 
-/** One answer, drawn as the tag it would put on the game. */
+/** One answer, with the current choice marked and focused. */
 function StatusRow({
   status,
   label,
@@ -131,8 +124,6 @@ function StatusRow({
       aria-current={chosen}
       {...props}
     >
-      {/* The row is the tag it is about to put on the game, so the colour is
-          learnt by choosing rather than by being explained. */}
       <StatusTag status={status} />
       {/* A mark on the one that is already set, and nothing at all on the rest:
           an icon on every row invites the question of what pressing it adds. */}

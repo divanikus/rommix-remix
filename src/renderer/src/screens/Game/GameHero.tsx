@@ -1,18 +1,16 @@
 import { type JSX, type ReactNode, type Ref, useEffect, useState } from 'react'
 import { romResourcePath } from '@shared/romm-resource'
 import { bytesOf, newFilesOf } from '@shared/gamefiles'
-import type { InstalledRom, RommRom, RomUserStatus } from '@shared/types'
+import type { InstalledRom, RommRom } from '@shared/types'
 import { ArtBackdrop, CoverArt, PlatformIcon } from '../../components'
 import { useFocusable } from '../../input/focus'
 import { Icon } from '../../icons'
 import { useI18n } from '../../state'
-import { StatusTag } from './StatusDialog'
 
 export function GameHero({
   rom,
   entry,
   system,
-  status,
   actions,
   facts,
   versionCount,
@@ -23,8 +21,6 @@ export function GameHero({
   entry?: InstalledRom
   /** The ES-DE system this game resolves to, for the platform icon. */
   system: string | null
-  /** How far through it the player says they are, or null if they have not. */
-  status: RomUserStatus | null
   /** The action row: Play, Download, Pull saves, and the rest. */
   actions: ReactNode
   facts: ReactNode
@@ -120,11 +116,6 @@ export function GameHero({
                 })}
               </span>
             ) : null}
-            {/* Last on the line, after everything the game is: this is the one
-                thing here the player put there themselves. Absent until they
-                have — a chip reading "not said" on every game in the library
-                would be a fact about nothing. */}
-            {status ? <StatusTag status={status} /> : null}
           </div>
 
           <button

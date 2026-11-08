@@ -941,6 +941,17 @@ describe('saying how far through a game you are', () => {
     const rom = server.roms.find((one) => one.id === 2)
     assert.equal(rom?.rom_user.status, 'finished')
     assert.equal(rom?.rom_user.rom_id, 2, 'the rest of what RomM holds should survive the patch')
+    assert.equal(
+      await app.read<string>(`document.querySelector('[data-action="status"]').textContent`),
+      en['status.finished']
+    )
+    assert.equal(
+      await app.read<number>(
+        `document.querySelectorAll('.game-hero__meta .chip--status:not([data-new-files])').length`
+      ),
+      0,
+      'the editable status should not be repeated as a separate tag'
+    )
   })
 
   test('and the dialog opens on it the next time', async () => {
