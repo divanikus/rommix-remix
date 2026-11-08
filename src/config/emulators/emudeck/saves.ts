@@ -88,6 +88,11 @@ function dolphinSaveDir(ctx: SaveContext, root: string): string {
 }
 
 export const FOLDERS: Readonly<Record<string, FolderSaves>> = {
+  // MAME files both NVRAM and numbered states under the machine short name.
+  mame: (ctx, root) => ({
+    saves: { dir: joinPath(root, 'saves', ctx.romStem), match: 'directory' },
+    states: { dir: joinPath(root, 'states', ctx.romStem), match: 'directory' }
+  }),
   /**
    * EmuDeck ships every RetroArch sort flag off, so saves land flat in
    * `retroarch/saves`. Read from the config all the same rather than assumed —

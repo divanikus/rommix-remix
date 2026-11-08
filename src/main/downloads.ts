@@ -1143,7 +1143,9 @@ export class DownloadManager extends EventEmitter {
     // Nothing is arriving any more, so the row stops naming a file.
     item.currentFile = undefined
 
-    const chosen = chooseLaunchFile(sized, where.system) ?? sized[0]?.name
+    const chosen =
+      chooseLaunchFile(sized, where.system, rom.fs_name_no_ext) ??
+      (archiveIsTheRom(where.system) ? undefined : sized[0]?.name)
     const launchPath = chosen ? join(where.dir, chosen) : where.dir
     return where.asDirectory
       ? {

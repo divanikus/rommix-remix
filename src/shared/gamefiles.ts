@@ -6,6 +6,8 @@ import {
   CONTAINER_SYSTEMS,
   DESCRIPTOR_EXTENSIONS,
   IMAGE_ONLY_SYSTEMS,
+  ROMSET_ARCHIVE_EXTENSIONS,
+  ROMSET_DEPENDENCY_EXTENSIONS,
   ROMSET_SYSTEMS,
   SIDECAR_EXTENSIONS
 } from '../config/romfiles.ts'
@@ -158,7 +160,9 @@ function stemOf(name: string): string {
 /**
  * The file to launch, or null when nothing in the list qualifies.
  *
- * Anything left after the sidecars are dropped and no descriptor is found
+ * Romsets prefer the archive matching `gameName`, or the only archive present.
+ * Multiple unmatched archives are ambiguous; BIOS size is no guide to a game.
+ * Elsewhere, anything left after sidecars are dropped and no descriptor is found
  * falls back to the largest file: the game itself is reliably bigger than the
  * manuals and artwork shipped beside it.
  *
@@ -168,9 +172,29 @@ function stemOf(name: string): string {
  * it asks the question that has always been asked, which is the right one
  * everywhere else.
  */
-export function chooseLaunchFile(files: readonly GameFile[], system?: string): string | null {
+export function chooseLaunchFile(
+  files: readonly GameFile[],
+  system?: string,
+  gameName?: string
+): string | null {
   const candidates = files.filter((file) => !SIDECARS.has(extensionOf(file.name)))
   if (candidates.length === 0) return null
+
+  if (archiveIsTheRom(system)) {
+    const archives = candidates.filter((file) =>
+      ROMSET_ARCHIVE_EXTENSIONS.includes(extensionOf(file.name))
+    )
+    const expected = gameName ? stemOf(fileNameOf(gameName)).toLowerCase() : null
+    const matching = expected
+      ? archives.filter((file) => stemOf(fileNameOf(file.name)).toLowerCase() === expected)
+      : []
+    if (matching.length === 1) return matching[0].name
+    // Size cannot distinguish a game from a BIOS/parent archive. Do not guess.
+    if (matching.length > 1 || archives.length > 1) return null
+    if (archives.length === 1) return archives[0].name
+    const other = candidates.filter((file) => isLaunchable(file.name, system))
+    return other.length ? largest(other).name : null
+  }
 
   const format = system ? CONTAINER_SYSTEMS[system] : undefined
   if (format) {
@@ -226,6 +250,8 @@ function chooseContainer(candidates: readonly GameFile[], format: ContainerForma
  * unexpected one would be declared unplayable for no better reason than that.
  */
 export function isLaunchable(name: string, system?: string): boolean {
+  if (archiveIsTheRom(system) && ROMSET_DEPENDENCY_EXTENSIONS.includes(extensionOf(name)))
+    return false
   if (system !== undefined && IMAGE_ONLY_SYSTEMS.includes(system)) {
     return !DESCRIPTOR_EXTENSIONS.includes(extensionOf(name))
   }

@@ -56,6 +56,10 @@ the feature for upstream. [Multidisc downloads](docs/multidisc.md) add generic
 file-based recognition, runner capabilities and narrowly scoped directory-as-file
 export. They introduce no platform allowlist or emulator rules outside configuration.
 
+[Arcade launchers](docs/arcade.md) extend the existing system-wide runner choice
+with MAME, select the program archive in ZIP/BIOS/CHD bundles and preserve the
+user's emulator configuration. They introduce no per-game runner preference.
+
 ## Distribution boundaries
 
 The fork has its own application ID, default data root, config pointer and Chromium

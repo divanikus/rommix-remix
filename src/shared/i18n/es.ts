@@ -14,6 +14,9 @@ import type { Catalog } from './catalog.ts'
  * Se tutea, que es como habla el resto de una interfaz de salón.
  */
 export const es: Catalog = {
+  'error.romsetLaunch':
+    'No se pudo identificar el archivo del juego. Comprueba que el conjunto contiene su archivo ZIP o 7z y que su nombre coincide con la carpeta del juego.',
+  'files.localPath': 'Ruta local',
   'error.playlistUnsupported':
     'El lanzador seleccionado no admite la lista de discos generada para este juego. Elige un lanzador compatible.',
   'settings.esdeLinux': 'El enriquecimiento de ES-DE requiere Linux.',

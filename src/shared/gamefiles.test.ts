@@ -14,6 +14,34 @@ const file = (name: string, sizeBytes = 1024): { name: string; sizeBytes: number
   sizeBytes
 })
 
+test('romsets select the named program archive, never a larger BIOS, CHD or playlist', () => {
+  const set = [
+    file('mslug.zip', 10),
+    file('neogeo.zip', 100),
+    file('mslug/disk.chd', 1000),
+    file('mslug.m3u')
+  ]
+  for (const system of ['arcade', 'mame', 'fbneo']) {
+    assert.equal(chooseLaunchFile(set, system, 'mslug'), 'mslug.zip')
+    assert.equal(chooseLaunchFile(set, system), null)
+    assert.equal(isLaunchable('mslug/disk.chd', system), false)
+    assert.equal(isLaunchable('mslug.m3u', system), false)
+  }
+  assert.equal(
+    chooseLaunchFile(
+      [file('wrapper/kinst2.7Z'), file('kinst2/disk.chd', 10000)],
+      'arcade',
+      'kinst2'
+    ),
+    'wrapper/kinst2.7Z'
+  )
+  assert.equal(chooseLaunchFile([file('one.zip'), file('two.zip')], 'arcade', 'unknown'), null)
+  assert.equal(chooseLaunchFile([file('game.zip'), file('game.7z')], 'arcade', 'game'), null)
+  assert.equal(chooseLaunchFile([file('kinst2.chd')], 'arcade', 'kinst2'), null)
+  assert.equal(chooseLaunchFile([file('game.neo')], 'neogeo'), 'game.neo')
+  assert.equal(chooseLaunchFile([file('Game.chd')], 'psx'), 'Game.chd')
+})
+
 test('a lone ROM is the launch file', () => {
   assert.equal(
     chooseLaunchFile([file('QuackShot (World) (Rev A).md')]),

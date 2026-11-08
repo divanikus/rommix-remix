@@ -149,6 +149,54 @@ function rom(fields: Partial<RommRom> = {}): RommRom {
   } as RommRom
 }
 
+for (const perFile of [true, false]) {
+  for (const [set, bodies] of Object.entries<Record<string, string>>({
+    sf2: { 'sf2.zip': 'program', 'readme.txt': 'notes' },
+    mslug: { 'mslug.zip': 'program', 'neogeo.zip': 'larger BIOS bytes' },
+    kinst2: {
+      'kinst2.zip': 'program',
+      'kinst2/kinst2.chd': 'much larger disk bytes',
+      'kinst2.m3u': 'owner playlist'
+    }
+  })) {
+    test(`arcade ${set} preserves its package and selects the program via ${perFile ? 'files' : 'archive'}`, async () => {
+      const game = rom({
+        fs_name: set,
+        fs_name_no_ext: set,
+        fs_path: 'roms/arcade',
+        fs_extension: '',
+        platform_slug: 'arcade',
+        platform_fs_slug: 'arcade',
+        has_multiple_files: true,
+        files: Object.entries(bodies).map(([name, body], id) => ({
+          id,
+          file_name: name.split('/').at(-1)!,
+          file_path:
+            'roms/arcade/' +
+            set +
+            (name.includes('/') ? '/' + name.slice(0, name.lastIndexOf('/')) : ''),
+          file_size_bytes: Buffer.byteLength(body)
+        }))
+      } as Partial<RommRom>)
+      const f = manager({
+        perFile,
+        zip: bodies,
+        fileBodies: Object.fromEntries(
+          Object.entries(bodies).map(([name, body]) => ['roms/arcade/' + set + '/' + name, body])
+        )
+      })
+      await f.downloads.enqueue(game)
+      assert.equal((await settled(f.downloads, 1)).state, 'done')
+      const installed = f.store.getInstalled(1)!
+      assert.equal(installed.launchPath, join(installed.path, set + '.zip'))
+      assert.equal(await f.library.launchTarget(installed), installed.launchPath)
+      for (const [name, body] of Object.entries(bodies))
+        assert.equal(readFileSync(join(installed.path, name), 'utf8'), body)
+      assert.equal(installed.playlist, undefined)
+    })
+  }
+}
+
 for (const legacy of [false, true]) {
   test(`resumed CHD set ${legacy ? 'preserves an older unowned folder' : 'generates once and checks a changed runner'}`, async () => {
     const game = rom({

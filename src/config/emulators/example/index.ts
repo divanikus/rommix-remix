@@ -370,6 +370,9 @@ export const example: EmulatorDescriptor = {
    * program in it, so whatever the descriptor names must land *after* it.
    * `ctx.installRef` is what the probe resolved: an app id, a program path, or
    * a launcher directory.
+   * `ctx.home` is the real user home. `ctx.env` provides read-only access to
+   * configuration there; `ctx.paths` holds the discovered integration folders.
+   * Build any required per-launch arguments here without rewriting settings.
    */
   launch: ({ exec, system, romPath }) => {
     if (system === 'nes') return [...exec, '--nes', romPath]

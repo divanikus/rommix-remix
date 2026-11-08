@@ -3,6 +3,7 @@ import { existsSync } from 'node:fs'
 import { mkdir, rename, rm, rmdir, stat } from 'node:fs/promises'
 import { basename, dirname, join, relative } from 'node:path'
 import {
+  archiveIsTheRom,
   chooseLaunchFile,
   gameFolderOf,
   isLaunchable,
@@ -330,7 +331,9 @@ export class Library extends EventEmitter {
         adopted.push(
           await this.entryFor(rom, target.system, target.emulatorId, {
             path,
-            launchPath: isDirectory ? ((await pickLaunchFile(path, target.system)) ?? path) : path,
+            launchPath: isDirectory
+              ? ((await pickLaunchFile(path, target.system, rom.fs_name_no_ext)) ?? path)
+              : path,
             sizeBytes: isDirectory
               ? await directorySize(path).catch(() => 0)
               : ((await stat(path).catch(() => null))?.size ?? 0),
@@ -376,7 +379,10 @@ export class Library extends EventEmitter {
               sizeBytes: (await stat(join(target.dir, name)).catch(() => null))?.size ?? 0
             }))
           )
-          const launch = join(target.dir, chooseLaunchFile(sized, target.system) ?? found[0])
+          const launch = join(
+            target.dir,
+            chooseLaunchFile(sized, target.system, rom.fs_name_no_ext) ?? found[0]
+          )
           adopted.push(
             await this.entryFor(rom, target.system, target.emulatorId, {
               path: launch,
@@ -556,6 +562,11 @@ export class Library extends EventEmitter {
    * load. Choosing again from disk fixes those without a reinstall.
    */
   async launchTarget(entry: InstalledRom, variant?: string): Promise<string> {
+    if (archiveIsTheRom(entry.system) && entry.isDirectory) {
+      const selected = await pickLaunchFile(entry.path, entry.system)
+      if (!selected) throw new RommError(t('error.romsetLaunch'))
+      return selected
+    }
     if (
       entry.playlist &&
       !entry.playlist.discs.every((disc) =>
@@ -579,7 +590,8 @@ export class Library extends EventEmitter {
         sizeBytes: (await stat(join(dir, name)).catch(() => null))?.size ?? 0
       }))
     )
-    const chosen = chooseLaunchFile(sized, entry.system)
+    const chosen = chooseLaunchFile(sized, entry.system, basename(entry.path))
+    if (!chosen && archiveIsTheRom(entry.system)) throw new RommError(t('error.romsetLaunch'))
     return chosen ? join(dir, chosen) : entry.path
   }
 
@@ -699,7 +711,7 @@ export class Library extends EventEmitter {
     const dir = gameFolderOf(entry)
     const sized = await this.sizesOf(dir, [...new Set([...localFileNames(entry), ...added])])
     const keeps = existsSync(entry.launchPath) && isLaunchable(entry.launchPath, entry.system)
-    const chosen = keeps ? null : chooseLaunchFile(sized, entry.system)
+    const chosen = keeps ? null : chooseLaunchFile(sized, entry.system, basename(entry.path))
     const launchPath = chosen ? join(dir, chosen) : entry.launchPath
     return {
       ...entry,

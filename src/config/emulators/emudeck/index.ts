@@ -1,4 +1,5 @@
 import { emuDeckSavePaths } from './saves.ts'
+import { mameArguments } from './mame.ts'
 import { coreM3u, DUCKSTATION_M3U } from '../playlists.ts'
 import type { DirSpec, EmulatorDescriptor, LaunchVariant, LayoutSource } from '../types.ts'
 
@@ -279,9 +280,17 @@ export const EMUDECK_LAUNCHERS: Readonly<Record<string, readonly EmuDeckLauncher
   wonderswancolor: [core('mednafen_wswan', 'Beetle WonderSwan', 'mednafen_wswan')],
 
   // -- Arcade ---------------------------------------------------------------
-  arcade: [core('fbneo', 'FinalBurn Neo', 'fbneo')],
+  arcade: [
+    core('fbneo', 'FinalBurn Neo', 'fbneo'),
+    standalone('mame-standalone', 'MAME', 'mame.sh'),
+    core('mame', 'MAME', 'mame')
+  ],
   fbneo: [core('fbneo', 'FinalBurn Neo', 'fbneo')],
-  mame: [core('mame2003_plus', 'MAME 2003-Plus', 'mame2003_plus')],
+  mame: [
+    core('mame2003_plus', 'MAME 2003-Plus', 'mame2003_plus'),
+    standalone('mame-standalone', 'MAME', 'mame.sh'),
+    core('mame', 'MAME', 'mame')
+  ],
   model3: [standalone('supermodel', 'Supermodel', 'supermodel.sh')],
 
   // -- Engines and fantasy consoles -----------------------------------------
@@ -432,7 +441,8 @@ export const emudeck: EmulatorDescriptor = {
   // RomMix is already the frontend the user is looking at, so handing them a
   // second one is not what "Run EmuDeck" means.
   open: ({ home }) => [`${home}/${EMUDECK_APP}`, '--no-sandbox'],
-  launch: ({ exec, installRef, system, romPath, variant }) => {
+  launch: (ctx) => {
+    const { exec, installRef, system, romPath, variant } = ctx
     const options = emuDeckLaunchers(system)
     if (options.length === 0) return null
     // An unknown variant is not silently downgraded to the default: it means a
@@ -440,6 +450,10 @@ export const emudeck: EmulatorDescriptor = {
     // emulator than the one asked for is how a save ends up in the wrong place.
     const chosen = variant ? options.find((option) => option.id === variant) : options[0]
     if (!chosen) return null
+    if (chosen.script === 'mame.sh') {
+      const args = mameArguments(ctx)
+      return args ? [...exec, `${installRef}/${chosen.script}`, ...args] : null
+    }
     return [
       ...exec,
       `${installRef}/${chosen.script}`,

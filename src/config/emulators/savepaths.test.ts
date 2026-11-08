@@ -48,6 +48,18 @@ const ENGLISH = createI18n('en')
 
 const HOME = '/home/deck'
 
+test('standalone MAME syncs only the selected machine NVRAM and state directories', () => {
+  const paths = resolve(emudeck, {
+    system: 'arcade',
+    romPath: '/roms/arcade/kinst2/kinst2.zip',
+    variant: 'mame-standalone',
+    paths: { saves: '/e/saves' }
+  })
+  assert.deepEqual(paths.saves, { dir: '/e/saves/mame/saves/kinst2', match: 'directory' })
+  assert.deepEqual(paths.states, { dir: '/e/saves/mame/states/kinst2', match: 'directory' })
+  assert.equal(paths.emulator, 'mame')
+})
+
 /** A machine described as a set of files and directories. */
 interface FakeMachine {
   /** Absolute path -> contents, for files that get read. */
@@ -114,6 +126,7 @@ function context(options: ContextOptions): SaveContext {
 
 /** What a launch is told about the disk when nothing on it matters. */
 const NOTHING_ON_DISK = {
+  home: '/home/u',
   paths: { home: null, roms: null, saves: null, states: null, bios: null },
   installDir: null,
   env: machine({})

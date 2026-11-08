@@ -82,6 +82,7 @@ function disk(files: Record<string, string> = {}): SaveEnvironment {
 
 /** What a launch is told about the disk when nothing on it matters. */
 const NOTHING_ON_DISK = {
+  home: '/home/u',
   paths: { home: null, roms: null, saves: null, states: null, bios: null },
   installDir: null,
   env: disk()
@@ -234,6 +235,7 @@ const PS3_SYSTEM = `<systemList>
 
 function launchPs3(romPath: string, files: Record<string, string> = {}): string[] | null {
   return retrodeck.launch({
+    home: '/home/u',
     exec: ['flatpak', 'run', 'net.retrodeck.retrodeck'],
     installRef: 'net.retrodeck.retrodeck',
     system: 'ps3',
@@ -707,6 +709,62 @@ test('a chosen EmuDeck variant is the one that runs', () => {
     '--fullscreen',
     '/e/roms/switch/game.nsp'
   ])
+})
+
+test('EmuDeck offers current MAME without changing the FBNeo system or old choices', () => {
+  for (const system of ['arcade', 'mame']) {
+    assert.ok(
+      launchVariants(emudeck, system).some(
+        (option) => option.id === 'mame-standalone' && option.requires === 'mame.sh'
+      )
+    )
+    assert.ok(
+      launchVariants(emudeck, system).some(
+        (option) => option.id === 'mame' && option.requires === 'retroarch.sh'
+      )
+    )
+  }
+  assert.deepEqual(
+    launchVariants(emudeck, 'fbneo').map((option) => option.id),
+    ['fbneo']
+  )
+  assert.equal(launchVariants(emudeck, 'arcade')[0].id, 'fbneo')
+  assert.equal(launchVariants(emudeck, 'mame')[0].id, 'mame2003_plus')
+})
+
+test('standalone MAME sees a nested set and retains configured ROM/BIOS search paths', () => {
+  const ctx = {
+    ...NOTHING_ON_DISK,
+    exec: [],
+    installRef: '/e/tools/launchers',
+    system: 'arcade',
+    romPath: '/games/Arcade Sets/kinst2/kinst2.zip',
+    variant: 'mame-standalone',
+    env: disk({
+      '/home/u/.mame/mame.ini': '# owner configuration\nrompath "/owner/ROM Sets;$HOME/BIOS"\n'
+    })
+  }
+  assert.deepEqual(emudeck.launch(ctx), [
+    '/e/tools/launchers/mame.sh',
+    '-rompath',
+    '/games/Arcade Sets/kinst2;/owner/ROM Sets;$HOME/BIOS',
+    ctx.romPath
+  ])
+  assert.equal(emudeck.launch({ ...ctx, romPath: '/games/kinst2/kinst2.chd' }), null)
+  assert.equal(emudeck.launch({ ...ctx, romPath: '/games/a;b/kinst2.zip' }), null)
+  assert.deepEqual(
+    emudeck.launch({
+      ...ctx,
+      env: disk(),
+      paths: { ...ctx.paths, roms: '/e/roms', bios: '/e/bios' }
+    }),
+    [
+      '/e/tools/launchers/mame.sh',
+      '-rompath',
+      '/games/Arcade Sets/kinst2;/e/roms/arcade;/e/bios;/e/bios/mame',
+      ctx.romPath
+    ]
+  )
 })
 
 test('a variant that no longer exists refuses rather than substituting', () => {

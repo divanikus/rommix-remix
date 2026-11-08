@@ -599,6 +599,36 @@ describe('uninstalling', () => {
 })
 
 describe('the file handed to an emulator', () => {
+  test('old arcade CHD and playlist targets are repaired by reading the set without changing files', async () => {
+    const made = manager()
+    const dir = join(made.root, 'roms', 'arcade', 'kinst2')
+    mkdirSync(join(dir, 'kinst2'), { recursive: true })
+    for (const name of ['kinst2.zip', 'bios.zip', 'kinst2.m3u', 'kinst2/kinst2.chd'])
+      writeFileSync(join(dir, name), 'owner bytes')
+    for (const stale of ['kinst2.m3u', 'kinst2/kinst2.chd', 'bios.zip']) {
+      const installed = entry({
+        path: dir,
+        launchPath: join(dir, stale),
+        system: 'arcade',
+        isDirectory: true
+      })
+      assert.equal(await made.library.launchTarget(installed), join(dir, 'kinst2.zip'))
+      assert.equal(existsSync(join(dir, stale)), true)
+    }
+    await rm(join(dir, 'kinst2.zip'))
+    writeFileSync(join(dir, 'other.zip'), 'another ambiguous archive')
+    await assert.rejects(
+      made.library.launchTarget(
+        entry({
+          path: dir,
+          launchPath: join(dir, 'kinst2.m3u'),
+          system: 'arcade',
+          isDirectory: true
+        })
+      ),
+      /archive could not be identified/
+    )
+  })
   test('a recorded launch file that has gone is chosen again from the disk', async () => {
     const made = manager()
     const dir = join(made.root, 'roms', 'psx', 'Final Fantasy VII')

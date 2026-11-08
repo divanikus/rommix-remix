@@ -304,6 +304,8 @@ export interface LaunchVariant {
 }
 
 export interface LaunchContext {
+  /** The real user home, for read-only discovery of the runner's own settings. */
+  home: string
   /**
    * argv prefix that starts the program. Empty for a `scripts` install, where
    * the launcher to run depends on the system and the descriptor names it.

@@ -23,6 +23,9 @@
  */
 
 export const en = {
+  'error.romsetLaunch':
+    'The game archive could not be identified. Check that the set contains its ZIP or 7z file and that its name matches the game folder.',
+  'files.localPath': 'Local path',
   'error.playlistUnsupported':
     'The selected launcher does not support this game’s generated disc playlist. Choose a compatible launcher.',
   'settings.esdeLinux': 'ES-DE enrichment requires Linux.',

@@ -130,21 +130,28 @@ export function FilesTab({
       })}
     </ul>
   )
-  if (added === 0) return list
-
   return (
     <>
-      <div className="btn-row">
-        <FocusButton
-          icon="download"
-          action="add-files"
-          variant="primary"
-          onSelect={onAddFiles}
-          disabled={addDisabled}
-        >
-          {t('files.addNew', { count: added })}
-        </FocusButton>
-      </div>
+      {entry ? (
+        <p className="faint">
+          {t('files.localPath')}
+          <br />
+          <code style={{ overflowWrap: 'anywhere' }}>{entry.path}</code>
+        </p>
+      ) : null}
+      {added > 0 ? (
+        <div className="btn-row">
+          <FocusButton
+            icon="download"
+            action="add-files"
+            variant="primary"
+            onSelect={onAddFiles}
+            disabled={addDisabled}
+          >
+            {t('files.addNew', { count: added })}
+          </FocusButton>
+        </div>
+      ) : null}
       {list}
     </>
   )

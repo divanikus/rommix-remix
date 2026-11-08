@@ -230,6 +230,7 @@ export class Launcher {
     const descriptor = emulatorById(emulator.id)
     if (!descriptor || !emulator.install) return null
     return descriptor.launch({
+      home: realHome(),
       exec: execPrefix(emulator.install, descriptor.env),
       installRef: emulator.install.ref,
       system,

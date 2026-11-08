@@ -96,6 +96,16 @@ export const ROMSET_SYSTEMS: readonly string[] = [
   'atomiswave'
 ]
 
+/** Program archives, as distinct from the disk images and playlists beside them. */
+export const ROMSET_ARCHIVE_EXTENSIONS: readonly string[] = ['.zip', '.7z']
+export const ROMSET_DEPENDENCY_EXTENSIONS: readonly string[] = [
+  '.chd',
+  '.m3u',
+  '.m3u8',
+  '.cue',
+  '.gdi'
+]
+
 /**
  * Disc descriptors, in the order they should be preferred.
  *

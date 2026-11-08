@@ -12,6 +12,9 @@ import type { Catalog } from './catalog.ts'
  * en anglais.
  */
 export const fr: Catalog = {
+  'error.romsetLaunch':
+    'L’archive du jeu n’a pas pu être identifiée. Vérifiez que le jeu contient son fichier ZIP ou 7z et que son nom correspond au dossier du jeu.',
+  'files.localPath': 'Chemin local',
   'error.playlistUnsupported':
     'Le lanceur sélectionné ne prend pas en charge la liste de disques générée pour ce jeu. Choisissez un lanceur compatible.',
   'settings.esdeLinux': 'L’enrichissement ES-DE nécessite Linux.',

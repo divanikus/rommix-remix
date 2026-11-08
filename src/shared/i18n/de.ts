@@ -15,6 +15,9 @@ import type { Catalog } from './catalog.ts'
  * überall gleich sein soll.
  */
 export const de: Catalog = {
+  'error.romsetLaunch':
+    'Das Spielarchiv konnte nicht bestimmt werden. Prüfe, ob der Satz seine ZIP- oder 7z-Datei enthält und ihr Name zum Spielordner passt.',
+  'files.localPath': 'Lokaler Pfad',
   'error.playlistUnsupported':
     'Der gewählte Launcher unterstützt die erzeugte Disc-Playlist dieses Spiels nicht. Wähle einen kompatiblen Launcher.',
   'settings.esdeLinux': 'Die ES-DE-Ergänzung erfordert Linux.',

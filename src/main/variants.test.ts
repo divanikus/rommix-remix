@@ -66,6 +66,22 @@ test('libretro entries ride on the one retroarch launcher', () => {
   assert.deepEqual(usableVariants(emudeck, 'n3ds', install), [])
 })
 
+test('arcade choices follow installed scripts without adding MAME to the FBNeo system', () => {
+  const retroarch = launchers('retroarch.sh')
+  assert.deepEqual(ids(usableVariants(emudeck, 'arcade', retroarch)), ['fbneo', 'mame'])
+  const both = launchers('retroarch.sh', 'mame.sh')
+  assert.deepEqual(ids(usableVariants(emudeck, 'arcade', both)), [
+    'fbneo',
+    'mame-standalone',
+    'mame'
+  ])
+  assert.deepEqual(ids(usableVariants(emudeck, 'fbneo', both)), ['fbneo'])
+  const standalone = launchers('mame.sh')
+  for (const system of ['arcade', 'mame']) {
+    assert.deepEqual(ids(usableVariants(emudeck, system, standalone)), ['mame-standalone'])
+  }
+})
+
 test('a system the descriptor does not cover is empty either way', () => {
   assert.deepEqual(usableVariants(emudeck, 'gamecube-not-a-system', launchers('retroarch.sh')), [])
 })

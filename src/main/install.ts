@@ -36,19 +36,23 @@ export async function directorySize(path: string): Promise<number> {
  * disk, and descends through the single wrapper folder that archives so often
  * add.
  */
-export async function pickLaunchFile(dir: string, system: string): Promise<string | null> {
+export async function pickLaunchFile(
+  dir: string,
+  system: string,
+  gameName = basename(dir)
+): Promise<string | null> {
   const entries = await readdir(dir, { withFileTypes: true }).catch(() => [])
   const files = entries.filter((entry) => entry.isFile()).map((entry) => entry.name)
   const subdirs = entries.filter((entry) => entry.isDirectory()).map((entry) => entry.name)
 
   if (files.length === 0 && subdirs.length === 1) {
-    return pickLaunchFile(join(dir, subdirs[0]), system)
+    return pickLaunchFile(join(dir, subdirs[0]), system, gameName)
   }
 
   const sized = await Promise.all(
     files.map(async (name) => ({ name, sizeBytes: (await stat(join(dir, name))).size }))
   )
-  const chosen = chooseLaunchFile(sized, system)
+  const chosen = chooseLaunchFile(sized, system, gameName)
   return chosen ? join(dir, chosen) : null
 }
 
@@ -263,7 +267,7 @@ export async function unpack(
 
   return {
     path: dirTarget,
-    launchPath: (await pickLaunchFile(dirTarget, system)) ?? dirTarget,
+    launchPath: (await pickLaunchFile(dirTarget, system, rom.fs_name_no_ext)) ?? dirTarget,
     sizeBytes: await directorySize(dirTarget),
     isDirectory: true,
     files: await installedFiles(dirTarget)
