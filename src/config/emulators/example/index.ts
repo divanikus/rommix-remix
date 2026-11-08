@@ -61,9 +61,7 @@ export const example: EmulatorDescriptor = {
    *       A loose file, searched for in the folders people keep AppImages in
    *       and in the one RomMix downloads into. Only `*` is supported in a
    *       pattern, and matching is case-insensitive. `release` is where the
-   *       project publishes its builds, and is required — an AppImage RomMix
-   *       cannot fetch is one the user drops in a folder themselves, which is
-   *       what `binary` already describes:
+   *       project publishes its builds:
    *
    *         release: {
    *           api: 'https://git.eden-emu.dev/api/v1/repos/eden-emu/eden/releases',
@@ -72,6 +70,10 @@ export const example: EmulatorDescriptor = {
    *           // same `.zip` as Linux. A zip is unpacked after download.
    *           asset: /\.AppImage$/i
    *         }
+   *
+   *       `release: null` is a project with no feed stable enough to install
+   *       from: its AppImage is only ever found, never offered as a download.
+   *       `binary` cannot stand in for it, being looked for on PATH alone.
    *
    *   { kind: 'binary',   names: ['retroarch', 'retroarch-nightly'] }
    *       Looked up on PATH. Whatever put it there — a distro

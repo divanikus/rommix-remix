@@ -800,10 +800,20 @@ export const de: Catalog = {
     'Firmware in Eden installieren: Tools → Install Firmware. Die Schlüssel werden für Sie kopiert.',
   'setup.edenControls': 'Den Controller in Eden einrichten: Emulation → Configure → Controls.',
   'setup.edenExitConfirm':
-    'Die Beenden-Nachfrage von Eden abschalten: Emulation → Configure → General → Confirm exit ' +
-    'while emulation is running.',
+    'Die Beenden-Nachfrage von Eden abschalten: Emulation → Configure → General → Confirm ' +
+    'before stopping emulation → Never ask.',
   'setup.edenStaging':
     'Firmware in Eden installieren: Tools → Install Firmware, auf die Datei unten zeigen lassen.',
+  'setup.eglantineRoms':
+    'Den ROM-Ordner von RomMix in Eglantine eintragen: File → Game Directories.',
+  'setup.eglantineMigration':
+    'Eglantine einmal selbst starten und die Frage nach der Datenübernahme beantworten, sonst ' +
+    'bleibt ein aus RomMix gestartetes Spiel daran hängen.',
+  'setup.eglantineControls':
+    'Den Controller in Eglantine einrichten: Emulation → Configure → Controls.',
+  'setup.eglantineExitConfirm':
+    'Die Beenden-Nachfrage von Eglantine abschalten: Emulation → Configure → General → Confirm ' +
+    'before stopping emulation → Never ask.',
   'setup.shadps4Roms':
     'Den ROM-Ordner von RomMix in shadPS4 eintragen, damit dessen Spieleliste findet, was Sie herunterladen.',
 
