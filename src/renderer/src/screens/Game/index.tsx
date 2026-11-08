@@ -452,14 +452,16 @@ function GameContent({
    *
    * Two, and they are not the same news. A file RomM holds a copy of that this
    * device did not put there is a decision RomMix will not make for anybody.
-   * The rest are held by a setting, and naming it is the point: nothing is
-   * wrong with them, and the person reading this is the one who turned it on.
-   * Both can be true at once, for different files in one session.
+   * The rest can be reviewed and sent. They may still be here after an approved
+   * upload failed, so their presence does not prove the confirmation setting
+   * caused the delay. Both groups can exist in one session.
    */
   const outstanding = unsentSaves.find((game) => game.romId === romId)
   const waitingReasons = [
     outstanding && outstanding.conflicts > 0 ? t('saves.waitingConflict') : null,
-    outstanding && outstanding.ready > 0 ? t('saves.waitingConfirm') : null
+    outstanding && outstanding.ready > 0
+      ? t('saves.waitingConfirm', { action: t('game.pushSaves') })
+      : null
   ].filter((reason) => reason !== null)
 
   const openVersion = (id: number, keepVersionsTab = false): void => {
@@ -732,9 +734,8 @@ function GameContent({
           running at a time — the transfer buttons grey each other out. */}
         {saveProgress ? <SaveTransfer progress={saveProgress} /> : null}
 
-        {/* Saves a session wrote that RomMix would not hand over on its own —
-          because RomM's copy came from somewhere else or has moved on, or
-          because the user has asked to be asked. The only place it is said:
+        {/* Saves still pending after a session or an unsuccessful upload.
+          They need review or another attempt. The only place it is said:
           this is the screen with the button that answers it, and a warning on
           any other screen is one the user cannot act on from there. */}
         {waitingReasons.length > 0 ? (

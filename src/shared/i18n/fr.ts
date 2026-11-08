@@ -761,7 +761,7 @@ export const fr: Catalog = {
   'saves.waitingConflict':
     'Des sauvegardes n’ont pas été envoyées à RomM car elles sont en conflit avec des sauvegardes existantes.',
   'saves.waitingConfirm':
-    'Des sauvegardes n’ont pas été envoyées à RomM car « Demander avant d’envoyer des sauvegardes à RomM » est activé.',
+    'Certaines sauvegardes n’ont pas encore été envoyées à RomM. Utilisez {action} pour les vérifier et les envoyer.',
   'saves.sentAutomatically_one': 'Sauvegardes de {count} jeu envoyées à RomM',
   'saves.sentAutomatically_other': 'Sauvegardes de {count} jeux envoyées à RomM',
   'saves.sentAutomaticallyOne': 'Sauvegardes envoyées à RomM',

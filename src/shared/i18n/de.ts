@@ -768,7 +768,7 @@ export const de: Catalog = {
   'saves.waitingConflict':
     'Einige Spielstände wurden nicht an RomM gesendet, weil sie mit vorhandenen Spielständen kollidieren.',
   'saves.waitingConfirm':
-    'Einige Spielstände wurden nicht an RomM gesendet, weil „Vor dem Senden von Spielständen an RomM fragen“ aktiv ist.',
+    'Einige Spielstände wurden noch nicht an RomM gesendet. Mit {action} kannst du sie prüfen und senden.',
   'saves.sentAutomatically_one': 'Spielstände von {count} Spiel an RomM gesendet',
   'saves.sentAutomatically_other': 'Spielstände von {count} Spielen an RomM gesendet',
   'saves.sentAutomaticallyOne': 'Spielstände an RomM gesendet',

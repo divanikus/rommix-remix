@@ -751,7 +751,7 @@ export const en = {
   'saves.waitingConflict':
     'Some saves were not sent to RomM because there are conflicts with existing saves.',
   'saves.waitingConfirm':
-    'Some saves were not sent to RomM because “Ask before sending saves to RomM” is on.',
+    'Some saves have not been sent to RomM yet. Use {action} to review and send them.',
   'saves.sentAutomatically_one': 'Saves for {count} game sent to RomM',
   'saves.sentAutomatically_other': 'Saves for {count} games sent to RomM',
   'saves.sentAutomaticallyOne': 'Saves sent to RomM',
