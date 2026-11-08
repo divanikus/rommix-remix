@@ -1,5 +1,5 @@
 import { type JSX, useEffect, useState } from 'react'
-import { type GameFile, localFileNames, newFilesOf } from '@shared/gamefiles'
+import { type GameFile, localFileNames, newFilesOf, romFileName } from '@shared/gamefiles'
 import type { MessageKey } from '@shared/i18n'
 import type { InstalledRom, RommRom } from '@shared/types'
 import { FocusButton, StatusBadge, type Tone } from '../../../components'
@@ -46,13 +46,15 @@ interface FileRow {
  */
 function merge(rom: RommRom, entry: InstalledRom | undefined): FileRow[] {
   const local = entry ? localFileNames(entry) : []
-  const here = new Map(local.map((name) => [name.toLowerCase(), name]))
+  const here = new Map(local.map((name) => [name.replaceAll('\\', '/').toLowerCase(), name]))
   const rows: FileRow[] = []
 
   for (const file of rom.files) {
-    const key = file.file_name.toLowerCase()
+    const name =
+      entry?.isDirectory === false ? file.file_name : (romFileName(file, rom) ?? file.file_name)
+    const key = name.toLowerCase()
     rows.push({
-      name: file.file_name,
+      name,
       where: here.has(key) ? 'both' : 'server',
       sizeBytes: file.file_size_bytes
     })
