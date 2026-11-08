@@ -22,7 +22,9 @@ export function FocusButton({
   icon,
   on,
   action,
-  actionLabel
+  actionLabel,
+  focusId,
+  popup
 }: {
   children?: ReactNode
   onSelect: () => void
@@ -60,8 +62,13 @@ export function FocusButton({
    * drives, which is most of them.
    */
   action?: string
+  /** A stable target for an explicit focus handoff after an action completes. */
+  focusId?: string
+  /** An action panel opened by this button. */
+  popup?: { id: string; open: boolean }
 }): JSX.Element {
   const { ref, props } = useFocusable({
+    id: focusId,
     onSelect: disabled ? undefined : onSelect,
     enabled: !disabled,
     autoFocus,
@@ -80,6 +87,9 @@ export function FocusButton({
       data-disabled={disabled}
       data-on={on}
       aria-label={actionLabel}
+      aria-haspopup={popup ? 'dialog' : undefined}
+      aria-expanded={popup?.open}
+      aria-controls={popup?.open ? popup.id : undefined}
       title={children === undefined ? actionLabel : undefined}
       {...props}
     >

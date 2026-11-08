@@ -720,7 +720,7 @@ export const fr: Catalog = {
 
   'game.variantTitle': 'Comment lancer les jeux {system} ?',
   'game.variantBody':
-    '{emulator} en propose plusieurs. Retenu pour {system} — changez-le plus tard avec Lancer avec',
+    '{emulator} en propose plusieurs. Retenu pour {system} — modifiez-le avec la flèche à côté de Jouer',
   'game.deleteSaveTitle': 'Supprimer cette sauvegarde ?',
   'game.deleteStateTitle': 'Supprimer cet état ?',
   'game.deleteAssetBody': '{file} — {location}',

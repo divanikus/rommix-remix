@@ -33,11 +33,13 @@ export function useGameLaunch(options: {
   onPendingPush: (preview: SavePushPreview) => void
 }): {
   busy: boolean
-  /** The ways this game can be run, for deciding whether "Run with" is worth showing. */
+  /** The ways this game can be run, for the arrow beside Play. */
   variants: LaunchChoice['options']
   /** The choice being put to the user, or null while nothing is being asked. */
   choosing: LaunchChoice | null
   setChoosing: (choice: LaunchChoice | null) => void
+  menu: LaunchChoice | null
+  closeMenu: () => void
   startPlay: () => Promise<void>
   play: (variant?: string) => Promise<void>
   openChooser: () => Promise<void>
@@ -51,6 +53,7 @@ export function useGameLaunch(options: {
 
   const [busy, setBusy] = useState(false)
   const [choosing, setChoosing] = useState<LaunchChoice | null>(null)
+  const [menu, setMenu] = useState<LaunchChoice | null>(null)
   const [variants, setVariants] = useState<LaunchChoice['options']>([])
   const [setup, setSetup] = useState<{ emulatorId: string; notes: string[] } | null>(null)
 
@@ -63,6 +66,7 @@ export function useGameLaunch(options: {
   const run = useRef(0)
   useEffect(() => {
     const mine = (run.current += 1)
+    setMenu(null)
     if (installedFor === null) {
       setVariants([])
       setSetup(null)
@@ -83,6 +87,9 @@ export function useGameLaunch(options: {
         setVariants([])
         setSetup(null)
       })
+    return () => {
+      run.current += 1
+    }
   }, [romId, installedFor])
 
   const noticeKey = setup ? `setup:${setup.emulatorId}` : null
@@ -105,6 +112,7 @@ export function useGameLaunch(options: {
 
   const play = async (variant?: string): Promise<void> => {
     setChoosing(null)
+    setMenu(null)
     setBusy(true)
     try {
       const result = await window.rommix.game.launch(romId, variant)
@@ -159,10 +167,15 @@ export function useGameLaunch(options: {
 
   /** Re-open the picker for a platform that has already been answered. */
   const openChooser = async (): Promise<void> => {
+    const mine = run.current
+    setBusy(true)
     try {
-      setChoosing(await window.rommix.game.variants(romId))
+      const choice = await window.rommix.game.variants(romId)
+      if (run.current === mine) setMenu(choice)
     } catch {
       // Reported centrally.
+    } finally {
+      setBusy(false)
     }
   }
 
@@ -171,6 +184,8 @@ export function useGameLaunch(options: {
     variants,
     choosing,
     setChoosing,
+    menu,
+    closeMenu: () => setMenu(null),
     startPlay,
     play,
     openChooser,

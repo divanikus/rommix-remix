@@ -33,6 +33,7 @@ export function useGameCopy(options: {
   rom: RommRom | null
   entry: InstalledRom | undefined
   download: DownloadItem | undefined
+  onUninstalled: () => void
 }): {
   busy: boolean
   startDownload: () => Promise<void>
@@ -41,7 +42,7 @@ export function useGameCopy(options: {
   confirmingRemoval: boolean
   setConfirmingRemoval: (confirming: boolean) => void
 } {
-  const { romId, rom, entry, download } = options
+  const { romId, rom, entry, download, onUninstalled } = options
   const { t } = useI18n()
   const { notify, refreshInstalled } = useApp()
   const [busy, setBusy] = useState(false)
@@ -76,6 +77,7 @@ export function useGameCopy(options: {
     try {
       await window.rommix.downloads.uninstall(romId)
       await refreshInstalled()
+      onUninstalled()
       notify(t('downloads.uninstalled'), 'ok', {
         title: rom?.name ?? (entry && fileNameOf(entry.path)) ?? t('game.fallbackTitle'),
         coverPath: rom?.path_cover_small ?? rom?.path_cover_large ?? null

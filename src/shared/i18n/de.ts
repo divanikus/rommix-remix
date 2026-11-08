@@ -727,7 +727,7 @@ export const de: Catalog = {
 
   'game.variantTitle': 'Womit sollen {system}-Spiele laufen?',
   'game.variantBody':
-    '{emulator} bietet mehrere an. Für {system} gemerkt — später über Ausführen mit änderbar',
+    '{emulator} bietet mehrere an. Für {system} gemerkt — über den Pfeil neben Spielen änderbar',
   'game.deleteSaveTitle': 'Diesen Spielstand löschen?',
   'game.deleteStateTitle': 'Diesen Savestate löschen?',
   'game.deleteAssetBody': '{file} — {location}',

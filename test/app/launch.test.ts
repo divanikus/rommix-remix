@@ -153,7 +153,36 @@ describe('a game its emulator has more than one way to run', () => {
     )
   })
 
-  test('and Run with is the way back to it', async () => {
+  test('the Play arrow opens a menu and B or Escape returns to the arrow', async () => {
+    await app.choose('[data-action="run-with"]')
+    await app.waitFor(
+      `document.querySelector('.launch-menu [data-action="variant-mgba"][data-focused="true"]')`,
+      'the remembered runner to be focused in the menu'
+    )
+    const pad = await app.plugInPad()
+    try {
+      await pad.tap(1)
+      await app.waitFor(
+        `!document.querySelector('.launch-menu') && document.querySelector('[data-action="run-with"][data-focused="true"]')`,
+        'B to return to the arrow'
+      )
+      await pad.tap(0)
+      await app.waitFor(`document.querySelector('.launch-menu')`, 'A to reopen the menu')
+    } finally {
+      await pad.unplug()
+    }
+    await app.press('Escape')
+    await app.waitFor(
+      `document.querySelector('[data-action="run-with"][data-focused="true"]')`,
+      'Escape to return to the arrow'
+    )
+    await app.click('[data-action="run-with"]')
+    await app.waitFor(`document.querySelector('.launch-menu')`, 'the pointer to open the menu')
+    await app.click('.game-hero__title')
+    await app.waitFor(`!document.querySelector('.launch-menu')`, 'an outside click to close it')
+  })
+
+  test('and the Play menu is the way back to the choice', async () => {
     // Without this button an answer given once could only be changed by
     // editing the settings file, which is not a thing to do from a sofa.
     await app.choose('[data-action="run-with"]')

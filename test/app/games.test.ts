@@ -460,6 +460,10 @@ describe('uninstalling a game', () => {
     // The folder and everything in it. An empty directory left behind is a
     // game RomMix would believe in again on the next pass.
     assert.equal(existsSync(discSet.path), false, `${discSet.path} is still there`)
+    await app.waitFor(
+      `document.querySelector('[data-action="download"][data-focused="true"][data-disabled="false"]')`,
+      'Download to receive focus after removal'
+    )
     for (const file of discSet.files) {
       assert.equal(existsSync(join(discSet.path, file)), false, `${file} survived`)
     }

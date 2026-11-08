@@ -1,4 +1,4 @@
-import { type JSX, useEffect, useMemo, useRef, useState } from 'react'
+import { type JSX, useEffect, useId, useMemo, useRef, useState } from 'react'
 import { emulatorsForSystem, resolveEmulator } from '@config/emulators'
 import { resolveSystem } from '@config/systems'
 import {
@@ -25,8 +25,9 @@ import { GameNavigation } from './GameNavigation'
 import { OverviewTab } from './tabs/OverviewTab'
 import { GameFacts } from './tabs/GameFacts'
 import { GameMedia } from './GameMedia'
-import { FocusZone } from '../../input/focus'
+import { FocusZone, useFocusContext } from '../../input/focus'
 import { GameHero } from './GameHero'
+import { PlayButton } from './PlayButton'
 import { SaveTransfer } from './SaveTransfer'
 import {
   DeleteAssetDialog,
@@ -86,6 +87,9 @@ function GameContent({
     unsentSaves
   } = useApp()
   const downloads = useDownloads()
+  const { setFocus } = useFocusContext()
+  const downloadFocusId = useId()
+  const [focusDownload, setFocusDownload] = useState(false)
 
   const [rom, setRom] = useState<RommRom | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -251,6 +255,8 @@ function GameContent({
     variants,
     choosing,
     setChoosing,
+    menu,
+    closeMenu,
     startPlay,
     play,
     openChooser,
@@ -270,7 +276,7 @@ function GameContent({
     uninstall,
     confirmingRemoval,
     setConfirmingRemoval
-  } = useGameCopy({ romId, rom, entry, download })
+  } = useGameCopy({ romId, rom, entry, download, onUninstalled: () => setFocusDownload(true) })
 
   /**
    * The game itself, and the status it arrives carrying.
@@ -321,6 +327,13 @@ function GameContent({
    * a second while the first is running is never what was meant.
    */
   const working = syncing || launching || copying
+  useEffect(() => {
+    // Wait for the refreshed index and the enabled button to reach the focus
+    // registry. Cancelling or failing the removal never requests this handoff.
+    if (!focusDownload || entry || working || active) return
+    setFocus(downloadFocusId)
+    setFocusDownload(false)
+  }, [focusDownload, entry, working, active, downloadFocusId, setFocus])
   const screenClass = 'content game-screen'
 
   if (error) {
@@ -510,16 +523,17 @@ function GameContent({
         actions={
           <>
             {entry ? (
-              <FocusButton
-                icon="play"
-                action="play"
-                variant="primary"
-                onSelect={() => void startPlay()}
+              <PlayButton
+                onPlay={() => void startPlay()}
+                onOpen={() => void openChooser()}
+                onClose={closeMenu}
+                onPick={(variant) => void play(variant)}
+                hasVariants={variants.length > 1}
+                menu={menu}
+                running={running}
                 disabled={working || running}
                 autoFocus={!focusTabs}
-              >
-                {running ? t('game.running') : t('game.play')}
-              </FocusButton>
+              />
             ) : active && !interruptible ? (
               /* The bytes are all here and the game is being put in place, which
              is not something to be stopped half way: both buttons below were
@@ -534,6 +548,8 @@ function GameContent({
               <FocusButton
                 icon="download"
                 action="download"
+                key="download"
+                focusId={downloadFocusId}
                 variant="primary"
                 onSelect={() => (noEmulator ? setAskingEmulator(true) : void startDownload())}
                 disabled={working}
@@ -612,20 +628,6 @@ function GameContent({
               onSelect={() => setChoosingCollections(true)}
               disabled={offline === true}
             />
-
-            {/* The way back to a choice already made: without it, a platform
-            answered once could only be changed by editing settings. Shown only
-            where there is genuinely more than one answer. */}
-            {entry && variants.length > 1 ? (
-              <FocusButton
-                icon="emulator"
-                action="run-with"
-                onSelect={() => void openChooser()}
-                disabled={working || running}
-              >
-                {t('game.runWith')}
-              </FocusButton>
-            ) : null}
 
             {/* Only for a game that is here: there is no local save directory to
             read from or write into until the ROM has been downloaded. Greyed

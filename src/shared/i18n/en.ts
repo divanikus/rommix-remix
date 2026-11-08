@@ -710,7 +710,7 @@ export const en = {
 
   'game.variantTitle': 'How should {system} games run?',
   'game.variantBody':
-    '{emulator} offers several. Remembered for {system} — change it later with Run with',
+    '{emulator} offers several. Remembered for {system} — change it with the arrow beside Play',
   'game.deleteSaveTitle': 'Delete this save?',
   'game.deleteStateTitle': 'Delete this state?',
   'game.deleteAssetBody': '{file} — {location}',

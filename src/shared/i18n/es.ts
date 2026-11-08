@@ -715,7 +715,7 @@ export const es: Catalog = {
 
   'game.variantTitle': '¿Cómo deben ejecutarse los juegos de {system}?',
   'game.variantBody':
-    '{emulator} ofrece varios. Recordado para {system} — cámbialo luego con Ejecutar con',
+    '{emulator} ofrece varios. Recordado para {system} — cámbialo con la flecha junto a Jugar',
   'game.deleteSaveTitle': '¿Borrar esta partida?',
   'game.deleteStateTitle': '¿Borrar este estado?',
   'game.deleteAssetBody': '{file} — {location}',
