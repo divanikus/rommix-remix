@@ -107,7 +107,7 @@ worth being able to see.
 | Teach a new ROM format  | `src/config/romfiles.ts`                           |
 | Add an emulator         | a folder under `src/config/emulators/` — see below |
 | Add a theme             | a file under `src/renderer/src/styles/themes/`     |
-| Change what RomMix says | `src/shared/i18n/en.ts`, then the other three      |
+| Change what RomMix says | `src/shared/i18n/en.ts`, then every catalog        |
 | Change the landing page | `site/text/en.json`, then the other three          |
 
 **No code outside `src/config/` names an emulator.** That is a rule, not a
@@ -118,9 +118,10 @@ two prose lists that do name them — the table in the README and the one in
 ### Wording
 
 Nothing user-facing is written where it is drawn. Every phrase lives in
-`src/shared/i18n/`, English first — `fr.ts`, `de.ts` and `es.ts` are declared as
+`src/shared/i18n/`, English first — all translated catalogs are declared as
 `Catalog`, so adding a key to English and forgetting one of them does not
-compile. `npm test` checks the parts the types cannot: that each language
+compile. See [localization](docs/localization.md) for adding a language and
+regional/script resolution. `npm test` checks the parts the types cannot: that each language
 substitutes the same `{placeholders}`, and that a plural set has all its forms.
 
 Two of these are checked by `npm test` rather than by review: no error in

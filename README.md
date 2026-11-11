@@ -147,7 +147,7 @@ Demo: https://leclercb.github.io/rommix/demo/
 - 📱 Sign in by scanning a code with your phone
 - 🎮 Controller-driven and fullscreen, desk to television
 - 🩺 A pre-flight check that names what is wrong before a launch fails
-- 🌍 English, French, German and Spanish
+- 🌍 [21 locale choices](docs/localization.md), including Ukrainian and Belarusian
 - 🔄 It updates itself
 
 ---
