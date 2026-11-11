@@ -225,6 +225,22 @@ export const ICONS = {
 
 export type IconName = keyof typeof ICONS
 
+/** A controller direction, with the right arm filled to show which way to press. */
+export function DpadRight({ label }: { label: string }): JSX.Element {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" role="img" aria-label={label} focusable="false">
+      <path d="M15 9h6v6h-6Z" fill="currentColor" />
+      <path
+        d="M9 3h6v6h6v6h-6v6H9v-6H3V9h6Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
 /**
  * An icon at button size.
  *

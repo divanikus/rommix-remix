@@ -34,7 +34,6 @@ export function ProgressRow({
   interrupts?: boolean
 }): JSX.Element {
   const { t, formatBytes } = useI18n()
-  const { ref, props } = useFocusable({ onSelect, actionLabel: t('action.open') })
   const percent = item.totalBytes > 0 ? Math.round((item.receivedBytes / item.totalBytes) * 100) : 0
   const stopped = isStopped(item.state)
   const resumable = stopped && onResume !== undefined
@@ -64,6 +63,7 @@ export function ProgressRow({
   // The column the buttons need is added for the buttons there actually are,
   // not for one of them: a row that only offers Resume needs it just as much.
   const acts = cancellable || resumable || stoppable || Boolean(onNext)
+  const { ref, props } = useFocusable({ onSelect, actionLabel: t('action.open'), rowActions: acts })
 
   return (
     <div

@@ -461,14 +461,12 @@ export function DownloadsScreen(): JSX.Element {
       ) : null}
 
       <Hints
+        rowActions
         items={[
           {
             key: 'A',
             label: tab === 'device' && grouped ? t('downloads.openExpand') : t('action.open')
           },
-          // Row actions are reached sideways, which is worth saying: walking
-          // down a list never passes through them.
-          { key: '→', label: t('action.rowActions') },
           { key: 'LT', label: t('action.previousTab') },
           { key: 'RT', label: t('action.nextTab') },
           { key: 'B', label: t('action.back') }

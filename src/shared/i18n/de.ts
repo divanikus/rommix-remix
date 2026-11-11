@@ -223,7 +223,7 @@ export const de: Catalog = {
   'action.moveDown': 'Nach unten',
   'action.previousTab': 'Vorheriger Tab',
   'action.nextTab': 'Nächster Tab',
-  'action.rowActions': 'Aktionen der Zeile',
+  'action.rowActions': 'Zu den Zeilenschaltflächen',
   'action.openInBrowser': 'Im Browser öffnen',
 
   'value.on': 'An',
@@ -242,6 +242,7 @@ export const de: Catalog = {
 
   'key.enter': 'Enter',
   'key.esc': 'Esc',
+  'key.dpadRight': 'Steuerkreuz rechts',
 
   // -- das Gerüst der Anwendung ---------------------------------------------
 

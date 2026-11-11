@@ -220,7 +220,7 @@ export const fr: Catalog = {
   'action.moveDown': 'Descendre',
   'action.previousTab': 'Onglet précédent',
   'action.nextTab': 'Onglet suivant',
-  'action.rowActions': 'Actions de la ligne',
+  'action.rowActions': 'Vers les boutons de la ligne',
   'action.openInBrowser': 'Ouvrir dans un navigateur',
 
   'value.on': 'Activé',
@@ -239,6 +239,7 @@ export const fr: Catalog = {
 
   'key.enter': 'Entrée',
   'key.esc': 'Échap',
+  'key.dpadRight': 'Croix directionnelle droite',
 
   // -- l'ossature de l'application ------------------------------------------
 

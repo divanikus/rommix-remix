@@ -223,7 +223,7 @@ export const en = {
   'action.moveDown': 'Move down',
   'action.previousTab': 'Previous tab',
   'action.nextTab': 'Next tab',
-  'action.rowActions': 'Row actions',
+  'action.rowActions': 'To row buttons',
   'action.openInBrowser': 'Open in a browser',
 
   'value.on': 'On',
@@ -243,6 +243,7 @@ export const en = {
   /** Only the two keys whose names are words. Tab and Shift+Tab are neither. */
   'key.enter': 'Enter',
   'key.esc': 'Esc',
+  'key.dpadRight': 'D-pad right',
 
   // -- app shell ------------------------------------------------------------
 

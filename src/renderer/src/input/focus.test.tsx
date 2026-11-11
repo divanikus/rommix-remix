@@ -10,7 +10,55 @@ const window = installDom()
 
 const { act, useEffect, useState, StrictMode } = await import('react')
 const { createRoot } = await import('react-dom/client')
-const { FocusProvider, useFocusable, useFocusContext } = await import('./focus.tsx')
+const { FocusProvider, useFocusable, useFocusContext, useFocusedRowActions } =
+  await import('./focus.tsx')
+
+test('row-button hints follow focus, live availability and modal ownership', () => {
+  const { take, focus } = harness()
+  let changeActions: (available: boolean) => void = () => undefined
+  let holdModal: () => () => void = () => () => undefined
+  function Row(): JSX.Element {
+    const [available, setAvailable] = useState(true)
+    useEffect(() => {
+      changeActions = setAvailable
+    }, [])
+    const { ref, props } = useFocusable({ id: 'row', rowActions: available })
+    return <div ref={ref as Ref<HTMLDivElement>} {...props} />
+  }
+  function Hint(): JSX.Element {
+    const available = useFocusedRowActions()
+    const { claimLayer } = useFocusContext()
+    useEffect(() => {
+      holdModal = () => claimLayer(1)
+    }, [claimLayer])
+    return <span data-hint>{available ? 'To row buttons' : ''}</span>
+  }
+  const host = mount(
+    <FocusProvider>
+      <Driver take={take} />
+      <Row />
+      <Card name="button" onDraw={() => undefined} />
+      <Hint />
+    </FocusProvider>
+  )
+  const hint = (): string | null | undefined => host.querySelector('[data-hint]')?.textContent
+  focus('row')
+  assert.equal(hint(), 'To row buttons')
+  act(() => changeActions(false))
+  assert.equal(hint(), '', 'a transfer can lose its buttons without moving focus')
+  act(() => changeActions(true))
+  assert.equal(hint(), 'To row buttons')
+  focus('button')
+  assert.equal(hint(), '', 'the hint is for entering a row, not for its individual buttons')
+  focus('row')
+  let release = (): void => undefined
+  act(() => {
+    release = holdModal()
+  })
+  assert.equal(hint(), '', 'a reporting modal with no focusables still owns input')
+  act(release)
+  assert.equal(hint(), 'To row buttons', 'closing the modal restores the row and its hint')
+})
 
 test('declining a contextual action falls through only within the current modal layer', () => {
   const calls: string[] = []

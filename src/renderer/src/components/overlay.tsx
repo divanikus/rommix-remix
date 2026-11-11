@@ -1,9 +1,16 @@
 import { useEffect, useState, type JSX, type ReactNode } from 'react'
-import { FocusLayer, useAction, useFocusedAction, useKeyLabel } from '../input/focus'
+import {
+  FocusLayer,
+  useAction,
+  useFocusedAction,
+  useFocusedRowActions,
+  useInputKind,
+  useKeyLabel
+} from '../input/focus'
 import type { MessageKey } from '@shared/i18n'
 import type { PowerAction } from '@shared/types'
 import { useApp, useI18n } from '../state'
-import { Icon, type IconName } from '../icons'
+import { DpadRight, Icon, type IconName } from '../icons'
 import { FocusButton } from './controls'
 import { Filled } from './text'
 
@@ -235,11 +242,20 @@ function QuitActions({ onCancel }: { onCancel: () => void }): JSX.Element {
  * thing a bug report needs and the one thing a photograph of the screen can
  * carry.
  */
-export function Hints({ items }: { items: { key: string; label: string }[] }): JSX.Element {
+export function Hints({
+  items,
+  rowActions = false
+}: {
+  items: { key: string; label: string }[]
+  /** Offer sideways entry only while a row with buttons holds focus. */
+  rowActions?: boolean
+}): JSX.Element {
   const { t } = useI18n()
   const { update, route, canGoBack } = useApp()
   const keyLabel = useKeyLabel()
   const focusedAction = useFocusedAction()
+  const focusedRowActions = useFocusedRowActions()
+  const inputKind = useInputKind()
   const rootMenu =
     !canGoBack &&
     (route.name === 'home' ||
@@ -249,6 +265,8 @@ export function Hints({ items }: { items: { key: string; label: string }[] }): J
   const hints = items.map((item) =>
     item.key === 'B' && rootMenu ? { ...item, label: t('action.menu') } : item
   )
+  if (rowActions && focusedRowActions)
+    hints.splice(1, 0, { key: 'Right', label: t('action.rowActions') })
   // Start is an app-wide menu action after setup, including utility pages.
   if (route.name !== 'setup' && !hints.some((item) => item.key === 'Start'))
     hints.push({ key: 'Start', label: t('action.menu') })
@@ -283,7 +301,13 @@ export function Hints({ items }: { items: { key: string; label: string }[] }): J
       </span>
       {hints.map((item) => (
         <span key={item.key + item.label}>
-          <span className="hint__key">{keyLabel(item.key)}</span>
+          <span className="hint__key">
+            {item.key === 'Right' && inputKind === 'gamepad' ? (
+              <DpadRight label={t('key.dpadRight')} />
+            ) : (
+              keyLabel(item.key)
+            )}
+          </span>
           {/* A is whatever is focused, when it has said what it does: the
               screen's own label describes one action out of several and is
               wrong the moment focus moves off it. Every other key is a screen

@@ -221,7 +221,7 @@ export const es: Catalog = {
   'action.moveDown': 'Bajar',
   'action.previousTab': 'Pestaña anterior',
   'action.nextTab': 'Pestaña siguiente',
-  'action.rowActions': 'Acciones de la fila',
+  'action.rowActions': 'Ir a los botones de la fila',
   'action.openInBrowser': 'Abrir en un navegador',
 
   'value.on': 'Activado',
@@ -240,6 +240,7 @@ export const es: Catalog = {
 
   'key.enter': 'Intro',
   'key.esc': 'Esc',
+  'key.dpadRight': 'Cruceta derecha',
 
   // -- el armazón de la aplicación ------------------------------------------
 

@@ -95,7 +95,7 @@ interface FocusContextValue {
   /** Return false to try an earlier handler on the same layer; never leaks past modals. */
   onAction(action: Action, handler: () => void | boolean, layer: number): () => void
   /** Called by the focused element to say what it does. See `useFocusedAction`. */
-  reportAction(label: string | null): void
+  reportAction(label: string | null, rowActions?: boolean): void
   /** See `useSuspendGamepad`. */
   setInputSuspended(suspended: boolean): void
 }
@@ -114,7 +114,7 @@ const FocusContext = createContext<FocusContextValue | null>(null)
  * changes as the highlight moves, and which input is driving changes when
  * somebody picks up a different one.
  */
-const FocusedActionContext = createContext<string | null>(null)
+const FocusedActionContext = createContext({ label: null as string | null, rowActions: false })
 const InputKindContext = createContext<InputKind>('keyboard')
 
 /**
@@ -828,12 +828,24 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
   const [inputKind, setInputKind] = useState<InputKind>(() =>
     gamepadPresent() ? 'gamepad' : 'keyboard'
   )
-  const [focusedAction, setFocusedAction] = useState<string | null>(null)
+  const [focusedAction, setFocusedAction] = useState({
+    label: null as string | null,
+    rowActions: false
+  })
   // Reported by the focused element rather than read off the registry, so a
   // label that changes while focused — "Play" becoming "Running…" — keeps up.
-  const reportAction = useCallback((label: string | null): void => {
-    setFocusedAction((current) => (current === label ? current : label))
+  const reportAction = useCallback((label: string | null, rowActions = false): void => {
+    setFocusedAction((current) =>
+      current.label === label && current.rowActions === rowActions ? current : { label, rowActions }
+    )
   }, [])
+  useEffect(
+    () =>
+      subscribeFocus(() => {
+        if (focusedRef.current === null) reportAction(null)
+      }),
+    [subscribeFocus, reportAction]
+  )
   // Set on every input, so it must not re-render unless the answer changed.
   const noteInput = useCallback((kind: InputKind): void => {
     setInputKind((current) => (current === kind ? current : kind))
@@ -937,7 +949,12 @@ export function FocusProvider({ children }: { children: ReactNode }): JSX.Elemen
  * is true at the moment it is read.
  */
 export function useFocusedAction(): string | null {
-  return useContext(FocusedActionContext)
+  return useContext(FocusedActionContext).label
+}
+
+/** Whether Right can enter the currently focused row's buttons. */
+export function useFocusedRowActions(): boolean {
+  return useContext(FocusedActionContext).rowActions
 }
 
 /** What the last input came from, for anything that has to name a button. */
@@ -1012,6 +1029,8 @@ export function useFocusable(options: {
   autoFocus?: boolean
   /** What selecting this does, for the hint bar. */
   actionLabel?: string
+  /** This row currently has buttons reached by moving Right. */
+  rowActions?: boolean
   /**
    * A name for this focusable, where something outside has to focus it.
    *
@@ -1023,7 +1042,7 @@ export function useFocusable(options: {
    */
   id?: string
 }): UseFocusableResult {
-  const { onSelect, enabled = true, autoFocus = false, actionLabel } = options
+  const { onSelect, enabled = true, autoFocus = false, actionLabel, rowActions = false } = options
   const { register, isFocused, subscribeFocus, setFocus, setInitialFocus, reportAction } =
     useFocusContext()
   const layer = useContext(LayerContext)
@@ -1093,8 +1112,8 @@ export function useFocusable(options: {
   // Only while focused: an element that has just lost focus must not overwrite
   // what the one that took it has already said.
   useEffect(() => {
-    if (focused) reportAction(actionLabel ?? null)
-  }, [focused, actionLabel, reportAction])
+    if (focused) reportAction(actionLabel ?? null, rowActions)
+  }, [focused, actionLabel, rowActions, reportAction])
 
   return {
     ref,

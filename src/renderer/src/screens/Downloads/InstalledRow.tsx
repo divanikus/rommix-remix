@@ -19,7 +19,7 @@ export function InstalledRow({
   onRemove: () => void
 }): JSX.Element {
   const { t, formatBytes } = useI18n()
-  const { ref, props } = useFocusable({ onSelect, actionLabel: t('action.open') })
+  const { ref, props } = useFocusable({ onSelect, actionLabel: t('action.open'), rowActions: true })
   const title = titleOf(entry)
   const files = entry.files
 

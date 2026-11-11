@@ -36,6 +36,8 @@ export function keyboardLabel(key: string, t: I18n['t']): string | undefined {
       return 'Shift+Tab'
     case 'RB':
       return 'Tab'
+    case 'RIGHT':
+      return '→'
     default:
       return undefined
   }
