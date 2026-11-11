@@ -210,7 +210,13 @@ export function Swatch({ theme }: { theme: Theme }): JSX.Element {
 export function Flag({ locale }: { locale: Locale }): JSX.Element {
   return (
     <svg className="flag" viewBox={FLAG_VIEWBOX} aria-hidden="true" focusable="false">
-      {LANGUAGE_FLAGS[locale].map((shape, index) => (
+      {!LANGUAGE_FLAGS[locale] ? (
+        <g fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="12" cy="9" r="8" />
+          <path d="M4 9h16M12 1c-5 4-5 12 0 16M12 1c5 4 5 12 0 16" />
+        </g>
+      ) : null}
+      {(LANGUAGE_FLAGS[locale] ?? []).map((shape, index) => (
         <path
           key={index}
           d={shape.d}

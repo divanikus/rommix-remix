@@ -1,16 +1,14 @@
 import type { Catalog } from './catalog.ts'
-import { de } from './de.ts'
 import { en } from './en.ts'
-import { es } from './es.ts'
-import { fr } from './fr.ts'
+import { CATALOGS } from './catalogs.ts'
 import { DEFAULT_DATE_FORMAT, dateFormatters, type DateFormat } from './dates.ts'
-import type { Locale } from './locales.ts'
+import { formattingLocale, type Locale } from './locales.ts'
 
 /**
  * Everything the interface says, in whichever language it is being read in.
  *
  * One catalogue per language, English being the one the others are written
- * from: `Catalog` is `typeof en`, so every other file is checked against it and
+ * from: `Catalog` requires every English key, so other files are checked against it and
  * a key added here and forgotten there is a typecheck failure rather than a
  * word that silently comes out in English.
  *
@@ -87,8 +85,6 @@ export function localize(text: Text | null | undefined, i18n: I18n): string | nu
   return typeof text === 'string' ? i18n.t(text) : i18n.t(text.key, text.params)
 }
 
-const CATALOGS: Record<Locale, Catalog> = { en, fr, de, es }
-
 /**
  * The catalogue, the plural rules and the number and date formats for one
  * language, built once.
@@ -146,17 +142,18 @@ export function createI18n(locale: Locale, dateFormat: DateFormat = DEFAULT_DATE
   if (cached) return cached
 
   const catalog = CATALOGS[locale] ?? en
-  const plurals = new Intl.PluralRules(locale)
-  const numbers = new Intl.NumberFormat(locale)
-  const decimals = new Intl.NumberFormat(locale, { maximumFractionDigits: 1 })
+  const language = formattingLocale(locale)
+  const plurals = new Intl.PluralRules(language)
+  const numbers = new Intl.NumberFormat(language)
+  const decimals = new Intl.NumberFormat(language, { maximumFractionDigits: 1 })
   const dates = dateFormatters(locale, dateFormat)
-  const hours = new Intl.NumberFormat(locale, {
+  const hours = new Intl.NumberFormat(language, {
     style: 'unit',
     unit: 'hour',
     unitDisplay: 'long',
     maximumFractionDigits: 1
   })
-  const minutes = new Intl.NumberFormat(locale, {
+  const minutes = new Intl.NumberFormat(language, {
     style: 'unit',
     unit: 'minute',
     unitDisplay: 'long'
@@ -188,7 +185,7 @@ export function createI18n(locale: Locale, dateFormat: DateFormat = DEFAULT_DATE
     formatDuration(seconds) {
       if (!seconds || seconds < 0) return null
       // The unit styles rather than a phrase per language: Intl already knows
-      // what an hour is called in each of the four, and in the plural forms
+      // what an hour is called in each language, and in the plural forms
       // that a catalogue entry would have to carry by hand.
       return seconds < 3600
         ? minutes.format(Math.max(1, Math.round(seconds / 60)))

@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict'
 import { afterEach, test } from 'node:test'
 import { setLanguage, t } from './i18n.ts'
+import { CATALOGS } from '@shared/i18n/catalogs.ts'
+import { LOCALES } from '@shared/i18n/locales.ts'
 
 /**
  * The language the main process writes in.
@@ -17,6 +19,13 @@ import { setLanguage, t } from './i18n.ts'
 
 afterEach(() => {
   setLanguage('auto')
+})
+
+test('all interface languages also reach main-process messages', () => {
+  for (const locale of LOCALES) {
+    setLanguage(locale)
+    assert.equal(t('error.serverAddressEmpty'), CATALOGS[locale]['error.serverAddressEmpty'])
+  }
 })
 
 test('a chosen language is what the main process writes in', () => {

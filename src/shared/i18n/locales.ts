@@ -1,7 +1,7 @@
 /**
  * The languages RomMix is drawn in, and how one of them is picked.
  *
- * Four, because that is what there are complete catalogues for — every string
+ * Every registered language has a complete catalogue — every string
  * in `en.ts` exists in each of the others, which is enforced by the type rather
  * than by a script: a catalogue is declared as `Catalog`, so a key added to
  * English and forgotten anywhere else fails the typecheck.
@@ -10,7 +10,29 @@
  * it, and it is what `Settings.language` is typed against.
  */
 
-export const LOCALES = ['en', 'fr', 'de', 'es'] as const
+export const LOCALES = [
+  'en',
+  'en-US',
+  'fr',
+  'de',
+  'es',
+  'be',
+  'bg',
+  'cs',
+  'hu',
+  'it',
+  'ja',
+  'ko',
+  'pl',
+  'pt-BR',
+  'ro',
+  'ru',
+  'sv',
+  'tr',
+  'uk',
+  'zh-CN',
+  'zh-TW'
+] as const
 
 export type Locale = (typeof LOCALES)[number]
 
@@ -32,10 +54,27 @@ export type LanguageChoice = 'auto' | Locale
  * whole point of the row is to be recognisable before the interface changes.
  */
 export const LANGUAGE_NAMES: Record<Locale, string> = {
-  en: 'English',
+  en: 'English (UK)',
+  'en-US': 'English (US)',
   fr: 'Français',
   de: 'Deutsch',
-  es: 'Español'
+  es: 'Español',
+  be: 'Беларуская',
+  bg: 'Български',
+  cs: 'Čeština',
+  hu: 'Magyar',
+  it: 'Italiano',
+  ja: '日本語',
+  ko: '한국어',
+  pl: 'Polski',
+  'pt-BR': 'Português (Brasil)',
+  ro: 'Română',
+  ru: 'Русский',
+  sv: 'Svenska',
+  tr: 'Türkçe',
+  uk: 'Українська',
+  'zh-CN': '简体中文',
+  'zh-TW': '繁體中文'
 }
 
 /** One shape of a flag: a filled band, or a stroked bar of a cross. */
@@ -58,7 +97,8 @@ export interface FlagShape {
 export const FLAG_VIEWBOX = '0 0 24 18'
 
 /**
- * A flag per language, for the row in Settings and the site's language menu.
+ * Optional flags for the existing website languages. The application's longer
+ * dropdown uses native names; a new language does not need a country flag.
  *
  * A language is not a country and these are approximations: English is spoken
  * in more places than the United Kingdom, and Spanish in more than Spain. They
@@ -83,7 +123,7 @@ export const FLAG_VIEWBOX = '0 0 24 18'
  * real flag has it. At the size these are drawn that offset is a smear, and
  * enough of a flag to be known is the whole job here.
  */
-export const LANGUAGE_FLAGS: Record<Locale, readonly FlagShape[]> = {
+export const LANGUAGE_FLAGS: Partial<Record<Locale, readonly FlagShape[]>> = {
   en: [
     { d: 'M0 0h24v18H0z', fill: '#012169' },
     { d: 'm0 0 24 18M24 0 0 18', stroke: '#ffffff', strokeWidth: 3.6 },
@@ -112,15 +152,36 @@ export const LANGUAGE_FLAGS: Record<Locale, readonly FlagShape[]> = {
 /** What RomMix falls back to: the language every other catalogue is written from. */
 export const DEFAULT_LOCALE: Locale = 'en'
 
+/** The legacy English choice keeps its ID while formatting as British English. */
+export function formattingLocale(locale: Locale): string {
+  return locale === 'en' ? 'en-GB' : locale
+}
+
 /**
  * A BCP 47 tag — `fr`, `de-AT`, `es_MX` — as one of the languages RomMix has.
  *
- * Only the primary subtag is looked at. RomMix does not distinguish regional
- * variants, and treating `fr-CA` as unknown would put a French desktop into
- * English for a distinction none of the catalogues make.
+ * Existing short settings remain valid. Regional variants share a catalogue
+ * except English and Chinese. Explicit Chinese scripts take precedence over
+ * the region, including tags such as `zh-Hant-CN`.
  */
 export function resolveLocale(tag: string | null | undefined): Locale {
-  const primary = (tag ?? '').toLowerCase().split(/[-_]/)[0]
+  const normalized = (tag ?? '').trim().replaceAll('_', '-').toLowerCase()
+  const exact = LOCALES.find((locale) => locale.toLowerCase() === normalized)
+  if (exact) return exact
+  let parsed: Intl.Locale
+  try {
+    parsed = new Intl.Locale(normalized)
+  } catch {
+    return DEFAULT_LOCALE
+  }
+  const { language: primary, script, region } = parsed
+  if (primary === 'zh') {
+    if (script === 'Hant') return 'zh-TW'
+    if (script === 'Hans') return 'zh-CN'
+    return region && ['TW', 'HK', 'MO'].includes(region) ? 'zh-TW' : 'zh-CN'
+  }
+  if (primary === 'pt') return 'pt-BR'
+  if (primary === 'en') return region && ['US', 'CA', 'PH'].includes(region) ? 'en-US' : 'en'
   return (LOCALES as readonly string[]).includes(primary) ? (primary as Locale) : DEFAULT_LOCALE
 }
 

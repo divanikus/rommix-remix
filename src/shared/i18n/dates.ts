@@ -1,4 +1,4 @@
-import type { Locale } from './locales.ts'
+import { formattingLocale, type Locale } from './locales.ts'
 
 /**
  * How RomMix writes a date.
@@ -48,12 +48,12 @@ export function dateFormatters(locale: Locale, format: DateFormat): DateFormatte
   if (format === 'language') {
     // `hourCycle: 'h23'` rather than `hour12: false`, which in some locales
     // resolves to the h24 cycle and prints midnight as 24:00.
-    const dateTime = new Intl.DateTimeFormat(locale, {
+    const dateTime = new Intl.DateTimeFormat(formattingLocale(locale), {
       dateStyle: 'medium',
       timeStyle: 'short',
       hourCycle: 'h23'
     })
-    const dateOnly = new Intl.DateTimeFormat(locale, { dateStyle: 'long' })
+    const dateOnly = new Intl.DateTimeFormat(formattingLocale(locale), { dateStyle: 'long' })
     return { date: (at) => dateOnly.format(at), dateTime: (at) => dateTime.format(at) }
   }
 

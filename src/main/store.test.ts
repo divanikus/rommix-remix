@@ -14,6 +14,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { InstalledRom, Settings } from '@shared/types'
 import { Store } from './store.ts'
+import { LOCALES } from '@shared/i18n/locales.ts'
 
 /**
  * What RomMix remembers between runs, and what it does with a file it cannot
@@ -64,6 +65,14 @@ function installed(fields: Partial<InstalledRom>): InstalledRom {
 }
 
 describe('settings', () => {
+  test('every interface locale survives persistence and a fresh store', () => {
+    const dir = scratch()
+    const store = new Store(dir)
+    for (const language of ['auto', ...LOCALES] as const) {
+      store.updateSettings({ language })
+      assert.equal(new Store(dir).settings.language, language)
+    }
+  })
   test('a fresh directory starts from the defaults and writes them when changed', () => {
     const dir = scratch()
     const store = new Store(dir)

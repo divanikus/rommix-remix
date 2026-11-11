@@ -19,7 +19,7 @@ OUT="out/site"
 
 # Cleared rather than written over. Vite empties its own output directory and
 # the image step clears its own, but a rendered landing page is only ever
-# overwritten — so dropping a locale from `LOCALES` left the previous build's
+# overwritten — so dropping a site translation left the previous build's
 # `$OUT/<locale>/index.html` to be uploaded and stay live, pointing at
 # `hreflang` links no other page offers any more.
 rm -rf "$OUT"

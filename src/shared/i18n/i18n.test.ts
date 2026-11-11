@@ -10,9 +10,9 @@ import {
 } from './index.ts'
 import { de } from './de.ts'
 import { en } from './en.ts'
-import { es } from './es.ts'
-import { fr } from './fr.ts'
 import type { Catalog } from './catalog.ts'
+import { CATALOGS } from './catalogs.ts'
+import { LOCALES } from './locales.ts'
 
 /**
  * What the type system cannot check about a translation.
@@ -30,7 +30,29 @@ import type { Catalog } from './catalog.ts'
  * stale.
  */
 
-const CATALOGUES: Record<string, Catalog> = { fr, de, es }
+const CATALOGUES: Record<string, Catalog> = Object.fromEntries(
+  Object.entries(CATALOGS).filter(([locale]) => !locale.startsWith('en'))
+)
+
+test('every registered locale has a complete, nonempty catalog', () => {
+  assert.deepEqual(Object.keys(CATALOGS).sort(), [...LOCALES].sort())
+  for (const [locale, catalog] of Object.entries(CATALOGS)) {
+    for (const key of Object.keys(en)) {
+      assert.ok((catalog as Record<string, string>)[key]?.trim(), `${locale}: ${key}`)
+    }
+    for (const [key, phrase] of Object.entries(catalog)) {
+      const reference =
+        (en as Record<string, string>)[key] ??
+        (en as Record<string, string>)[key.replace(/_(zero|two|few|many)$/, '_other')]
+      assert.ok(reference, `${locale}: unknown key ${key}`)
+      assert.deepEqual(
+        [...placeholders(phrase!)].sort(),
+        [...placeholders(reference)].sort(),
+        `${locale}: ${key}`
+      )
+    }
+  }
+})
 
 /** Every `{placeholder}` in a phrase, in no particular order. */
 function placeholders(phrase: string): Set<string> {
@@ -63,6 +85,43 @@ test('a plural set is complete in every language, English included', () => {
         keys.includes(`${stem[1]}_other`),
         `${language} has ${key} but no ${stem[1]}_other to fall back to`
       )
+    }
+  }
+})
+
+test('new catalogs provide every plural category their language can select', () => {
+  for (const locale of LOCALES.filter(
+    (value) => !['en', 'en-US', 'fr', 'de', 'es'].includes(value)
+  )) {
+    const catalog = CATALOGS[locale] as Record<string, string | undefined>
+    const categories = new Intl.PluralRules(locale).resolvedOptions().pluralCategories
+    for (const key of Object.keys(en).filter((value) => value.endsWith('_other'))) {
+      for (const category of categories) {
+        assert.ok(
+          catalog[key.replace(/_other$/, `_${category}`)]?.trim(),
+          `${locale}: ${key} ${category}`
+        )
+      }
+    }
+  }
+})
+
+test('technical commands and settings identifiers survive translation', () => {
+  const tokens = [
+    'ROMMIX_HOME',
+    'systemOverrides',
+    'settings.json',
+    'flatpak remote-add --user --if-not-exists',
+    'https://dl.flathub.org/repo/flathub.flatpakrepo'
+  ]
+  for (const [locale, catalog] of Object.entries(CATALOGS)) {
+    for (const [key, phrase] of Object.entries(en)) {
+      for (const token of tokens.filter((value) => phrase.includes(value))) {
+        assert.ok(
+          (catalog as Record<string, string>)[key].includes(token),
+          `${locale}: ${key} changed ${token}`
+        )
+      }
     }
   }
 })
@@ -200,7 +259,45 @@ test('an unknown language tag falls back to English', () => {
 test('a stored choice wins over the machine, and auto defers to it', () => {
   assert.equal(localeFor('es', 'de-DE'), 'es')
   assert.equal(localeFor('auto', 'de-DE'), 'de')
-  assert.equal(localeFor(null, 'pt-BR'), 'en')
+  assert.equal(localeFor(null, 'pt-BR'), 'pt-BR')
+})
+
+test('system locales distinguish scripts and preserve the old short choices', () => {
+  for (const locale of LOCALES) assert.equal(resolveLocale(locale), locale)
+  const cases = {
+    ru_RU: 'ru',
+    'uk-UA': 'uk',
+    'be-BY': 'be',
+    'pt-PT': 'pt-BR',
+    'en-GB': 'en',
+    en_US: 'en-US',
+    zh: 'zh-CN',
+    'zh-SG': 'zh-CN',
+    'zh-Hans-TW': 'zh-CN',
+    'zh-Hant-CN': 'zh-TW',
+    'zh-Hans-CN-x-hant': 'zh-CN',
+    'en-GB-x-us': 'en',
+    zh_HK: 'zh-TW'
+  }
+  for (const [tag, locale] of Object.entries(cases)) assert.equal(resolveLocale(tag), locale, tag)
+  for (const locale of ['en', 'fr', 'de', 'es'] as const)
+    assert.equal(localeFor(locale, 'uk-UA'), locale)
+})
+
+test('English variants share messages but retain regional spelling and dates', () => {
+  assert.equal(createI18n('en').t('home.favourites'), 'Favourites')
+  assert.equal(createI18n('en-US').t('home.favourites'), 'Favorites')
+  const day = new Date(2026, 11, 25)
+  assert.equal(createI18n('en', 'language').formatDate(day), '25 December 2026')
+  assert.equal(createI18n('en-US', 'language').formatDate(day), 'December 25, 2026')
+})
+
+test('Slavic counts and Chinese text use their own catalog', () => {
+  assert.equal(createI18n('ru').t('library.count', { count: 1 }), '1 игра')
+  assert.equal(createI18n('ru').t('library.count', { count: 2 }), '2 игры')
+  assert.equal(createI18n('ru').t('library.count', { count: 5 }), '5 игр')
+  assert.equal(createI18n('ru').t('library.count', { count: 21 }), '21 игра')
+  assert.notEqual(createI18n('zh-CN').t('nav.settings'), createI18n('zh-TW').t('nav.settings'))
 })
 
 test('a phrase a descriptor names is read in the language asked for', () => {

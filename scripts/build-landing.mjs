@@ -27,7 +27,7 @@
  * when it is opened, so a build is offline and a reader is never shown a figure
  * that was true at the last deploy.
  */
-import { mkdir, readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, readdir, writeFile } from 'node:fs/promises'
 import { dirname, resolve } from 'node:path'
 import {
   createI18n,
@@ -40,6 +40,16 @@ import {
 const ROOT = resolve(import.meta.dirname, '..')
 const OUT = resolve(ROOT, 'out/site')
 
+// The website has its own prose. Application-only languages must not require
+// an untranslated landing page or create links to pages that do not exist.
+const SITE_LOCALES = (await readdir(resolve(ROOT, 'site/text')))
+  .filter((file) => file.endsWith('.json'))
+  .map((file) => file.slice(0, -5))
+  .sort()
+for (const locale of SITE_LOCALES) {
+  if (!LOCALES.includes(locale)) throw new Error(`Unknown site locale: ${locale}`)
+}
+
 /**
  * The flags, as one `<symbol>` each for the sprite at the top of the page.
  *
@@ -48,10 +58,10 @@ const OUT = resolve(ROOT, 'out/site')
  * inline at each of the five places the menu names a language, for the same
  * reason the GitHub mark is a symbol: one drawing, five `<use>`s.
  */
-const flags = LOCALES.map(
+const flags = SITE_LOCALES.map(
   (locale) =>
     `<symbol id="flag-${locale}" viewBox="${FLAG_VIEWBOX}">\n` +
-    LANGUAGE_FLAGS[locale]
+    (LANGUAGE_FLAGS[locale] ?? [])
       .map(
         (shape) =>
           `        <path fill="${shape.fill ?? 'none'}"` +
@@ -93,14 +103,14 @@ async function render(template, locale) {
   // because a placeholder is, as far as it knows, a word.
   const name = (other) =>
     `<svg class="flag" aria-hidden="true"><use href="#flag-${other}" /></svg>${LANGUAGE_NAMES[other]}`
-  const languages = LOCALES.map((other) =>
+  const languages = SITE_LOCALES.map((other) =>
     other === locale
       ? `              <li><span aria-current="page">${name(other)}</span></li>`
       : `              <li><a href="${rootOf(locale)}${pathOf(other)}" hreflang="${other}" lang="${other}">${name(other)}</a></li>`
   ).join('\n')
 
   const alternates = [
-    ...LOCALES.map(
+    ...SITE_LOCALES.map(
       (other) => `    <link rel="alternate" hreflang="${other}" href="${SITE}/${pathOf(other)}" />`
     ),
     `    <link rel="alternate" hreflang="x-default" href="${SITE}/" />`
@@ -156,7 +166,7 @@ const template = source.replace(
 )
 if (template === source) throw new Error('site/index.html has lost its header comment')
 
-for (const locale of LOCALES) {
+for (const locale of SITE_LOCALES) {
   const target = await render(template, locale)
   console.log(`    ${locale} -> ${target.slice(ROOT.length + 1)}`)
 }
