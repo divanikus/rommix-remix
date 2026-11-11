@@ -1138,6 +1138,16 @@ export async function startApp(options: StartOptions): Promise<App> {
         if (await read<boolean>(`Boolean(document.querySelector('.topbar .topbar__nav'))`)) break
         await press('Escape')
       }
+      // Back from a utility can already have reached the requested root page.
+      // Header toggles between navigation and content; selecting again here
+      // can activate the hero while its arrival focus is still settling.
+      if (
+        await read<boolean>(
+          `Boolean(document.querySelector('.topbar .topbar__nav')) &&
+           document.querySelector('[data-screen]')?.dataset.screen === ${JSON.stringify(route)}`
+        )
+      )
+        return
       await press('Header')
       await choose(`.topbar .topbar__nav [data-route="${route}"]`)
     }
