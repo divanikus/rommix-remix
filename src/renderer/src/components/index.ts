@@ -20,7 +20,6 @@ export {
 export {
   Choice,
   FocusButton,
-  LanguageChoice,
   RomStorageChoice,
   SegmentedControl,
   Tabs,
@@ -31,6 +30,7 @@ export {
   type SegmentedOptions,
   type UiScaleChoice
 } from './controls'
+export { LanguageChoice } from './language'
 export { DownloadBadge, DownloadBar, ProgressBar, TransferProgress } from './downloads'
 export {
   GameCard,

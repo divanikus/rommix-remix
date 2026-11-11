@@ -1611,7 +1611,7 @@ describe('the room left where the games go', () => {
 /**
  * The language, changed from the screen that offers it.
  *
- * Four catalogues are checked against each other by `npm test` — every key in
+ * The catalogues are checked against each other by `npm test` — every key in
  * one is a key in the others — and not one of them had ever been drawn. What
  * that leaves untested is the part between a catalogue and a screen: the
  * setting reaching the renderer, and every label being read through `t` rather
@@ -1624,7 +1624,8 @@ describe('reading it in another language', () => {
     // leave it on another one.
     await app.waitFor(`document.querySelector('[data-tab="general"]')`, 'the settings tabs')
     await app.choose('[data-tab="general"]')
-    await app.waitFor(`document.querySelector('[data-option="fr"]')`, 'the languages')
+    await app.choose('[data-action="language"]')
+    await app.waitFor(`document.querySelector('[data-option="fr"]')`, 'the language dropdown')
 
     // The menu rather than anything on the settings page itself: it is drawn by
     // the shell, so a language that reached only the screen that set it would
@@ -1646,6 +1647,7 @@ describe('reading it in another language', () => {
   test('and it goes back, which is the half a one-way switch would hide', async () => {
     // Still findable while the screen is in a language the test does not read,
     // which is what the handles are for.
+    await app.choose('[data-action="language"]')
     await app.choose('[data-option="en"]')
     await app.waitFor(
       `document.querySelector('[data-utility-route="settings"]')?.textContent === ${JSON.stringify(
@@ -1656,7 +1658,8 @@ describe('reading it in another language', () => {
 
     // Left as it was found: every scenario after this one shares the
     // application, and the language it starts in is the machine's own.
-    await app.choose('[data-option="auto"]')
+    await app.choose('[data-action="language"]')
+    await app.choose('.language-dropdown [data-option="auto"]')
     await app.waitFor(
       `(await window.rommix.system.settings()).language === 'auto'`,
       'the language to be handed back to the system'
