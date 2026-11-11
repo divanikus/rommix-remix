@@ -6,20 +6,15 @@ before releasing if you want prose instead. See [Releasing](README.md#releasing)
 
 ## 0.24.0-remix.3 — 2026-11-11
 
-- Expanded the interface to 21 language choices: the RomM language set,
-  including UK/US English and Simplified/Traditional Chinese, plus Ukrainian
-  and Belarusian. Added complete client translations and language-specific
-  plural forms, using RomM as a terminology reference.
-- Language selection in Settings and initial setup is now a scrollable dropdown
-  with native language names, keyboard/controller navigation and focus restored
-  when it closes.
-- Downloads now show “To row buttons” only when the selected row has buttons.
-  The hint uses a D-pad with its right direction highlighted for controllers
-  and an arrow key for keyboards.
-
-Auto follows the application's launch environment. Steam Gaming Mode can supply
-English even when the KDE desktop uses another language; an explicit language
-choice applies consistently across both.
+- Expanded the interface to 21 language choices, covering RomM's language set
+  plus Ukrainian and Belarusian, including UK/US English and
+  Simplified/Traditional Chinese.
+- New translations are AI-generated, using RomM as a terminology reference.
+  Client-specific messages were translated separately. Native-speaker
+  corrections are welcome.
+- Added a scrollable language dropdown in Settings and initial setup, with
+  native language names and keyboard/controller navigation.
+- Minor UI fixes.
 
 ## 0.24.0-remix.2 — 2026-11-09
 
