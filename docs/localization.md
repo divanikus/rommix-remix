@@ -11,7 +11,14 @@ the scrollable list, A/Enter selects, and B/Escape dismisses it. Dismissing or
 moving through options does not change the saved choice. Clicking outside also
 closes it. Closing returns the controller highlight to the dropdown button.
 
-Auto follows the system language. Chinese script tags take priority over region:
+Auto follows the language exposed to the running application: `navigator.language`
+in the interface and Electron's [`app.getLocale()`](https://www.electronjs.org/docs/latest/api/app#appgetlocale)
+in the main process. A Steam Gaming Mode session can supply English even when
+KDE's desktop language is different. Choose an explicit language to keep the
+interface consistent across launch environments; this does not change the OS or
+Steam language.
+
+Chinese script tags take priority over region:
 `zh-Hant` uses Traditional Chinese, `zh-Hans` uses Simplified Chinese. Hong Kong,
 Macau and Taiwan use Traditional Chinese when no script is specified. Other
 Chinese regions use Simplified Chinese. Portuguese uses the Brazilian catalog.

@@ -266,7 +266,8 @@ export function AppProvider({ children }: { children: ReactNode }): JSX.Element 
   const route = history[history.length - 1]
 
   /**
-   * `auto` asks the browser, which under Electron is the desktop's own locale.
+   * `auto` asks the browser for the application's locale. A Steam session can
+   * provide a different language from the desktop's own settings.
    * Recomputed from the setting alone, so changing the language in Settings
    * redraws every screen in it without a restart.
    */
