@@ -2,6 +2,22 @@ import type { Catalog } from './catalog.ts'
 
 /** Independently authored client translation; RomM consulted for selected terminology. */
 export const ko: Catalog = {
+  'connect.acceptSelfSigned': '자체 서명 인증서 허용',
+  'connect.acceptSelfSignedHint': 'RomM 서버에서 직접 만든 인증서를 사용하는 경우 켜세요.',
+  'game.playOnRomm': 'RomM에서 플레이',
+  'game.streamFromRomm': 'RomM에서 스트리밍',
+  'player.howToLeave': 'Start 또는 Esc를 길게 눌러 RomMix로 돌아가기',
+  'emulator.locateName': '이 기기의 AppImage',
+  'emulator.locateDetail': '이미 다운로드한 파일을 선택하세요',
+  'emulator.locateTitle': '{name} AppImage 선택',
+  'error.untrustedCertificate': '{url}의 인증서를 신뢰할 수 없습니다: {reason}',
+  'error.selfSignedCertificate':
+    '{url}에서 자체 서명 인증서를 사용합니다. 연결하려면 자체 서명 인증서를 허용하세요.',
+  'error.certificateExpired': '인증서가 만료되었습니다',
+  'error.certificateNotYetValid': '인증서가 아직 유효하지 않습니다',
+  'error.certificateRefused': '인증서가 거부되었습니다',
+  'error.playerFailed': 'RomM 플레이어를 열 수 없습니다: {reason}',
+  'error.playerNotSignedIn': 'RomM에서 플레이어에 대한 RomMix의 로그인을 수락하지 않았습니다',
   'error.romsetLaunch':
     '게임 압축 파일을 식별할 수 없습니다. 세트에 ZIP 또는 7z 파일이 있고 이름이 게임 폴더와 일치하는지 확인하세요.',
   'files.localPath': '로컬 경로',

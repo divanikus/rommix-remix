@@ -2,6 +2,21 @@ import type { Catalog } from './catalog.ts'
 
 /** Independently authored client translation; RomM consulted for selected terminology. */
 export const zhTW: Catalog = {
+  'connect.acceptSelfSigned': '接受自我簽署憑證',
+  'connect.acceptSelfSignedHint': '如果你的 RomM 伺服器使用自行建立的憑證，請開啟此選項。',
+  'game.playOnRomm': '在 RomM 中遊玩',
+  'game.streamFromRomm': '從 RomM 串流',
+  'player.howToLeave': '按住 Start 或 Esc 返回 RomMix',
+  'emulator.locateName': '此裝置上的 AppImage',
+  'emulator.locateDetail': '選取已下載的檔案',
+  'emulator.locateTitle': '選取 {name} 的 AppImage',
+  'error.untrustedCertificate': '不信任 {url} 的憑證：{reason}',
+  'error.selfSignedCertificate': '{url} 使用自我簽署憑證。請開啟接受自我簽署憑證後再連線。',
+  'error.certificateExpired': '憑證已過期',
+  'error.certificateNotYetValid': '憑證尚未生效',
+  'error.certificateRefused': '憑證遭拒絕',
+  'error.playerFailed': '無法開啟 RomM 播放器：{reason}',
+  'error.playerNotSignedIn': 'RomM 未接受 RomMix 登入其播放器',
   'error.romsetLaunch':
     '無法識別遊戲壓縮檔。請確認套組含有 ZIP 或 7z 檔案，且名稱與遊戲資料夾相符。',
   'files.localPath': '本機路徑',

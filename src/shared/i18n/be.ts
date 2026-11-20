@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Independently authored translation of the complete client catalogue. */
 export const be: Catalog = {
+  'connect.acceptSelfSigned': 'Дазволіць самападпісаныя сертыфікаты',
+  'connect.acceptSelfSignedHint':
+    'Уключыце, калі ваш сервер RomM выкарыстоўвае створаны вамі сертыфікат.',
+  'game.playOnRomm': 'Гуляць праз RomM',
+  'game.streamFromRomm': 'Трансляцыя з RomM',
+  'player.howToLeave': 'Утрымлівайце Start або Esc, каб вярнуцца ў RomMix',
+  'emulator.locateName': 'AppImage на гэтай прыладзе',
+  'emulator.locateDetail': 'выберыце раней спампаваны файл',
+  'emulator.locateTitle': 'Выберыце AppImage для {name}',
+  'error.untrustedCertificate': 'Сертыфікат {url} не з’яўляецца давераным: {reason}',
+  'error.selfSignedCertificate':
+    'Сервер {url} выкарыстоўвае самападпісаны сертыфікат. Дазвольце такія сертыфікаты, каб падключыцца.',
+  'error.certificateExpired': 'Тэрмін дзеяння сертыфіката скончыўся',
+  'error.certificateNotYetValid': 'Сертыфікат яшчэ не дзейнічае',
+  'error.certificateRefused': 'Сертыфікат адхілены',
+  'error.playerFailed': 'Не ўдалося адкрыць прайгравальнік RomM: {reason}',
+  'error.playerNotSignedIn': 'RomM не прыняў даныя ўваходу RomMix для прайгравальніка',
   'error.romsetLaunch':
     'Не ўдалося вызначыць архіў гульні. Праверце, ці набор змяшчае ZIP або 7z і ці яго назва супадае з папкай гульні.',
   'files.localPath': 'Лакальны шлях',

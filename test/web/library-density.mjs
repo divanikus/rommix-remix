@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
-const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, locale: 'en-GB' })
 const errors = []
 page.on('pageerror', (error) => errors.push(error.message))
 const frames = () =>
@@ -123,8 +123,10 @@ try {
     await page.locator(`[data-control="cover-size"] [data-option="${size}"]`).click()
     density.push(
       await page
-        .locator('.library-grid')
-        .evaluate((e) => getComputedStyle(e).gridTemplateColumns.split(' ').length)
+        .locator('.library-grid .card')
+        .evaluateAll(
+          (cards) => cards.filter((card) => card.offsetTop === cards[0]?.offsetTop).length
+        )
     )
   }
   assert.ok(density[0] > density[1] && density[1] > density[2])
@@ -174,7 +176,7 @@ try {
   await page.locator('.game-screen [data-tab]').first().waitFor()
   assert.equal(await page.locator('.topbar').count(), 0)
   const tab = await page.locator('[data-tab][data-active=true]').getAttribute('data-tab')
-  await tap(5)
+  await tap(7)
   assert.notEqual(await page.locator('[data-tab][data-active=true]').getAttribute('data-tab'), tab)
   await tap(1)
   await page.locator('.library-grid').waitFor()
@@ -204,6 +206,55 @@ try {
   }
   assert.deepEqual(errors, [])
   console.log('PASS larger featured cover and denser cards fit narrow/wide viewports')
+
+  await page.locator('[data-route="home"]').click()
+  await page.evaluate(() => {
+    const list = rommix.library.roms
+    rommix.library.roms = async (query) => {
+      const page = await list(query)
+      return {
+        ...page,
+        items: page.items.map((rom) => {
+          if (rom.id === 300000) return { ...rom, path_cover_small: 'fixture-portrait' }
+          if (rom.id === 300001) return { ...rom, path_cover_small: 'fixture-wide' }
+          if (rom.id === 300002) {
+            return { ...rom, path_cover_small: null, path_cover_large: null }
+          }
+          return rom
+        })
+      }
+    }
+    const assetUrl = rommix.system.assetUrl
+    rommix.system.assetUrl = (path) => {
+      if (path !== 'fixture-portrait' && path !== 'fixture-wide') return assetUrl(path)
+      const width = path === 'fixture-wide' ? 400 : 150
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="200"/>`
+      return 'data:image/svg+xml,' + encodeURIComponent(svg)
+    }
+  })
+  await page.locator('[data-route="systems"]').click()
+  await page.locator('[data-system]').first().click()
+  await page.locator('[data-control="layout"] [data-option="grid"]').click()
+  await page.waitForFunction(() =>
+    [300000, 300001].every(
+      (id) => document.querySelector(`[data-rom="${id}"] img`)?.naturalWidth > 0
+    )
+  )
+  let previousHeight = 0
+  for (const size of ['small', 'medium', 'large']) {
+    await page.locator(`[data-control="cover-size"] [data-option="${size}"]`).click()
+    const [portrait, wide, fallback] = await Promise.all(
+      [300000, 300001, 300002].map((id) => page.locator(`[data-rom="${id}"] .cover`).boundingBox())
+    )
+    assert.ok(portrait.height > previousHeight)
+    assert.ok(Math.abs(portrait.height - wide.height) < 1)
+    assert.ok(Math.abs(portrait.height - fallback.height) < 1)
+    assert.ok(Math.abs(wide.width - 2 * wide.height) < 1)
+    assert.ok(Math.abs(portrait.width - fallback.width) < 1)
+    previousHeight = portrait.height
+  }
+  assert.deepEqual(errors, [])
+  console.log('PASS all three sizes retain equal heights and the proportions of wide covers')
 } finally {
   await browser.close()
 }

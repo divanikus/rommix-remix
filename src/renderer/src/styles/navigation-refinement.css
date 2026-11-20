@@ -4,11 +4,16 @@
   margin-inline: 5px;
   font-size: 11px;
 }
-.home-screen .row > .card {
-  flex-basis: 132px;
+.home-screen .row {
+  --cover-width: 132px;
+}
+.home-screen .collection-row > .card {
+  flex: 0 0 132px;
+  min-width: 0;
 }
 .home-screen .row--scenes > .card {
-  flex-basis: 234px;
+  flex: 0 0 234px;
+  min-width: 0;
 }
 .home-screen .scene-art {
   height: 132px;

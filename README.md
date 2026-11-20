@@ -168,15 +168,16 @@ Demo: https://leclercb.github.io/rommix/demo/
   way; RomMix adds the Flathub remote itself.
 - **A RomM server** you can reach, version 5.x or newer, with an account.
 - **A controller**, recommended but not required.
-- **At least one emulator**, from the ones RomMix drives:
+- **An emulator**, from the ones RomMix drives — or none, for the games RomM
+  plays in the browser or streams itself (see [Using it](#-using-it)):
 
   | Emulator         | Covers                            | Installed by RomMix                           |
   | ---------------- | --------------------------------- | --------------------------------------------- |
   | **RetroDECK**    | The NES to the PS3                | ✅ Flatpak                                    |
   | **EmuDeck**      | The NES to the Switch and the 360 | ❌ Its own installer, see [EmuDeck](#emudeck) |
-  | **RetroArch**    | Libretro, your core per system    | ✅ Flatpak                                    |
+  | **RetroArch**    | Libretro, your core per system    | ✅ Flatpak; ❌ an AppImage you pick           |
   | **Eden**         | Nintendo Switch                   | ✅ AppImage                                   |
-  | **Eglantine**    | Nintendo Switch 2                 | ❌ Found, not downloaded                      |
+  | **Eglantine**    | Nintendo Switch 2                 | ❌ An AppImage you pick                       |
   | **shadPS4**      | PlayStation 4                     | ✅ Flatpak and AppImage                       |
   | **Xenia Canary** | Xbox 360                          | ✅ AppImage                                   |
 
@@ -297,6 +298,10 @@ quit to.
   fetched against the name on your RomM account.
   Where an emulator offers more than one way to run a platform, RomMix asks once
   and remembers; **Run with…** changes the answer.
+  **Play on RomM** and **Stream from RomM** open RomM's own player for the game,
+  with nothing downloaded or installed here: the first where RomM can play the
+  platform in the browser, the second where your server streams it. RomM keeps
+  the saves. Hold Start, or Esc on a keyboard, to come back.
 
 When your server cannot be reached, the same screens narrow rather than
 disappearing: Home keeps **Ready to play**, the Library shows what is
@@ -531,6 +536,13 @@ where `electronLibraries` is, with `pkgs`:
 
 Also on NixOS: leave `programs.appimage.binfmt` off, and an AppImage emulator
 needs `programs.nix-ld.enable` too.
+
+**`Cannot reach https://…: self-signed certificate`** (or `unable to verify the
+first certificate`). RomM is served over HTTPS with a certificate it signed
+itself, or one from your own authority. Turn on **Accept self-signed
+certificates** under the server address on the sign-in screen, or in Settings →
+General. An expired certificate, or one issued for another name, is still
+refused.
 
 **"flatpak is not installed".** Most of the emulators are flatpaks, so without
 the command none can be found or installed.

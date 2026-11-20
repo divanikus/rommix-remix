@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Svenska. Client messages translated independently from the English catalog. */
 export const sv: Catalog = {
+  'connect.acceptSelfSigned': 'Acceptera självsignerade certifikat',
+  'connect.acceptSelfSignedHint':
+    'Slå på om din RomM-server använder ett certifikat som du själv har skapat.',
+  'game.playOnRomm': 'Spela i RomM',
+  'game.streamFromRomm': 'Strömma från RomM',
+  'player.howToLeave': 'Håll ned Start eller Esc för att återgå till RomMix',
+  'emulator.locateName': 'AppImage på den här enheten',
+  'emulator.locateDetail': 'välj en fil som du redan har hämtat',
+  'emulator.locateTitle': 'Välj AppImage för {name}',
+  'error.untrustedCertificate': 'Certifikatet för {url} är inte betrott: {reason}',
+  'error.selfSignedCertificate':
+    '{url} använder ett självsignerat certifikat. Tillåt självsignerade certifikat för att ansluta.',
+  'error.certificateExpired': 'Certifikatet har gått ut',
+  'error.certificateNotYetValid': 'Certifikatet är inte giltigt än',
+  'error.certificateRefused': 'Certifikatet avvisades',
+  'error.playerFailed': 'Det gick inte att öppna RomM:s spelare: {reason}',
+  'error.playerNotSignedIn': 'RomM godkände inte RomMix inloggning i spelaren',
   'error.romsetLaunch':
     'Spelarkivet kunde inte identifieras. Kontrollera att uppsättningen innehåller sin ZIP- eller 7z-fil och att namnet matchar spelmappen.',
   'files.localPath': 'Lokal sökväg',

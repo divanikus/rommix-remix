@@ -4,8 +4,8 @@ This is a source fork of [leclercb/rommix](https://github.com/leclercb/rommix),
 with the original MIT license and Git history preserved. `main` carries the fork;
 an `upstream` remote tracks the original project.
 
-The current fork version is **0.24.0-remix.3**, based on upstream **0.24.0**
-(`7b8fbdb`). See the [changelog](CHANGELOG.md) for changes since the previous fork
+The current fork version is **0.25.0-remix.1**, based on upstream **0.25.0**
+(`2369f3d`). See the [changelog](CHANGELOG.md) for changes since the previous fork
 release. Changing the source version alone does not publish a release.
 
 ## Feature history

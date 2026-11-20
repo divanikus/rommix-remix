@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Independently authored translation of the complete client catalogue. */
 export const uk: Catalog = {
+  'connect.acceptSelfSigned': 'Дозволити самопідписані сертифікати',
+  'connect.acceptSelfSignedHint':
+    'Увімкніть, якщо ваш сервер RomM використовує створений вами сертифікат.',
+  'game.playOnRomm': 'Грати через RomM',
+  'game.streamFromRomm': 'Трансляція з RomM',
+  'player.howToLeave': 'Утримуйте Start або Esc, щоб повернутися до RomMix',
+  'emulator.locateName': 'AppImage на цьому пристрої',
+  'emulator.locateDetail': 'виберіть раніше завантажений файл',
+  'emulator.locateTitle': 'Виберіть AppImage для {name}',
+  'error.untrustedCertificate': 'Сертифікат {url} не є довіреним: {reason}',
+  'error.selfSignedCertificate':
+    'Сервер {url} використовує самопідписаний сертифікат. Дозвольте такі сертифікати, щоб підключитися.',
+  'error.certificateExpired': 'Термін дії сертифіката минув',
+  'error.certificateNotYetValid': 'Сертифікат ще не дійсний',
+  'error.certificateRefused': 'Сертифікат відхилено',
+  'error.playerFailed': 'Не вдалося відкрити програвач RomM: {reason}',
+  'error.playerNotSignedIn': 'RomM не прийняв дані входу RomMix для програвача',
   'error.romsetLaunch':
     'Не вдалося визначити архів гри. Перевірте, чи набір містить ZIP або 7z і чи його назва збігається з текою гри.',
   'files.localPath': 'Локальний шлях',

@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Czech; terminology checked against RomM, client messages authored here. */
 export const cs: Catalog = {
+  'connect.acceptSelfSigned': 'Povolit certifikáty podepsané vlastním klíčem',
+  'connect.acceptSelfSignedHint':
+    'Zapněte, pokud váš server RomM používá vámi vytvořený certifikát.',
+  'game.playOnRomm': 'Hrát v RomM',
+  'game.streamFromRomm': 'Streamovat z RomM',
+  'player.howToLeave': 'Podržením Start nebo Esc se vrátíte do RomMixu',
+  'emulator.locateName': 'AppImage v tomto zařízení',
+  'emulator.locateDetail': 'vyberte již stažený soubor',
+  'emulator.locateTitle': 'Vyberte AppImage pro {name}',
+  'error.untrustedCertificate': 'Certifikát serveru {url} není důvěryhodný: {reason}',
+  'error.selfSignedCertificate':
+    'Server {url} používá certifikát podepsaný vlastním klíčem. Pro připojení takové certifikáty povolte.',
+  'error.certificateExpired': 'Platnost certifikátu vypršela',
+  'error.certificateNotYetValid': 'Certifikát zatím není platný',
+  'error.certificateRefused': 'Certifikát byl odmítnut',
+  'error.playerFailed': 'Přehrávač RomM se nepodařilo otevřít: {reason}',
+  'error.playerNotSignedIn': 'RomM nepřijal přihlášení RomMixu do přehrávače',
   'error.romsetLaunch':
     'Archiv hry nelze určit. Ověřte, že sada obsahuje soubor ZIP nebo 7z a že jeho název odpovídá složce hry.',
   'files.localPath': 'Místní cesta',

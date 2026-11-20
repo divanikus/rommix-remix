@@ -5,7 +5,7 @@ const browser = await chromium.launch({
   channel: process.env.BROWSER_CHANNEL || 'chrome',
   headless: true
 })
-const page = await browser.newPage({ viewport: { width: 1920, height: 1080 } })
+const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, locale: 'en-GB' })
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
 const pad = async (button, pressed) =>
@@ -166,8 +166,8 @@ try {
     await page.locator(`[data-control="cover-size"] [data-option="${size}"]`).click()
     await startAtFirst()
     const columns = await page
-      .locator('.library-grid')
-      .evaluate((e) => getComputedStyle(e).gridTemplateColumns.split(' ').length)
+      .locator('.library-grid .card')
+      .evaluateAll((cards) => cards.filter((card) => card.offsetTop === cards[0]?.offsetTop).length)
     const first = await focusedId()
     await tap(13)
     assert.equal(await focusedId(), first + columns)

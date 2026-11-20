@@ -9,6 +9,8 @@ import type {
   DownloadItem,
   InstalledRom,
   LaunchChoice,
+  RommPlayer,
+  RommPlayers,
   LaunchResult,
   LibrarySyncResult,
   RommCollection,
@@ -338,6 +340,10 @@ export interface RomMixBridge {
     variants(romId: number): Promise<LaunchChoice>
     /** `variant` is remembered for the platform once passed. */
     launch(romId: number, variant?: string): Promise<LaunchResult>
+    /** Which of RomM's own players can run a game of this platform. */
+    rommPlayers(platformSlug: string): Promise<RommPlayers>
+    /** Play it on RomM, in a window over RomMix. Resolves once it is closed. */
+    playOnRomm(romId: number, player: RommPlayer): Promise<void>
   }
   /**
    * Whatever is in front of RomMix, and the way to close it.
@@ -396,6 +402,11 @@ export interface RomMixBridge {
     emulatorReleases(id: string): Promise<EmulatorRelease[]>
     /** Download an asset and adopt it as that emulator's executable. */
     installEmulator(id: string, asset: EmulatorAsset): Promise<string>
+    /**
+     * Ask the user for an AppImage of that emulator already on this machine and
+     * adopt it. Null when the file dialog was cancelled.
+     */
+    locateEmulator(id: string): Promise<string | null>
     /** Install an emulator that ships as a flatpak, from Flathub. */
     installEmulatorFlatpak(id: string): Promise<void>
     /** Start an emulator on its own, so it can be set up. Returns the command. */

@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Magyar. Client messages translated independently from the English catalog. */
 export const hu: Catalog = {
+  'connect.acceptSelfSigned': 'Önaláírt tanúsítványok elfogadása',
+  'connect.acceptSelfSignedHint':
+    'Kapcsold be, ha a RomM-kiszolgálód saját készítésű tanúsítványt használ.',
+  'game.playOnRomm': 'Játék a RomM-ban',
+  'game.streamFromRomm': 'Streamelés a RomM-ból',
+  'player.howToLeave': 'Tartsd lenyomva a Start vagy az Esc gombot a RomMixbe való visszatéréshez',
+  'emulator.locateName': 'AppImage ezen az eszközön',
+  'emulator.locateDetail': 'válassz ki egy már letöltött fájlt',
+  'emulator.locateTitle': 'Válaszd ki a(z) {name} AppImage-fájlját',
+  'error.untrustedCertificate': 'A(z) {url} tanúsítványa nem megbízható: {reason}',
+  'error.selfSignedCertificate':
+    'A(z) {url} önaláírt tanúsítványt használ. A csatlakozáshoz engedélyezd az önaláírt tanúsítványokat.',
+  'error.certificateExpired': 'A tanúsítvány lejárt',
+  'error.certificateNotYetValid': 'A tanúsítvány még nem érvényes',
+  'error.certificateRefused': 'A tanúsítványt elutasították',
+  'error.playerFailed': 'A RomM lejátszója nem nyitható meg: {reason}',
+  'error.playerNotSignedIn': 'A RomM nem fogadta el a RomMix bejelentkezését a lejátszóhoz',
   'error.romsetLaunch':
     'A játékarchívum nem azonosítható. Ellenőrizd, hogy a csomag tartalmazza a ZIP vagy 7z fájlt, és neve egyezik a játék mappájával.',
   'files.localPath': 'Helyi útvonal',

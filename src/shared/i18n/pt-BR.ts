@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Independently authored client translation; RomM consulted for selected terminology. */
 export const ptBR: Catalog = {
+  'connect.acceptSelfSigned': 'Aceitar certificados autoassinados',
+  'connect.acceptSelfSignedHint':
+    'Ative se o seu servidor RomM usa um certificado criado por você.',
+  'game.playOnRomm': 'Jogar no RomM',
+  'game.streamFromRomm': 'Transmitir do RomM',
+  'player.howToLeave': 'Segure Start ou Esc para voltar ao RomMix',
+  'emulator.locateName': 'AppImage neste dispositivo',
+  'emulator.locateDetail': 'selecione um arquivo já baixado',
+  'emulator.locateTitle': 'Escolha o AppImage de {name}',
+  'error.untrustedCertificate': 'O certificado de {url} não é confiável: {reason}',
+  'error.selfSignedCertificate':
+    '{url} usa um certificado autoassinado. Aceite certificados autoassinados para conectar.',
+  'error.certificateExpired': 'O certificado expirou',
+  'error.certificateNotYetValid': 'O certificado ainda não é válido',
+  'error.certificateRefused': 'O certificado foi recusado',
+  'error.playerFailed': 'Não foi possível abrir o player do RomM: {reason}',
+  'error.playerNotSignedIn': 'O RomM não aceitou o login do RomMix no player',
   'error.romsetLaunch':
     'Não foi possível identificar o arquivo do jogo. Verifique se o conjunto contém o ZIP ou 7z e se o nome corresponde à pasta do jogo.',
   'files.localPath': 'Caminho local',

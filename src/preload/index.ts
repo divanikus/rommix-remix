@@ -15,6 +15,7 @@ import type {
   EmulatorAsset,
   EmulatorInstallProgress,
   PowerAction,
+  RommPlayer,
   RomQuery,
   RomUserStatus,
   SaveDeleteScope,
@@ -126,7 +127,10 @@ const bridge: RomMixBridge = {
   },
   game: {
     variants: (romId: number) => ipcRenderer.invoke('game:variants', romId),
-    launch: (romId: number, variant?: string) => ipcRenderer.invoke('game:launch', romId, variant)
+    launch: (romId: number, variant?: string) => ipcRenderer.invoke('game:launch', romId, variant),
+    rommPlayers: (platformSlug: string) => ipcRenderer.invoke('game:rommPlayers', platformSlug),
+    playOnRomm: (romId: number, player: RommPlayer) =>
+      ipcRenderer.invoke('game:playOnRomm', romId, player)
   },
   running: {
     stop: () => ipcRenderer.invoke('running:stop'),
@@ -152,6 +156,7 @@ const bridge: RomMixBridge = {
     installEmulator: (id: string, asset: EmulatorAsset) =>
       ipcRenderer.invoke('emulators:install', id, asset),
     installEmulatorFlatpak: (id: string) => ipcRenderer.invoke('emulators:installFlatpak', id),
+    locateEmulator: (id: string) => ipcRenderer.invoke('emulators:locate', id),
     runEmulator: (id: string) => ipcRenderer.invoke('emulators:run', id),
     onInstallProgress: (listener: (progress: EmulatorInstallProgress) => void) =>
       subscribe<EmulatorInstallProgress>('emulators:progress', listener),

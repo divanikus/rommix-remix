@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { after, before, describe, test } from 'node:test'
-import { dateFormatters } from '@shared/i18n/dates.ts'
+import { DATE_FORMATS, dateFormatters } from '@shared/i18n/dates.ts'
 import { en } from '@shared/i18n/en.ts'
 import { fr } from '@shared/i18n/fr.ts'
 import { atHome, POLL_MS, SETTLE_TIMEOUT_MS, type App } from './driver.ts'
@@ -180,6 +180,60 @@ describe('the settings screen', () => {
     await app.waitFor(
       `document.querySelectorAll('.settings-body *').length > 0`,
       'the system tab to have drawn something'
+    )
+  })
+
+  test('a press off a row still sliding into view stays in that row', async () => {
+    // Down onto a row below the edge of the window starts the page sliding,
+    // and the rest of that row is still below the edge when a quick second
+    // press arrives. Judged against what was on screen, Right off the first
+    // option went up to the row the page was leaving.
+    await app.goTo('home')
+    await app.goTo('settings')
+    await app.waitFor(
+      `document.querySelector('[data-option="iso"]')?.matches('[data-focused]') ?? false`,
+      'the date formats'
+    )
+    const onDates = `${JSON.stringify(DATE_FORMATS)}.includes(document.querySelector('[data-focused="true"]')?.dataset.option)`
+    for (let step = 0; step < 12 && !(await app.read<boolean>(onDates)); step += 1) {
+      await app.press('Down')
+    }
+    const next = await app.read<string | null>(
+      `document.querySelector('[data-focused="true"]')?.nextElementSibling?.dataset.option ?? null`
+    )
+    assert.ok(next, 'the highlight should be on a date format with another after it')
+
+    // Where a quick press finds things: the highlight on the row, and the page
+    // not yet caught up with it. Scrolled back by hand rather than raced, so the
+    // test does not depend on how fast the machine running it is.
+    await app.read(
+      `(() => {
+         let scroller = document.querySelector('[data-focused="true"]').parentElement
+         while (scroller && scroller.scrollTop === 0) scroller = scroller.parentElement
+         scroller?.scrollTo({ top: 0, behavior: 'instant' })
+         // Until the focus engine has been told, which an observer of the
+         // same element is in the same delivery as.
+         return new Promise((settle) => {
+           const watch = new IntersectionObserver(([record]) => {
+             if (record.isIntersecting) return
+             watch.disconnect()
+             settle(true)
+           })
+           watch.observe(document.querySelector('[data-focused="true"]'))
+         })
+       })()`
+    )
+    assert.ok(
+      await app.read<boolean>(
+        `document.querySelector('[data-focused="true"]').getBoundingClientRect().top >= window.innerHeight`
+      ),
+      'the highlight should be below the edge of the window'
+    )
+
+    await app.press('Right')
+    await app.waitFor(
+      `document.querySelector('[data-option=${JSON.stringify(next)}]')?.matches('[data-focused="true"]') ?? false`,
+      'the highlight to move along the date formats'
     )
   })
 })
@@ -2133,19 +2187,22 @@ describe('the emulators themselves', () => {
   test('installing one opens a screen that asks how first', async () => {
     await fromTheTop()
 
-    // RetroArch is declared more than one way and RomMix can perform only one
-    // of them: Flathub. The other is a binary it looks for on the machine,
-    // which is how an install is *found* rather than a way of installing
-    // anything — offered here it would be a row that cannot do what it says.
+    // RetroArch is declared more than one way and RomMix can install it only
+    // from Flathub. Its AppImage cannot be downloaded, so it is offered as a
+    // file to pick instead. The binary is how an install is *found* rather
+    // than a way of installing anything — offered here it would be a row that
+    // cannot do what it says.
     await app.choose('[data-emulator="retroarch"] [data-action="install-emulator"]')
     await app.waitFor(
       `document.querySelector('[data-screen="install-emulator"]')`,
       'the install screen'
     )
-    assert.equal(
-      await app.read<number>(`document.querySelectorAll('.release').length`),
-      1,
-      'only Flathub is something RomMix can do'
+    assert.deepEqual(
+      await app.read<string[]>(
+        `[...document.querySelectorAll('.release__name')].map((one) => one.textContent)`
+      ),
+      ['Flatpak', 'AppImage on this machine'],
+      'only Flathub and an AppImage already on the machine are things RomMix can do'
     )
 
     // Nothing has been run. The page is the confirmation as much as the choice

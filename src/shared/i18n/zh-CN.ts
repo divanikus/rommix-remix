@@ -2,6 +2,21 @@ import type { Catalog } from './catalog.ts'
 
 /** Independently authored client translation; RomM consulted for selected terminology. */
 export const zhCN: Catalog = {
+  'connect.acceptSelfSigned': '接受自签名证书',
+  'connect.acceptSelfSignedHint': '如果你的 RomM 服务器使用你自行创建的证书，请开启此选项。',
+  'game.playOnRomm': '在 RomM 中游玩',
+  'game.streamFromRomm': '从 RomM 串流',
+  'player.howToLeave': '按住 Start 或 Esc 返回 RomMix',
+  'emulator.locateName': '此设备上的 AppImage',
+  'emulator.locateDetail': '选择已下载的文件',
+  'emulator.locateTitle': '选择 {name} 的 AppImage',
+  'error.untrustedCertificate': '不信任 {url} 的证书：{reason}',
+  'error.selfSignedCertificate': '{url} 使用自签名证书。请开启接受自签名证书后再连接。',
+  'error.certificateExpired': '证书已过期',
+  'error.certificateNotYetValid': '证书尚未生效',
+  'error.certificateRefused': '证书被拒绝',
+  'error.playerFailed': '无法打开 RomM 播放器：{reason}',
+  'error.playerNotSignedIn': 'RomM 未接受 RomMix 登录其播放器',
   'error.romsetLaunch':
     '无法识别游戏压缩包。请确认套装包含 ZIP 或 7z 文件，且名称与游戏文件夹一致。',
   'files.localPath': '本地路径',

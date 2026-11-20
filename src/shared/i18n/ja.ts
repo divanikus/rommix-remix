@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Independently authored client translation; RomM consulted for selected terminology. */
 export const ja: Catalog = {
+  'connect.acceptSelfSigned': '自己署名証明書を許可',
+  'connect.acceptSelfSignedHint':
+    'RomM サーバーで自分で作成した証明書を使用している場合は有効にしてください。',
+  'game.playOnRomm': 'RomM でプレイ',
+  'game.streamFromRomm': 'RomM からストリーミング',
+  'player.howToLeave': 'Start または Esc を長押しして RomMix に戻る',
+  'emulator.locateName': 'この端末の AppImage',
+  'emulator.locateDetail': 'ダウンロード済みのファイルを選択',
+  'emulator.locateTitle': '{name} の AppImage を選択',
+  'error.untrustedCertificate': '{url} の証明書は信頼されていません: {reason}',
+  'error.selfSignedCertificate':
+    '{url} は自己署名証明書を使用しています。接続するには自己署名証明書を許可してください。',
+  'error.certificateExpired': '証明書の有効期限が切れています',
+  'error.certificateNotYetValid': '証明書はまだ有効ではありません',
+  'error.certificateRefused': '証明書が拒否されました',
+  'error.playerFailed': 'RomM のプレーヤーを開けませんでした: {reason}',
+  'error.playerNotSignedIn': 'RomM がプレーヤーへの RomMix のサインインを受け付けませんでした',
   'error.romsetLaunch':
     'ゲームアーカイブを識別できません。セットに ZIP または 7z が含まれ、名前がゲームフォルダーと一致するか確認してください。',
   'files.localPath': 'ローカルパス',

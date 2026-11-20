@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE ?? 'playwright')
 const browser = await chromium.launch({ channel: 'chrome', headless: true })
-const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
+const page = await browser.newPage({ viewport: { width: 1600, height: 900 }, locale: 'en-GB' })
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
 const frames = () =>
@@ -154,7 +154,7 @@ try {
   const before = await page
     .locator('.game-screen [data-tab][data-active="true"]')
     .getAttribute('data-tab')
-  await tap(5)
+  await tap(7)
   assert.notEqual(
     await page.locator('.game-screen [data-tab][data-active="true"]').getAttribute('data-tab'),
     before
@@ -166,14 +166,14 @@ try {
   assert.equal(await page.locator('[data-option="compact"]').count(), 0)
   await page.locator('[data-control="cover-size"] [data-option="small"]').click()
   const small = await page
-    .locator('.library-grid')
-    .evaluate((e) => getComputedStyle(e).gridTemplateColumns.split(' ').length)
+    .locator('.library-grid .card')
+    .evaluateAll((cards) => cards.filter((card) => card.offsetTop === cards[0]?.offsetTop).length)
   await page.locator('[data-control="cover-size"] [data-option="medium"]').click()
   const medium = await page
-    .locator('.library-grid')
-    .evaluate((e) => getComputedStyle(e).gridTemplateColumns.split(' ').length)
+    .locator('.library-grid .card')
+    .evaluateAll((cards) => cards.filter((card) => card.offsetTop === cards[0]?.offsetTop).length)
   assert.ok(small > medium)
-  console.log('PASS detail shoulders retain tabs; three denser sizes preserve operations')
+  console.log('PASS detail triggers switch tabs; three denser sizes preserve operations')
   for (const width of [390, 700, 1600, 1920]) {
     await page.setViewportSize({ width, height: 900 })
     await page.locator('[data-route="home"]').click()

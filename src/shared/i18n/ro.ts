@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Română. Client messages translated independently from the English catalog. */
 export const ro: Catalog = {
+  'connect.acceptSelfSigned': 'Acceptă certificate autosemnate',
+  'connect.acceptSelfSignedHint':
+    'Activează dacă serverul tău RomM folosește un certificat creat de tine.',
+  'game.playOnRomm': 'Joacă în RomM',
+  'game.streamFromRomm': 'Redă prin streaming din RomM',
+  'player.howToLeave': 'Ține apăsat Start sau Esc pentru a reveni în RomMix',
+  'emulator.locateName': 'AppImage pe acest dispozitiv',
+  'emulator.locateDetail': 'alege un fișier deja descărcat',
+  'emulator.locateTitle': 'Alege AppImage pentru {name}',
+  'error.untrustedCertificate': 'Certificatul pentru {url} nu este de încredere: {reason}',
+  'error.selfSignedCertificate':
+    '{url} folosește un certificat autosemnat. Acceptă certificatele autosemnate pentru a te conecta.',
+  'error.certificateExpired': 'Certificatul a expirat',
+  'error.certificateNotYetValid': 'Certificatul nu este încă valabil',
+  'error.certificateRefused': 'Certificatul a fost respins',
+  'error.playerFailed': 'Playerul RomM nu a putut fi deschis: {reason}',
+  'error.playerNotSignedIn': 'RomM nu a acceptat autentificarea RomMix în player',
   'error.romsetLaunch':
     'Arhiva jocului nu a putut fi identificată. Verifică dacă setul conține fișierul ZIP sau 7z și dacă numele său corespunde dosarului jocului.',
   'files.localPath': 'Cale locală',

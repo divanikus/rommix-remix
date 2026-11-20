@@ -567,6 +567,7 @@ const SETTINGS: Settings = {
   syncSaves: true,
   syncStates: true,
   navigationSounds: true,
+  acceptSelfSigned: false,
   confirmUninstall: true,
   confirmSavePush: true,
   // The themes notice among them: it is there to tell somebody who had RomMix
@@ -1050,7 +1051,10 @@ const bridge: RomMixBridge = {
         ask: system === 'genesis'
       })
     },
-    launch: () => refuse('demo.noEmulator')
+    launch: () => refuse('demo.noEmulator'),
+    // No server behind the demo, so nothing to play on.
+    rommPlayers: () => later({ browser: false, stream: false }),
+    playOnRomm: () => refuse('demo.noEmulator')
   },
   running: {
     stop: () => later(undefined),
@@ -1094,6 +1098,7 @@ const bridge: RomMixBridge = {
     emulatorReleases: () => later([]),
     installEmulator: () => refuse(),
     installEmulatorFlatpak: () => refuse(),
+    locateEmulator: () => refuse(),
     runEmulator: () => refuse(),
     onInstallProgress: noSubscription,
     /**

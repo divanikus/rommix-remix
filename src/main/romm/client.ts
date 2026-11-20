@@ -12,7 +12,9 @@ import type {
   RommDeviceAuthToken,
   RommDeviceAuthTokenPayload,
   RommFirmware,
+  RommEmulation,
   RommHeartbeat,
+  RommStreamingConfig,
   RommPlaySession,
   RommPlaySessionPayload,
   RommRomUserPayload,
@@ -35,7 +37,15 @@ import { t } from '../i18n.ts'
 import type { Store } from '../store.ts'
 import { checksumOf, digestOf, unpackedChecksumOf } from './checksums.ts'
 import { DeviceRegistry } from './devices.ts'
-import { RommError, UnreachableError, UnsupportedServerError } from './errors.ts'
+import {
+  RommError,
+  UnreachableError,
+  UnsupportedServerError,
+  UntrustedCertificateError,
+  certificateRefused,
+  sendFailure
+} from './errors.ts'
+import { fetchTrustingSelfSigned, selfSigned } from './tls.ts'
 import { atLeast, isComparable, MINIMUM_SERVER_VERSION } from './version.ts'
 import {
   fetchToFile,
@@ -248,7 +258,10 @@ export class RommClient {
      */
     const attempt = async (): Promise<Response> => {
       try {
-        const res = await fetch(`${base}${path}`, {
+        // Read per attempt, so the toggle on the sign-in form applies to the
+        // very next try. See `Settings.acceptSelfSigned`.
+        const send = this.store.settings.acceptSelfSigned ? fetchTrustingSelfSigned : fetch
+        const res = await send(`${base}${path}`, {
           // A server that accepts the connection and then says nothing
           // otherwise holds the screen for as long as the runtime's own default
           // allows, behind a button that has already been pressed. The deadline
@@ -267,11 +280,22 @@ export class RommClient {
         // while its request was out — says nothing about the server, and
         // reported as an outage it would put the interface into offline mode.
         if (init.signal?.aborted) throw cause
-        log.error('romm', `${method} ${path} could not be sent`, cause, { baseUrl: base })
-        this.report(base, false, (cause as Error).message)
-        throw new UnreachableError(
-          t('error.cannotReach', { url: base, reason: (cause as Error).message })
-        )
+        const reason = sendFailure(cause)
+        log.error('romm', `${method} ${path} could not be sent`, cause, { baseUrl: base, reason })
+        // Not reported as an outage: the server is there, and offline mode
+        // would hide the reason. See `UntrustedCertificateError`.
+        const certificate = certificateRefused(cause)
+        if (certificate) {
+          // Pointed at the setting where the setting is what would let it
+          // through, since nothing else on the screen says it exists.
+          throw new UntrustedCertificateError(
+            selfSigned(certificate) && !this.store.settings.acceptSelfSigned
+              ? t('error.selfSignedCertificate', { url: base })
+              : t('error.untrustedCertificate', { url: base, reason })
+          )
+        }
+        this.report(base, false, reason)
+        throw new UnreachableError(t('error.cannotReach', { url: base, reason }))
       }
     }
 
@@ -334,6 +358,45 @@ export class RommClient {
   }
 
   // -- authentication -------------------------------------------------------
+
+  /**
+   * The server's address and the header that signs a request in as this user,
+   * for a page RomM serves to be opened as somebody signed in — see
+   * `RommPlayer`. Read on every request it makes rather than once, so a token
+   * refreshed mid-session is the one sent.
+   */
+  get origin(): string {
+    return new URL(this.baseUrl).origin
+  }
+
+  authorization(): string | null {
+    return this.authHeader().Authorization ?? null
+  }
+
+  /**
+   * What the heartbeat says about RomM's own in-browser player.
+   *
+   * Sent through `request` rather than as the unauthenticated probe below, so
+   * an expired token is refreshed here, before a player page is opened with it.
+   */
+  async emulation(): Promise<RommEmulation | null> {
+    const body = await this.json<RommHeartbeat>('/api/heartbeat')
+    return body.EMULATION ?? null
+  }
+
+  /**
+   * GET /api/streaming/config — which platforms the server streams.
+   *
+   * A 404 is a server too old to stream anything, and null says exactly that.
+   */
+  async streamingConfig(): Promise<RommStreamingConfig | null> {
+    try {
+      return await this.json<RommStreamingConfig>('/api/streaming/config')
+    } catch (cause) {
+      if (cause instanceof RommError && cause.status === 404) return null
+      throw cause
+    }
+  }
 
   /**
    * GET /api/heartbeat — also the "is this a RomM server we can read" probe.

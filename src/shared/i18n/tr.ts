@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Türkçe. Client messages translated independently from the English catalog. */
 export const tr: Catalog = {
+  'connect.acceptSelfSigned': 'Kendinden imzalı sertifikaları kabul et',
+  'connect.acceptSelfSignedHint':
+    'RomM sunucunuz kendi oluşturduğunuz bir sertifikayı kullanıyorsa bu seçeneği açın.',
+  'game.playOnRomm': 'RomM üzerinden oyna',
+  'game.streamFromRomm': 'RomM üzerinden yayınla',
+  'player.howToLeave': 'RomMix’e dönmek için Start veya Esc tuşunu basılı tutun',
+  'emulator.locateName': 'Bu cihazdaki AppImage',
+  'emulator.locateDetail': 'önceden indirdiğiniz bir dosyayı seçin',
+  'emulator.locateTitle': '{name} AppImage dosyasını seçin',
+  'error.untrustedCertificate': '{url} sertifikasına güvenilmiyor: {reason}',
+  'error.selfSignedCertificate':
+    '{url} kendinden imzalı bir sertifika kullanıyor. Bağlanmak için bu sertifikalara izin verin.',
+  'error.certificateExpired': 'Sertifikanın süresi doldu',
+  'error.certificateNotYetValid': 'Sertifika henüz geçerli değil',
+  'error.certificateRefused': 'Sertifika reddedildi',
+  'error.playerFailed': 'RomM oynatıcısı açılamadı: {reason}',
+  'error.playerNotSignedIn': 'RomM, oynatıcı için RomMix’in oturum açma isteğini kabul etmedi',
   'error.romsetLaunch':
     'Oyun arşivi tanımlanamadı. Setin ZIP veya 7z dosyasını içerdiğini ve adının oyun klasörüyle eşleştiğini kontrol edin.',
   'files.localPath': 'Yerel yol',

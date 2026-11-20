@@ -2,6 +2,23 @@ import type { Catalog } from './catalog.ts'
 
 /** Independently authored translation of the complete client catalogue. */
 export const bg: Catalog = {
+  'connect.acceptSelfSigned': 'Разрешаване на самоподписани сертификати',
+  'connect.acceptSelfSignedHint':
+    'Включете, ако вашият сървър RomM използва създаден от вас сертификат.',
+  'game.playOnRomm': 'Игра в RomM',
+  'game.streamFromRomm': 'Стрийминг от RomM',
+  'player.howToLeave': 'Задръжте Start или Esc, за да се върнете в RomMix',
+  'emulator.locateName': 'AppImage на това устройство',
+  'emulator.locateDetail': 'изберете вече изтеглен файл',
+  'emulator.locateTitle': 'Изберете AppImage за {name}',
+  'error.untrustedCertificate': 'Сертификатът на {url} не е доверен: {reason}',
+  'error.selfSignedCertificate':
+    'Сървърът {url} използва самоподписан сертификат. Разрешете такива сертификати, за да се свържете.',
+  'error.certificateExpired': 'Сертификатът е изтекъл',
+  'error.certificateNotYetValid': 'Сертификатът все още не е валиден',
+  'error.certificateRefused': 'Сертификатът е отхвърлен',
+  'error.playerFailed': 'Плейърът на RomM не може да се отвори: {reason}',
+  'error.playerNotSignedIn': 'RomM не прие данните за вход на RomMix за плейъра',
   'error.romsetLaunch':
     'Архивът на играта не може да бъде разпознат. Проверете дали комплектът съдържа ZIP или 7z файл и дали името му съвпада с папката на играта.',
   'files.localPath': 'Локален път',
