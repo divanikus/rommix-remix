@@ -27,7 +27,7 @@ import { GameFacts } from './tabs/GameFacts'
 import { GameMedia } from './GameMedia'
 import { FocusZone, useFocusContext } from '../../input/focus'
 import { GameHero } from './GameHero'
-import { PlayButton } from './PlayButton'
+import { LaunchActions } from './LaunchActions'
 import { SaveTransfer } from './SaveTransfer'
 import {
   DeleteAssetDialog,
@@ -256,11 +256,9 @@ function GameContent({
     variants,
     choosing,
     setChoosing,
-    menu,
-    closeMenu,
     startPlay,
     play,
-    openChooser,
+    readLocalChoice,
     setupNotes,
     dismissSetup
   } = useGameLaunch({
@@ -535,48 +533,52 @@ function GameContent({
         facts={<GameFacts rom={rom} played={played} />}
         actions={
           <>
-            {entry ? (
-              <PlayButton
-                onPlay={() => void startPlay()}
-                onOpen={() => void openChooser()}
-                onClose={closeMenu}
-                onPick={(variant) => void play(variant)}
-                hasVariants={variants.length > 1}
-                menu={menu}
-                running={running}
-                disabled={working || running}
-                autoFocus={!focusTabs}
-              />
-            ) : active && !interruptible ? (
-              /* The bytes are all here and the game is being put in place, which
-             is not something to be stopped half way: both buttons below were
-             refused by the queue, so what is left is to say what is happening.
-             Which part of it is happening is the badge under the banner. */
-              <FocusButton icon="install" variant="primary" disabled onSelect={() => {}}>
-                {t('action.installing')}
-              </FocusButton>
-            ) : active ? (
-              stopButtons(!focusTabs)
-            ) : (
-              <FocusButton
-                icon="download"
-                action="download"
-                key="download"
-                focusId={downloadFocusId}
-                variant="primary"
-                onSelect={() => (noEmulator ? setAskingEmulator(true) : void startDownload())}
-                disabled={working}
-                autoFocus={!focusTabs}
-              >
-                {/* The same button either way: what the player wants is the game,
-                and whether that means starting or finishing a transfer is not
-                a second decision to make. How far it got is on the button, as
-                it is on the two that stopped it. */}
-                {isStopped(download?.state ?? 'downloading')
-                  ? t('game.resumeDownload')
-                  : t('action.download')}
-              </FocusButton>
-            )}
+            {!entry && active ? (
+              interruptible ? (
+                stopButtons(!focusTabs)
+              ) : (
+                <FocusButton icon="install" variant="primary" disabled onSelect={() => {}}>
+                  {t('action.installing')}
+                </FocusButton>
+              )
+            ) : null}
+
+            <LaunchActions
+              readLocalChoice={entry && variants.length > 1 ? readLocalChoice : undefined}
+              players={players}
+              onPickLocal={(variant) => void play(variant)}
+              onPickRomm={(player) => void playOnRomm(player)}
+              disabled={working || running}
+            >
+              {entry ? (
+                <FocusButton
+                  icon="play"
+                  action="play"
+                  key="play"
+                  variant="primary"
+                  onSelect={() => void startPlay()}
+                  disabled={working || running}
+                  autoFocus={!focusTabs}
+                >
+                  {running ? t('game.running') : t('game.play')}
+                </FocusButton>
+              ) : !active ? (
+                <FocusButton
+                  icon="download"
+                  action="download"
+                  key="download"
+                  focusId={downloadFocusId}
+                  variant="primary"
+                  onSelect={() => (noEmulator ? setAskingEmulator(true) : void startDownload())}
+                  disabled={working}
+                  autoFocus={!focusTabs}
+                >
+                  {isStopped(download?.state ?? 'downloading')
+                    ? t('game.resumeDownload')
+                    : t('action.download')}
+                </FocusButton>
+              ) : null}
+            </LaunchActions>
 
             {/* A transfer that was stopped is still a transfer to be rid of, and
             this was the one screen with no way to say so — Resume was the only
@@ -596,31 +598,6 @@ function GameContent({
             {/* After Play rather than in its place: the game stays playable while
             new files arrive, so the highlight stays on Play as well. */}
             {entry && download?.adding && interruptible ? stopButtons(false) : null}
-
-            {/* RomM's own ways to play, after the primary button because they are
-            the other way round: nothing here, everything on the server. Only
-            where the server says it can, so a button never opens a page that
-            has nothing to play. */}
-            {players.browser ? (
-              <FocusButton
-                icon="homepage"
-                action="play-on-romm"
-                onSelect={() => void playOnRomm('browser')}
-                disabled={working || running}
-              >
-                {t('game.playOnRomm')}
-              </FocusButton>
-            ) : null}
-            {players.stream ? (
-              <FocusButton
-                icon="server"
-                action="stream-from-romm"
-                onSelect={() => void playOnRomm('stream')}
-                disabled={working || running}
-              >
-                {t('game.streamFromRomm')}
-              </FocusButton>
-            ) : null}
 
             {/* The three marks that live on RomM rather than on this disk. Greyed
             while it is away rather than taken off the screen: a heart that

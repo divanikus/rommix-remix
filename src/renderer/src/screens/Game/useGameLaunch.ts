@@ -38,11 +38,9 @@ export function useGameLaunch(options: {
   /** The choice being put to the user, or null while nothing is being asked. */
   choosing: LaunchChoice | null
   setChoosing: (choice: LaunchChoice | null) => void
-  menu: LaunchChoice | null
-  closeMenu: () => void
   startPlay: () => Promise<void>
   play: (variant?: string) => Promise<void>
-  openChooser: () => Promise<void>
+  readLocalChoice: () => Promise<LaunchChoice | null>
   /** The setup steps still outstanding for this emulator, once per emulator. */
   setupNotes: string[] | null
   dismissSetup: () => Promise<void>
@@ -53,7 +51,6 @@ export function useGameLaunch(options: {
 
   const [busy, setBusy] = useState(false)
   const [choosing, setChoosing] = useState<LaunchChoice | null>(null)
-  const [menu, setMenu] = useState<LaunchChoice | null>(null)
   const [variants, setVariants] = useState<LaunchChoice['options']>([])
   const [setup, setSetup] = useState<{ emulatorId: string; notes: string[] } | null>(null)
 
@@ -66,7 +63,6 @@ export function useGameLaunch(options: {
   const run = useRef(0)
   useEffect(() => {
     const mine = (run.current += 1)
-    setMenu(null)
     if (installedFor === null) {
       setVariants([])
       setSetup(null)
@@ -112,7 +108,6 @@ export function useGameLaunch(options: {
 
   const play = async (variant?: string): Promise<void> => {
     setChoosing(null)
-    setMenu(null)
     setBusy(true)
     try {
       const result = await window.rommix.game.launch(romId, variant)
@@ -165,15 +160,16 @@ export function useGameLaunch(options: {
     }
   }
 
-  /** Re-open the picker for a platform that has already been answered. */
-  const openChooser = async (): Promise<void> => {
+  /** Recheck the available runners and remembered choice when opening the menu. */
+  const readLocalChoice = async (): Promise<LaunchChoice | null> => {
     const mine = run.current
     setBusy(true)
     try {
       const choice = await window.rommix.game.variants(romId)
-      if (run.current === mine) setMenu(choice)
+      return run.current === mine ? choice : null
     } catch {
       // Reported centrally.
+      return null
     } finally {
       setBusy(false)
     }
@@ -184,11 +180,9 @@ export function useGameLaunch(options: {
     variants,
     choosing,
     setChoosing,
-    menu,
-    closeMenu: () => setMenu(null),
     startPlay,
     play,
-    openChooser,
+    readLocalChoice,
     setupNotes: setup && !dismissed && setup.notes.length > 0 ? setup.notes : null,
     dismissSetup
   }

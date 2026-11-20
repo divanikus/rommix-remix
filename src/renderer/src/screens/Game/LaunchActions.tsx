@@ -5,82 +5,89 @@ import {
   useRef,
   useState,
   type JSX,
+  type ReactNode,
   type RefObject
 } from 'react'
 import { createPortal } from 'react-dom'
-import type { LaunchChoice } from '@shared/types'
+import type { LaunchChoice, RommPlayer, RommPlayers } from '@shared/types'
 import { FocusButton } from '../../components'
 import { FocusLayer, useAction, useFocusContext } from '../../input/focus'
 import { useI18n } from '../../state'
 
-/** The remembered launch and its alternatives stay together in the action row. */
-export function PlayButton({
-  onPlay,
-  onOpen,
-  onClose,
-  onPick,
-  hasVariants,
-  menu,
-  running,
-  disabled,
-  autoFocus
+/** Keep launch alternatives beside the primary action, including before install. */
+export function LaunchActions({
+  children,
+  readLocalChoice,
+  onPickLocal,
+  players,
+  onPickRomm,
+  disabled
 }: {
-  onPlay: () => void
-  onOpen: () => void
-  onClose: () => void
-  onPick: (variant: string) => void
-  hasVariants: boolean
-  menu: LaunchChoice | null
-  running: boolean
+  children?: ReactNode
+  readLocalChoice?: () => Promise<LaunchChoice | null>
+  onPickLocal: (variant: string) => void
+  players: RommPlayers
+  onPickRomm: (player: RommPlayer) => void
   disabled: boolean
-  autoFocus: boolean
-}): JSX.Element {
+}): JSX.Element | null {
   const { t } = useI18n()
   const anchor = useRef<HTMLDivElement>(null)
   const arrowId = useId()
   const menuId = useId()
   const { setFocus } = useFocusContext()
+  const [menu, setMenu] = useState<{ local: LaunchChoice | null } | null>(null)
   const [returnToArrow, setReturnToArrow] = useState(false)
+  const hasRemote = players.browser || players.stream
+  const hasOptions = readLocalChoice !== undefined || hasRemote
+  const local = readLocalChoice ? (menu?.local ?? null) : null
+  const menuOpen = menu !== null && (Boolean(local?.options.length) || hasRemote)
+  useEffect(() => {
+    if (menu && !menuOpen) setMenu(null)
+  }, [menu, menuOpen])
   useEffect(() => {
     if (!returnToArrow || menu || disabled) return
-    setFocus(arrowId)
+    if (hasOptions) setFocus(arrowId)
     setReturnToArrow(false)
-  }, [returnToArrow, menu, disabled, arrowId, setFocus])
+  }, [returnToArrow, menu, disabled, hasOptions, arrowId, setFocus])
+  const open = async (): Promise<void> => {
+    const choice = readLocalChoice ? await readLocalChoice() : null
+    if (choice?.options.length || hasRemote) setMenu({ local: choice })
+  }
   const dismiss = (): void => {
-    onClose()
+    setMenu(null)
     setReturnToArrow(true)
   }
+  if (!children && !hasOptions) return null
   return (
-    <div className="game-play" data-split={hasVariants} ref={anchor}>
-      <FocusButton
-        icon="play"
-        action="play"
-        variant="primary"
-        onSelect={onPlay}
-        disabled={disabled}
-        autoFocus={autoFocus}
-      >
-        {running ? t('game.running') : t('game.play')}
-      </FocusButton>
-      {hasVariants ? (
+    <div className="game-play" data-split={Boolean(children) && hasOptions} ref={anchor}>
+      {children}
+      {hasOptions ? (
         <FocusButton
           icon="more"
           action="run-with"
-          variant="primary"
-          onSelect={onOpen}
+          variant={children ? 'primary' : 'default'}
+          onSelect={() => void open()}
           disabled={disabled}
           focusId={arrowId}
           actionLabel={t('game.runWith')}
-          popup={{ id: menuId, open: menu !== null }}
+          popup={{ id: menuId, open: menuOpen }}
         />
       ) : null}
-      {menu ? (
+      {menuOpen ? (
         <FocusLayer>
           <LaunchMenu
             id={menuId}
             anchor={anchor}
-            choice={menu}
-            onPick={onPick}
+            choice={local}
+            players={players}
+            onPickLocal={(id) => {
+              dismiss()
+              onPickLocal(id)
+            }}
+            onPickRomm={(player) => {
+              dismiss()
+              onPickRomm(player)
+            }}
             onDismiss={dismiss}
           />
         </FocusLayer>
@@ -94,18 +101,23 @@ function LaunchMenu({
   id,
   anchor,
   choice,
-  onPick,
+  players,
+  onPickLocal,
+  onPickRomm,
   onDismiss
 }: {
   id: string
   anchor: RefObject<HTMLDivElement | null>
-  choice: LaunchChoice
-  onPick: (variant: string) => void
+  choice: LaunchChoice | null
+  players: RommPlayers
+  onPickLocal: (variant: string) => void
+  onPickRomm: (player: RommPlayer) => void
   onDismiss: () => void
 }): JSX.Element {
   const { t } = useI18n()
   const panel = useRef<HTMLDivElement>(null)
   const [position, setPosition] = useState({ left: 0, top: 0 })
+  const localOptions = choice?.options ?? []
   useAction('back', onDismiss)
   useLayoutEffect(() => {
     const place = (): void => {
@@ -143,23 +155,45 @@ function LaunchMenu({
         onClick={(event) => event.stopPropagation()}
       >
         <h2 id={`${id}-title`}>{t('game.runWith')}</h2>
-        <p className="muted">
-          {t('game.variantBody', { emulator: choice.emulatorName, system: choice.system })}
-        </p>
+        {choice && localOptions.length > 0 ? (
+          <p className="muted">
+            {t('game.variantBody', { emulator: choice.emulatorName, system: choice.system })}
+          </p>
+        ) : null}
         <div className="launch-menu__options">
-          {choice.options.map((option) => (
+          {localOptions.map((option) => (
             <FocusButton
               key={option.id}
-              icon={option.id === choice.chosen ? 'confirm' : 'emulator'}
+              icon={option.id === choice?.chosen ? 'confirm' : 'emulator'}
               action={`variant-${option.id}`}
               actionLabel={option.label}
-              onSelect={() => onPick(option.id)}
-              autoFocus={option.id === (choice.chosen ?? choice.options[0]?.id)}
+              onSelect={() => onPickLocal(option.id)}
+              autoFocus={option.id === (choice?.chosen ?? localOptions[0]?.id)}
             >
               {option.label}
               {option.note ? ` · ${option.note}` : ''}
             </FocusButton>
           ))}
+          {players.browser ? (
+            <FocusButton
+              icon="homepage"
+              action="play-on-romm"
+              autoFocus={localOptions.length === 0}
+              onSelect={() => onPickRomm('browser')}
+            >
+              {t('game.playOnRomm')}
+            </FocusButton>
+          ) : null}
+          {players.stream ? (
+            <FocusButton
+              icon="server"
+              action="stream-from-romm"
+              autoFocus={localOptions.length === 0 && !players.browser}
+              onSelect={() => onPickRomm('stream')}
+            >
+              {t('game.streamFromRomm')}
+            </FocusButton>
+          ) : null}
         </div>
       </div>
     </div>,
