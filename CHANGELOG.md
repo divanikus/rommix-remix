@@ -4,17 +4,22 @@ Newest first. `npm run release` adds the entry for a version, falling back to th
 commit subjects and ids since the previous tag — so write the section by hand
 before releasing if you want prose instead. See [Releasing](README.md#releasing).
 
-## 0.25.0-remix.1
+## 0.25.0-remix.1 — 2026-11-20
 
-- Updated to RomMix 0.25.0 with RomM browser play and streaming, an emulator
-  AppImage picker, opt-in self-signed certificates and RetroArch save/state fixes.
-- Game covers keep their proportions in the library grid and cover shelves.
-  The three library sizes set the height, and wider covers get more room.
-  Turn off Preserve cover proportions in Settings → General to use equal-width
-  cards.
+- Updated to RomMix 0.25.0, including an emulator AppImage picker, opt-in
+  self-signed certificates, and RetroArch save and state fixes.
+- RomM browser play and streaming share the launch menu with local emulator
+  options. Open it using the arrow beside Play or Download.
+- RomM's browser player follows the interface scale and supports native Linux
+  gamepad input. The first active gamepad takes Player 1. Hold Start, Options,
+  or Esc to exit. The exit hint disappears after six seconds.
+- Library covers keep their proportions by default. Turn off Preserve cover
+  proportions in Settings → General to use equal-width cards in the grid and
+  cover shelves.
+- Minor UI optimizations for Steam Deck. Auto scale is more readable at
+  1280 × 800, and tighter game-card spacing gives video previews more room
+  above the controller hints.
 - Improved directional focus in rows that are still scrolling.
-- RomM's player follows the interface scale and keeps its exit shortcut visible.
-  The first Linux gamepad used on that page takes the first player slot.
 
 ## 0.25.0 — 2026-11-19
 
