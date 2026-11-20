@@ -203,38 +203,43 @@ describe('the settings screen', () => {
     )
     assert.ok(next, 'the highlight should be on a date format with another after it')
 
-    // Where a quick press finds things: the highlight on the row, and the page
-    // not yet caught up with it. Scrolled back by hand rather than raced, so the
-    // test does not depend on how fast the machine running it is.
-    await app.read(
-      `(() => {
-         let scroller = document.querySelector('[data-focused="true"]').parentElement
-         while (scroller && scroller.scrollTop === 0) scroller = scroller.parentElement
-         scroller?.scrollTo({ top: 0, behavior: 'instant' })
-         // Until the focus engine has been told, which an observer of the
-         // same element is in the same delivery as.
-         return new Promise((settle) => {
-           const watch = new IntersectionObserver(([record]) => {
-             if (record.isIntersecting) return
-             watch.disconnect()
-             settle(true)
+    try {
+      // The date row can fit above the fold in Remix. Shorten the scroll
+      // viewport to reproduce a reveal in progress regardless of UI scale.
+      const offscreen = await app.read<boolean>(
+        `(() => {
+           const scroller = document.querySelector('.settings-screen')
+           const focused = scroller.querySelector('[data-focused="true"]')
+           scroller.scrollTo({ top: 0, behavior: 'instant' })
+           const rowTop = focused.getBoundingClientRect().top
+           scroller.style.maxHeight = (rowTop - scroller.getBoundingClientRect().top - 40) + 'px'
+           // Wait for the same observer delivery that tells the focus engine.
+           return new Promise((settle) => {
+             const watch = new IntersectionObserver(([record]) => {
+               if (record.isIntersecting) return
+               clearTimeout(deadline)
+               watch.disconnect()
+               settle(rowTop >= scroller.getBoundingClientRect().bottom)
+             })
+             const deadline = setTimeout(() => {
+               watch.disconnect()
+               settle(false)
+             }, 1000)
+             watch.observe(focused)
            })
-           watch.observe(document.querySelector('[data-focused="true"]'))
-         })
-       })()`
-    )
-    assert.ok(
-      await app.read<boolean>(
-        `document.querySelector('[data-focused="true"]').getBoundingClientRect().top >= window.innerHeight`
-      ),
-      'the highlight should be below the edge of the window'
-    )
-
-    await app.press('Right')
-    await app.waitFor(
-      `document.querySelector('[data-option=${JSON.stringify(next)}]')?.matches('[data-focused="true"]') ?? false`,
-      'the highlight to move along the date formats'
-    )
+         })()`
+      )
+      assert.ok(offscreen, 'the highlight should be below the clipped settings viewport')
+      await app.press('Right')
+      await app.waitFor(
+        `document.querySelector('[data-option=${JSON.stringify(next)}]')?.matches('[data-focused="true"]') ?? false`,
+        'the highlight to move along the date formats'
+      )
+    } finally {
+      await app.read(
+        `document.querySelector('.settings-screen')?.style.removeProperty('max-height')`
+      )
+    }
   })
 })
 
