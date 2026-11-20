@@ -15,6 +15,7 @@ import { installNativePlayerGamepads } from './player-gamepads.ts'
 interface Hint {
   textContent: string | null
   style: Record<string, string>
+  remove(): void
   setAttribute(name: string, value: string): void
   addEventListener(type: 'click', listener: () => void): void
 }
@@ -92,10 +93,12 @@ function poll(now: number): void {
 page.requestAnimationFrame(poll)
 
 /**
- * Keep the way back visible during play. It also works with a pointer, but
- * stays out of the RomM page's keyboard and controller focus order.
+ * Show the way back when the page opens. The hint works with a pointer
+ * while visible and stays out of the page's keyboard and controller focus order.
  */
+const HINT_MS = 6000
 let hint: Hint | null = null
+let hideTimer: ReturnType<typeof setTimeout> | undefined
 function mountHint(): void {
   if (hint) (page.document.fullscreenElement ?? page.document.documentElement).append(hint)
 }
@@ -124,4 +127,9 @@ ipcRenderer.on('player:hint', (_event, text: string) => {
   }
   hint.textContent = text
   mountHint()
+  clearTimeout(hideTimer)
+  hideTimer = setTimeout(() => {
+    hint?.remove()
+    hint = null
+  }, HINT_MS)
 })
