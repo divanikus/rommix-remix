@@ -18,9 +18,10 @@ import time
 BUTTONS = {
     0x130: 0, 0x131: 1, 0x133: 2, 0x134: 3,
     0x136: 4, 0x137: 5, 0x138: 6, 0x139: 7, 0x13A: 8, 0x13B: 9, 0x13C: 16,
+    0x13D: 10, 0x13E: 11,
     0x220: 12, 0x221: 13, 0x222: 14, 0x223: 15,
 }
-AXES = (0, 1, 2, 5, 0x10, 0x11)
+AXES = (0, 1, 2, 3, 4, 5, 0x10, 0x11)
 
 
 def capability_bits(text, word_bits=struct.calcsize('L') * 8):
@@ -59,16 +60,20 @@ def read_pad(fd, index, name, ioctl, vendor=0):
                 raise
     # ABS_Z / ABS_RZ on xpad, Steam virtual Xbox and hid-playstation.
     # A missing axis is not a held trigger; digital triggers work independently.
+    triggers = []
     for code, button in ((2, 6), (5, 7)):
-        if code in axes:
-            buttons[button] |= normalize(axes[code]) > 0
+        info = axes.get(code)
+        amount = (normalize(info) + 1) / 2 if info and info[2] > info[1] else 0.0
+        triggers.append(1.0 if buttons[button] else amount)
+        buttons[button] |= amount > 0.5
     for code, negative, positive in ((0x10, 14, 15), (0x11, 12, 13)):
         if code in axes:
             buttons[negative] |= axes[code][0] < 0
             buttons[positive] |= axes[code][0] > 0
     return {
         'index': index, 'name': name, 'buttons': buttons,
-        'axes': [normalize(axes[code]) if code in axes else 0.0 for code in (0, 1)],
+        'axes': [normalize(axes[code]) if code in axes else 0.0 for code in (0, 1, 3, 4)],
+        'triggers': triggers,
     }
 
 

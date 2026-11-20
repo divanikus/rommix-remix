@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { BrowserWindow, ipcMain, session, shell } from 'electron'
 import { LEAVE_HOLD_MS } from '@shared/hold'
+import type { NativeGamepads } from '@shared/native-gamepad'
 import type { RommPlayer } from '@shared/types'
 import { t } from './i18n.ts'
 import { log } from './log.ts'
@@ -153,6 +154,21 @@ export class RommPlayerWindow {
 
   get isOpen(): boolean {
     return this.window !== null
+  }
+
+  /** Send controller state only to the active, configured EmulatorJS page. */
+  nativeGamepads(state: NativeGamepads): void {
+    const window = this.window
+    const server = this.store.server
+    if (!window || window.isDestroyed() || !window.isFocused() || !server || this.romId === null)
+      return
+    const current = window.webContents.getURL()
+    if (!current) return
+    const page = new URL(current)
+    const expected = new URL(playerUrl(server.baseUrl, this.romId, 'browser'))
+    if (page.origin !== expected.origin || page.pathname.replace(/\/$/, '') !== expected.pathname)
+      return
+    window.webContents.send('player:native-gamepads', state)
   }
 
   /**

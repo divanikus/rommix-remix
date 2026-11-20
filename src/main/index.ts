@@ -109,7 +109,10 @@ if (!app.requestSingleInstanceLock()) {
       app.isPackaged
         ? join(process.resourcesPath, 'linux-gamepad.py')
         : join(app.getAppPath(), 'src/main/input/linux-gamepad.py'),
-      (state) => rommix.send('input:native-gamepads', state),
+      (state) => {
+        rommix.send('input:native-gamepads', state)
+        rommix.player.nativeGamepads(state)
+      },
       (message) => log.info('input', message)
     )
     stopNativeGamepads = native.stop

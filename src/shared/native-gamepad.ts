@@ -4,6 +4,7 @@ export interface NativePad {
   name: string
   buttons: boolean[]
   axes: number[]
+  triggers?: number[]
 }
 
 export interface NativeGamepads {
@@ -27,8 +28,15 @@ export function parseNativeGamepads(value: unknown): NativeGamepads | null {
     if (typeof pad.name !== 'string' || pad.name.length > 200) return null
     if (!Array.isArray(pad.buttons) || pad.buttons.length !== 17) return null
     if (!pad.buttons.every((button) => typeof button === 'boolean')) return null
-    if (!Array.isArray(pad.axes) || pad.axes.length !== 2) return null
+    if (!Array.isArray(pad.axes) || (pad.axes.length !== 2 && pad.axes.length !== 4)) return null
     if (!pad.axes.every((axis) => Number.isFinite(axis) && Math.abs(axis) <= 1)) return null
+    if (
+      pad.triggers !== undefined &&
+      (!Array.isArray(pad.triggers) ||
+        pad.triggers.length !== 2 ||
+        !pad.triggers.every((amount) => Number.isFinite(amount) && amount >= 0 && amount <= 1))
+    )
+      return null
   }
   if (snapshot.available !== snapshot.pads.length > 0) return null
   return snapshot

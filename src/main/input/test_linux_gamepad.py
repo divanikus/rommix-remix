@@ -17,9 +17,11 @@ class Snapshots(unittest.TestCase):
             state = gamepad.read_pad(7, 0, 'fixture', self.ioctl(axes={
                 2: (minimum, minimum, maximum), 5: (maximum, minimum, maximum)}))
             self.assertEqual(state['buttons'][6:8], [False, True])
+            self.assertEqual(state['triggers'], [0, 1])
             state = gamepad.read_pad(7, 0, 'fixture', self.ioctl(axes={
                 2: (maximum, minimum, maximum), 5: (minimum, minimum, maximum)}))
             self.assertEqual(state['buttons'][6:8], [True, False])
+            self.assertEqual(state['triggers'], [1, 0])
 
     def test_digital_triggers_and_select_without_analog_axes(self):
         state = gamepad.read_pad(7, 0, 'fixture', self.ioctl(keys=(0x138, 0x139, 0x13A)))
@@ -48,7 +50,15 @@ class Snapshots(unittest.TestCase):
         state = gamepad.read_pad(7, 0, 'fixture', self.ioctl(
             keys=(0x130, 0x134, 0x13B, 0x13C, 0x220), axes={0x10: (1, -1, 1)}))
         self.assertEqual([i for i, held in enumerate(state['buttons']) if held], [0, 3, 9, 12, 15, 16])
-        self.assertEqual(state['axes'], [0, 0])
+        self.assertEqual(state['axes'], [0, 0, 0, 0])
+
+    def test_right_stick_and_partial_trigger_are_available_for_games(self):
+        state = gamepad.read_pad(7, 0, 'fixture', self.ioctl(
+            keys=(0x13E,), axes={2: (25, 0, 100), 3: (-5, -10, 10), 4: (10, -10, 10)}))
+        self.assertEqual(state['axes'], [0, 0, -0.5, 1])
+        self.assertEqual(state['triggers'], [0.25, 0])
+        self.assertFalse(state['buttons'][6])
+        self.assertTrue(state['buttons'][11])
 
     def test_disconnect_is_not_treated_as_missing_axis(self):
         def gone(*args):

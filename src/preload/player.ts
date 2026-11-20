@@ -1,10 +1,13 @@
-import { ipcRenderer } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { LEAVE_HOLD_MS, type PadState, startHeld } from '../shared/hold.ts'
+import type { NativeGamepads, NativePad } from '../shared/native-gamepad.ts'
+import { installNativePlayerGamepads } from './player-gamepads.ts'
 
 /**
  * The preload of RomM's player window, which is RomM's page and not RomMix's.
  *
- * It exposes nothing to the page. It watches the pads for Start held down, the
+ * The browser player can read controller snapshots, with no general IPC
+ * access. This preload watches the pads for Start held down, the
  * same way out a native emulator has, and asks the main process to close the
  * window. Watched here rather than from RomMix's own window behind, so the
  * way out does not depend on a covered window still reading the pads.
@@ -24,9 +27,40 @@ interface Hint {
  * `Blob` and `fetch` across the whole of the main process.
  */
 const page = globalThis as unknown as {
+  location: { pathname: string }
   navigator: { getGamepads(): readonly (PadState | null)[] }
-  document: { createElement(tag: 'div'): Hint; documentElement: { append(node: Hint): void } }
+  document: {
+    hasFocus(): boolean
+    createElement(tag: 'div'): Hint
+    documentElement: { append(node: Hint): void }
+  }
   requestAnimationFrame(callback: (now: number) => void): number
+}
+
+let native: NativeGamepads | null = null
+let received = -Infinity
+let armed = false
+function readNative(): NativePad[] | null {
+  if (!native?.available || performance.now() - received > 1000) {
+    armed = false
+    return null
+  }
+  if (!page.document.hasFocus()) {
+    armed = false
+    return []
+  }
+  // Do not deliver the button that opened the player until it is released.
+  if (!armed) armed = native.pads.every((pad) => !pad.buttons.some(Boolean))
+  return armed ? native.pads : []
+}
+
+if (process.isMainFrame && /\/rom\/\d+\/ejs\/?$/.test(page.location.pathname)) {
+  ipcRenderer.on('player:native-gamepads', (_event, state: NativeGamepads) => {
+    native = state
+    received = performance.now()
+  })
+  contextBridge.exposeInMainWorld('rommixPlayerPads', { read: readNative })
+  contextBridge.executeInMainWorld({ func: installNativePlayerGamepads })
 }
 
 /** How long the hint over the player stays up, and how long it takes to fade. */
@@ -37,7 +71,11 @@ let since: number | null = null
 let asked = false
 
 function poll(now: number): void {
-  const held = page.navigator.getGamepads().some((pad) => pad !== null && startHeld(pad))
+  const pads = readNative()
+  const held =
+    pads === null
+      ? page.navigator.getGamepads().some((pad) => pad !== null && startHeld(pad))
+      : pads.some((pad) => pad.buttons[9])
   if (!held) since = null
   else if (since === null) since = now
   else if (!asked && now - since >= LEAVE_HOLD_MS) {
