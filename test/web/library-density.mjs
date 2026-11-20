@@ -211,10 +211,10 @@ try {
   await page.evaluate(() => {
     const list = rommix.library.roms
     rommix.library.roms = async (query) => {
-      const page = await list(query)
+      const result = await list(query)
       return {
-        ...page,
-        items: page.items.map((rom) => {
+        ...result,
+        items: result.items.map((rom) => {
           if (rom.id === 300000) return { ...rom, path_cover_small: 'fixture-portrait' }
           if (rom.id === 300001) return { ...rom, path_cover_small: 'fixture-wide' }
           if (rom.id === 300002) {
