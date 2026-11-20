@@ -7,7 +7,7 @@ export const ptBR: Catalog = {
     'Ative se o seu servidor RomM usa um certificado criado por você.',
   'game.playOnRomm': 'Jogar no RomM',
   'game.streamFromRomm': 'Transmitir do RomM',
-  'player.howToLeave': 'Segure Start ou Esc para voltar ao RomMix',
+  'player.howToLeave': 'Segure Start / Options ou Esc para voltar ao RomMix',
   'emulator.locateName': 'AppImage neste dispositivo',
   'emulator.locateDetail': 'selecione um arquivo já baixado',
   'emulator.locateTitle': 'Escolha o AppImage de {name}',

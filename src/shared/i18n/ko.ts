@@ -6,7 +6,7 @@ export const ko: Catalog = {
   'connect.acceptSelfSignedHint': 'RomM 서버에서 직접 만든 인증서를 사용하는 경우 켜세요.',
   'game.playOnRomm': 'RomM에서 플레이',
   'game.streamFromRomm': 'RomM에서 스트리밍',
-  'player.howToLeave': 'Start 또는 Esc를 길게 눌러 RomMix로 돌아가기',
+  'player.howToLeave': 'Start / Options 또는 Esc를 길게 눌러 RomMix로 돌아가기',
   'emulator.locateName': '이 기기의 AppImage',
   'emulator.locateDetail': '이미 다운로드한 파일을 선택하세요',
   'emulator.locateTitle': '{name} AppImage 선택',

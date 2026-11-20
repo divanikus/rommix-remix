@@ -7,7 +7,7 @@ export const it: Catalog = {
     'Attiva questa opzione se il server RomM usa un certificato creato da te.',
   'game.playOnRomm': 'Gioca su RomM',
   'game.streamFromRomm': 'Riproduci in streaming da RomM',
-  'player.howToLeave': 'Tieni premuto Start o Esc per tornare a RomMix',
+  'player.howToLeave': 'Tieni premuto Start / Options o Esc per tornare a RomMix',
   'emulator.locateName': 'AppImage su questo dispositivo',
   'emulator.locateDetail': 'seleziona un file già scaricato',
   'emulator.locateTitle': 'Scegli l’AppImage di {name}',

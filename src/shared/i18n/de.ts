@@ -673,7 +673,7 @@ export const de: Catalog = {
   'game.play': 'Spielen',
   'game.playOnRomm': 'Auf RomM spielen',
   'game.streamFromRomm': 'Von RomM streamen',
-  'player.howToLeave': 'Start oder Esc gedrückt halten, um zu RomMix zurückzukehren',
+  'player.howToLeave': 'Start / Options oder Esc gedrückt halten, um zu RomMix zurückzukehren',
   'game.running': 'Läuft…',
   'game.newFiles_one': '{count} neue Datei · {size}',
   'game.newFiles_other': '{count} neue Dateien · {size}',

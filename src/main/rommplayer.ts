@@ -8,6 +8,8 @@ import { log } from './log.ts'
 import { RommClient, RommError } from './romm/index.ts'
 import type { Store } from './store.ts'
 import { isWebAddress } from './weblink.ts'
+import { PlayerNativeInput } from './player-input.ts'
+import { uiScaleFor } from './ui-scale.ts'
 
 /**
  * The session the player pages run in.
@@ -143,6 +145,7 @@ export class RommPlayerWindow {
   private listening = false
   private leaving = false
   private romId: number | null = null
+  private input = new PlayerNativeInput()
   /** Settles once the open window has closed. See `shutdown`. */
   private closing: Promise<unknown> | null = null
 
@@ -168,7 +171,12 @@ export class RommPlayerWindow {
     const expected = new URL(playerUrl(server.baseUrl, this.romId, 'browser'))
     if (page.origin !== expected.origin || page.pathname.replace(/\/$/, '') !== expected.pathname)
       return
-    window.webContents.send('player:native-gamepads', state)
+    const frame = this.input.read(state)
+    window.webContents.send('player:native-gamepads', frame.state)
+    if (frame.exit && !this.leaving) {
+      log.info('player', 'Start held on a native gamepad')
+      this.leave()
+    }
   }
 
   /**
@@ -268,7 +276,22 @@ export class RommPlayerWindow {
     this.window = window
     this.romId = romId
     this.leaving = false
-    window.once('ready-to-show', () => window.show())
+    this.input = new PlayerNativeInput()
+    window.on('blur', () => this.input.pause())
+    const rescale = (): void => {
+      if (window.isDestroyed()) return
+      const [width, height] = window.getContentSize()
+      const factor = uiScaleFor(height, this.store.settings.uiScale)
+      if (Math.abs(window.webContents.getZoomFactor() - factor) < 0.001) return
+      window.webContents.setZoomFactor(factor)
+      log.info('player', 'scaled the player interface', { width, height, factor })
+    }
+    window.on('resize', rescale)
+    window.on('enter-full-screen', rescale)
+    window.once('ready-to-show', () => {
+      window.show()
+      rescale()
+    })
     this.listen()
 
     // Any other close — the window manager, the compositor, a key the desktop
@@ -308,9 +331,10 @@ export class RommPlayerWindow {
       if (this.leaving) event.preventDefault()
     })
 
-    window.webContents.on('did-finish-load', () =>
+    window.webContents.on('did-finish-load', () => {
+      rescale()
       window.webContents.send('player:hint', t('player.howToLeave'))
-    )
+    })
     /**
      * Escape held, and acted on the moment the hold is long enough.
      *
@@ -424,9 +448,9 @@ export class RommPlayerWindow {
   private listen(): void {
     if (this.listening) return
     this.listening = true
-    ipcMain.on('player:leave', (event) => {
+    ipcMain.on('player:leave', (event, reason: unknown) => {
       if (!this.window || event.sender !== this.window.webContents) return
-      log.info('player', 'Start held')
+      log.info('player', reason === 'button' ? 'exit button selected' : 'Start held')
       this.leave()
     })
   }

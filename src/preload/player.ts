@@ -7,10 +7,8 @@ import { installNativePlayerGamepads } from './player-gamepads.ts'
  * The preload of RomM's player window, which is RomM's page and not RomMix's.
  *
  * The browser player can read controller snapshots, with no general IPC
- * access. This preload watches the pads for Start held down, the
- * same way out a native emulator has, and asks the main process to close the
- * window. Watched here rather than from RomMix's own window behind, so the
- * way out does not depend on a covered window still reading the pads.
+ * access. The native input source handles Start in the main process. The
+ * preload keeps the same exit gesture for Chromium gamepads.
  */
 
 /** The hint element, as far as this file touches it. */
@@ -18,7 +16,10 @@ interface Hint {
   textContent: string | null
   style: Record<string, string>
   setAttribute(name: string, value: string): void
-  remove(): void
+  addEventListener(type: 'click', listener: () => void): void
+}
+interface HintContainer {
+  append(node: Hint): void
 }
 
 /**
@@ -31,8 +32,10 @@ const page = globalThis as unknown as {
   navigator: { getGamepads(): readonly (PadState | null)[] }
   document: {
     hasFocus(): boolean
-    createElement(tag: 'div'): Hint
-    documentElement: { append(node: Hint): void }
+    createElement(tag: 'button'): Hint
+    documentElement: HintContainer
+    fullscreenElement: HintContainer | null
+    addEventListener(type: 'fullscreenchange', listener: () => void): void
   }
   requestAnimationFrame(callback: (now: number) => void): number
 }
@@ -40,8 +43,14 @@ const page = globalThis as unknown as {
 let native: NativeGamepads | null = null
 let received = -Infinity
 let armed = false
+const browserPlayer = process.isMainFrame && /\/rom\/\d+\/ejs\/?$/.test(page.location.pathname)
+// Give the Linux helper a chance to report before the emulator assigns
+// Chromium's devices to players during a document reload.
+const initialWait = browserPlayer && process.platform === 'linux' ? performance.now() + 600 : 0
 function readNative(): NativePad[] | null {
-  if (!native?.available || performance.now() - received > 1000) {
+  const now = performance.now()
+  if (native === null && now < initialWait) return []
+  if (!native?.available || now - received > 1000) {
     armed = false
     return null
   }
@@ -54,7 +63,7 @@ function readNative(): NativePad[] | null {
   return armed ? native.pads : []
 }
 
-if (process.isMainFrame && /\/rom\/\d+\/ejs\/?$/.test(page.location.pathname)) {
+if (browserPlayer) {
   ipcRenderer.on('player:native-gamepads', (_event, state: NativeGamepads) => {
     native = state
     received = performance.now()
@@ -63,55 +72,56 @@ if (process.isMainFrame && /\/rom\/\d+\/ejs\/?$/.test(page.location.pathname)) {
   contextBridge.executeInMainWorld({ func: installNativePlayerGamepads })
 }
 
-/** How long the hint over the player stays up, and how long it takes to fade. */
-const HINT_MS = 6000
-const FADE_MS = 400
-
 let since: number | null = null
 let asked = false
+function requestLeave(reason: 'start' | 'button'): void {
+  if (asked) return
+  asked = true
+  ipcRenderer.send('player:leave', reason)
+}
 
 function poll(now: number): void {
-  const pads = readNative()
   const held =
-    pads === null
-      ? page.navigator.getGamepads().some((pad) => pad !== null && startHeld(pad))
-      : pads.some((pad) => pad.buttons[9])
+    readNative() === null &&
+    page.navigator.getGamepads().some((pad) => pad !== null && startHeld(pad))
   if (!held) since = null
   else if (since === null) since = now
-  else if (!asked && now - since >= LEAVE_HOLD_MS) {
-    asked = true
-    ipcRenderer.send('player:leave')
-  }
+  else if (now - since >= LEAVE_HOLD_MS) requestLeave('start')
   page.requestAnimationFrame(poll)
 }
 page.requestAnimationFrame(poll)
 
 /**
- * The way back, said over the page as it opens: the running overlay that says
- * it otherwise is in RomMix's window, under this one. The sentence comes from
- * the main process, which has the catalogue.
+ * Keep the way back visible during play. It also works with a pointer, but
+ * stays out of the RomM page's keyboard and controller focus order.
  */
+let hint: Hint | null = null
+function mountHint(): void {
+  if (hint) (page.document.fullscreenElement ?? page.document.documentElement).append(hint)
+}
+page.document.addEventListener('fullscreenchange', mountHint)
 ipcRenderer.on('player:hint', (_event, text: string) => {
-  const hint = page.document.createElement('div')
+  if (!hint) {
+    hint = page.document.createElement('button')
+    hint.setAttribute('type', 'button')
+    hint.setAttribute('tabindex', '-1')
+    hint.setAttribute('data-rommix-player-exit', 'true')
+    hint.addEventListener('click', () => requestLeave('button'))
+    Object.assign(hint.style, {
+      position: 'fixed',
+      top: '12px',
+      right: '12px',
+      zIndex: '2147483647',
+      maxWidth: 'calc(100% - 24px)',
+      padding: '6px 10px',
+      border: '1px solid rgba(255, 255, 255, 0.25)',
+      borderRadius: '8px',
+      background: 'rgba(11, 13, 19, 0.88)',
+      color: '#ffffff',
+      cursor: 'pointer',
+      font: '600 13px system-ui, sans-serif'
+    })
+  }
   hint.textContent = text
-  hint.setAttribute('role', 'status')
-  Object.assign(hint.style, {
-    position: 'fixed',
-    top: '24px',
-    left: '50%',
-    transform: 'translateX(-50%)',
-    zIndex: '2147483647',
-    padding: '12px 20px',
-    borderRadius: '12px',
-    background: 'rgba(11, 13, 19, 0.88)',
-    color: '#ffffff',
-    font: '600 18px system-ui, sans-serif',
-    pointerEvents: 'none',
-    transition: `opacity ${FADE_MS}ms`
-  })
-  page.document.documentElement.append(hint)
-  setTimeout(() => {
-    hint.style.opacity = '0'
-    setTimeout(() => hint.remove(), FADE_MS)
-  }, HINT_MS)
+  mountHint()
 })

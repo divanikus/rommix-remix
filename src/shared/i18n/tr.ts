@@ -7,7 +7,7 @@ export const tr: Catalog = {
     'RomM sunucunuz kendi oluşturduğunuz bir sertifikayı kullanıyorsa bu seçeneği açın.',
   'game.playOnRomm': 'RomM üzerinden oyna',
   'game.streamFromRomm': 'RomM üzerinden yayınla',
-  'player.howToLeave': 'RomMix’e dönmek için Start veya Esc tuşunu basılı tutun',
+  'player.howToLeave': 'RomMix’e dönmek için Start / Options veya Esc tuşunu basılı tutun',
   'emulator.locateName': 'Bu cihazdaki AppImage',
   'emulator.locateDetail': 'önceden indirdiğiniz bir dosyayı seçin',
   'emulator.locateTitle': '{name} AppImage dosyasını seçin',

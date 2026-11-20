@@ -6,7 +6,7 @@ export const zhTW: Catalog = {
   'connect.acceptSelfSignedHint': '如果你的 RomM 伺服器使用自行建立的憑證，請開啟此選項。',
   'game.playOnRomm': '在 RomM 中遊玩',
   'game.streamFromRomm': '從 RomM 串流',
-  'player.howToLeave': '按住 Start 或 Esc 返回 RomMix',
+  'player.howToLeave': '按住 Start / Options 或 Esc 返回 RomMix',
   'emulator.locateName': '此裝置上的 AppImage',
   'emulator.locateDetail': '選取已下載的檔案',
   'emulator.locateTitle': '選取 {name} 的 AppImage',

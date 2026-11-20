@@ -659,7 +659,7 @@ export const en = {
   'game.play': 'Play',
   'game.playOnRomm': 'Play on RomM',
   'game.streamFromRomm': 'Stream from RomM',
-  'player.howToLeave': 'Hold Start or Esc to come back to RomMix',
+  'player.howToLeave': 'Hold Start / Options or Esc to come back to RomMix',
   'game.running': 'Running…',
   'game.newFiles_one': '{count} new file · {size}',
   'game.newFiles_other': '{count} new files · {size}',

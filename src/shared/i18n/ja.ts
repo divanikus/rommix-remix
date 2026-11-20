@@ -7,7 +7,7 @@ export const ja: Catalog = {
     'RomM サーバーで自分で作成した証明書を使用している場合は有効にしてください。',
   'game.playOnRomm': 'RomM でプレイ',
   'game.streamFromRomm': 'RomM からストリーミング',
-  'player.howToLeave': 'Start または Esc を長押しして RomMix に戻る',
+  'player.howToLeave': 'Start / Options または Esc を長押しして RomMix に戻る',
   'emulator.locateName': 'この端末の AppImage',
   'emulator.locateDetail': 'ダウンロード済みのファイルを選択',
   'emulator.locateTitle': '{name} の AppImage を選択',

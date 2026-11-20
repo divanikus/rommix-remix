@@ -7,7 +7,8 @@ export const hu: Catalog = {
     'Kapcsold be, ha a RomM-kiszolgálód saját készítésű tanúsítványt használ.',
   'game.playOnRomm': 'Játék a RomM-ban',
   'game.streamFromRomm': 'Streamelés a RomM-ból',
-  'player.howToLeave': 'Tartsd lenyomva a Start vagy az Esc gombot a RomMixbe való visszatéréshez',
+  'player.howToLeave':
+    'Tartsd lenyomva a Start / Options vagy az Esc gombot a RomMixbe való visszatéréshez',
   'emulator.locateName': 'AppImage ezen az eszközön',
   'emulator.locateDetail': 'válassz ki egy már letöltött fájlt',
   'emulator.locateTitle': 'Válaszd ki a(z) {name} AppImage-fájlját',

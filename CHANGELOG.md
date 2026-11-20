@@ -13,6 +13,8 @@ before releasing if you want prose instead. See [Releasing](README.md#releasing)
   Turn off Preserve cover proportions in Settings → General to use equal-width
   cards.
 - Improved directional focus in rows that are still scrolling.
+- RomM's player follows the interface scale and keeps its exit shortcut visible.
+  The first Linux gamepad used on that page takes the first player slot.
 
 ## 0.25.0 — 2026-11-19
 

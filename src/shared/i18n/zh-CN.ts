@@ -6,7 +6,7 @@ export const zhCN: Catalog = {
   'connect.acceptSelfSignedHint': '如果你的 RomM 服务器使用你自行创建的证书，请开启此选项。',
   'game.playOnRomm': '在 RomM 中游玩',
   'game.streamFromRomm': '从 RomM 串流',
-  'player.howToLeave': '按住 Start 或 Esc 返回 RomMix',
+  'player.howToLeave': '按住 Start / Options 或 Esc 返回 RomMix',
   'emulator.locateName': '此设备上的 AppImage',
   'emulator.locateDetail': '选择已下载的文件',
   'emulator.locateTitle': '选择 {name} 的 AppImage',

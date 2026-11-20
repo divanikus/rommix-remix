@@ -7,7 +7,7 @@ export const cs: Catalog = {
     'Zapněte, pokud váš server RomM používá vámi vytvořený certifikát.',
   'game.playOnRomm': 'Hrát v RomM',
   'game.streamFromRomm': 'Streamovat z RomM',
-  'player.howToLeave': 'Podržením Start nebo Esc se vrátíte do RomMixu',
+  'player.howToLeave': 'Podržením Start / Options nebo Esc se vrátíte do RomMixu',
   'emulator.locateName': 'AppImage v tomto zařízení',
   'emulator.locateDetail': 'vyberte již stažený soubor',
   'emulator.locateTitle': 'Vyberte AppImage pro {name}',

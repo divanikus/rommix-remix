@@ -7,7 +7,7 @@ export const ro: Catalog = {
     'Activează dacă serverul tău RomM folosește un certificat creat de tine.',
   'game.playOnRomm': 'Joacă în RomM',
   'game.streamFromRomm': 'Redă prin streaming din RomM',
-  'player.howToLeave': 'Ține apăsat Start sau Esc pentru a reveni în RomMix',
+  'player.howToLeave': 'Ține apăsat Start / Options sau Esc pentru a reveni în RomMix',
   'emulator.locateName': 'AppImage pe acest dispozitiv',
   'emulator.locateDetail': 'alege un fișier deja descărcat',
   'emulator.locateTitle': 'Alege AppImage pentru {name}',

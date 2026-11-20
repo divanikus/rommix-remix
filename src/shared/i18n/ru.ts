@@ -7,7 +7,7 @@ export const ru: Catalog = {
     'Включите, если ваш сервер RomM использует созданный вами сертификат.',
   'game.playOnRomm': 'Играть через RomM',
   'game.streamFromRomm': 'Трансляция с RomM',
-  'player.howToLeave': 'Удерживайте Start или Esc, чтобы вернуться в RomMix',
+  'player.howToLeave': 'Удерживайте Start / Options или Esc, чтобы вернуться в RomMix',
   'emulator.locateName': 'AppImage на этом устройстве',
   'emulator.locateDetail': 'выберите ранее скачанный файл',
   'emulator.locateTitle': 'Выберите AppImage для {name}',
