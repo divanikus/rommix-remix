@@ -387,6 +387,34 @@
   justify-content: center;
   gap: 14px;
 }
+/* Leave room for the preview and the hint bar on a short landscape screen. */
+@media (max-height: 840px) and (min-width: 651px) {
+  .game-screen .panel {
+    margin-top: 12px;
+  }
+  .game-screen .panel__body {
+    padding-block-start: 12px;
+  }
+  .game-screen .panel__body > .game-overview {
+    margin-top: 6px;
+  }
+  .game-screen .tabs {
+    gap: 4px;
+  }
+  .game-screen .tab {
+    gap: 6px;
+    padding: 6px 7px;
+  }
+  .game-screen .tabs__bumper {
+    margin-inline: 3px;
+  }
+  .game-overview {
+    gap: 14px;
+  }
+  .game-media--overview {
+    --preview-height: clamp(220px, 31vh, 280px);
+  }
+}
 @media (max-width: 1050px) {
   .game-screen .game-hero__body {
     grid-template-columns: 22% minmax(0, 1fr);

@@ -246,6 +246,7 @@ try {
 
   for (const viewport of [
     { width: 1600, height: 900 },
+    { width: 1280, height: 800 },
     { width: 1280, height: 720 },
     { width: 960, height: 540 },
     { width: 1920, height: 1080 }
@@ -253,6 +254,9 @@ try {
     await page.setViewportSize(viewport)
     await page.locator('[data-tab=overview]').click()
     await page.locator('[data-action=choose-version]').scrollIntoViewIfNeeded()
+    if (viewport.height === 800) {
+      await page.locator('.game-screen').evaluate((screen) => (screen.scrollTop = 0))
+    }
     const geometry = await page.evaluate(() => {
       const rect = (q) => {
         const r = document.querySelector(q).getBoundingClientRect()
@@ -264,7 +268,10 @@ try {
         version: rect('.game-version'),
         cover: rect('.game-hero__art'),
         facts: rect('.game-facts'),
-        video: rect('.game-video')
+        video: rect('.game-video'),
+        hints: rect('.game-screen .hints'),
+        summaryLines: getComputedStyle(document.querySelector('.game-hero__summary'))
+          .webkitLineClamp
       }
     })
     assert(
@@ -276,6 +283,10 @@ try {
     assert(geometry.version.height <= 44, 'Compact version control')
     assert(geometry.facts.bottom < viewport.height - 60, 'Metadata fits above footer at each scale')
     assert(geometry.video.height >= 220 && geometry.video.height <= 340, 'Bounded overview preview')
+    if (viewport.height === 800) {
+      assert(geometry.video.bottom <= geometry.hints.top - 4, 'Deck preview fits above the hints')
+      assert.equal(geometry.summaryLines, '3', 'Keep the same summary excerpt on Deck')
+    }
     console.log('Layout', viewport.width, JSON.stringify(geometry))
 
     assert.equal(
