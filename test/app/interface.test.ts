@@ -677,6 +677,8 @@ describe('driving it with a controller', () => {
  */
 
 describe('narrowing the library down', () => {
+  const gameBoyId = 2
+
   test('a system card asks the server for that platform and nothing else', async () => {
     const megadrive = server.platforms[0]
     await app.browsePlatform(megadrive.id)
@@ -708,7 +710,7 @@ describe('narrowing the library down', () => {
   })
 
   test('and another system shows its own games', async () => {
-    await app.browsePlatform(2)
+    await app.browsePlatform(gameBoyId)
     await app.waitFor(`document.querySelector('[data-rom="2"]')`, 'the Game Boy library')
   })
 
@@ -724,11 +726,21 @@ describe('narrowing the library down', () => {
       'the downloaded scope to be chosen'
     )
 
-    // Nothing has been downloaded in this file, so the honest answer is none —
-    // and the interesting half is that it did not go and ask.
+    // Nothing has been downloaded in this file, so the grid must be empty.
+    // Entering Game Boy scheduled metadata prefetch for adjacent systems while
+    // All games was active. It can reach the server during the switch. Check
+    // for a query of the current platform or the whole library.
     await app.waitFor(`!document.querySelector('[data-rom]')`, 'the grid to empty')
+    const libraryQueries = server.asked.slice(askedSoFar).filter((one) => {
+      const { pathname, searchParams } = new URL(one.path, server.baseUrl)
+      const platforms = searchParams.getAll('platform_ids')
+      return (
+        pathname === '/api/roms' &&
+        (platforms.length === 0 || platforms.includes(String(gameBoyId)))
+      )
+    })
     assert.deepEqual(
-      server.asked.slice(askedSoFar).filter((one) => one.path.startsWith('/api/roms?')),
+      libraryQueries,
       [],
       'the downloaded scope should not have asked the server for a library'
     )
