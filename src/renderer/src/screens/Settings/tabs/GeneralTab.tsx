@@ -119,6 +119,15 @@ export function GeneralTab({ open }: { open?: SettingsTarget }): JSX.Element {
         onChange={(next) => void saveSettings({ uiScale: next === 'auto' ? 0 : Number(next) })}
       />
       <Toggle
+        setting="cover-proportions"
+        label={t('settings.coverProportions')}
+        hint={t('settings.coverProportionsHint')}
+        on={settings?.coverProportions !== false}
+        onToggle={() =>
+          void saveSettings({ coverProportions: settings?.coverProportions === false })
+        }
+      />
+      <Toggle
         label={t('settings.sounds')}
         hint={t('settings.soundsHint')}
         on={settings?.navigationSounds ?? true}

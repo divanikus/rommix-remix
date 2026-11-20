@@ -847,6 +847,9 @@ export const it: Catalog = {
   'settings.disconnect': 'Disconnetti',
   'settings.disconnected': 'Disconnesso da RomM',
   'settings.interface': 'Interfaccia',
+  'settings.coverProportions': 'Mantieni le proporzioni delle copertine',
+  'settings.coverProportionsHint':
+    'Usa le proporzioni originali nella griglia e nelle raccolte in fila. Disattiva per avere schede della stessa larghezza.',
   'settings.sounds': 'Suoni di navigazione',
   'settings.soundsHint': 'Un clic discreto spostando il focus, selezionando o tornando indietro.',
   'settings.scaleHint':

@@ -789,6 +789,9 @@ export const ko: Catalog = {
   'settings.disconnect': '연결 해제',
   'settings.disconnected': 'RomM 연결 해제됨',
   'settings.interface': '인터페이스',
+  'settings.coverProportions': '표지 비율 유지',
+  'settings.coverProportionsHint':
+    '그리드와 진열대에서 표지의 비율을 유지합니다. 카드 너비를 같게 하려면 끄세요.',
   'settings.sounds': '탐색 소리',
   'settings.soundsHint': '선택 위치를 옮기거나 선택 또는 뒤로 이동할 때 작은 소리가 납니다.',
   'settings.scaleHint': '자동은 창 크기에 맞추며 백분율은 고정 배율을 설정합니다.',

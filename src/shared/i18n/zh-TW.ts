@@ -762,6 +762,8 @@ export const zhTW: Catalog = {
   'settings.disconnect': '中斷連線',
   'settings.disconnected': '已中斷 RomM 連線',
   'settings.interface': '介面',
+  'settings.coverProportions': '保留封面比例',
+  'settings.coverProportionsHint': '在網格和陳列列中保留封面的原始比例。關閉後卡片寬度一致。',
   'settings.sounds': '導覽音效',
   'settings.soundsHint': '移動焦點、選擇或返回時播放輕微點擊聲。',
   'settings.scaleHint': '自動模式依視窗大小調整介面。百分比選項使用固定縮放。',

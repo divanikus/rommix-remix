@@ -806,6 +806,9 @@ export const uk: Catalog = {
   'settings.disconnect': 'Відключитися',
   'settings.disconnected': 'Відключено від RomM',
   'settings.interface': 'Інтерфейс',
+  'settings.coverProportions': 'Зберігати пропорції обкладинок',
+  'settings.coverProportionsHint':
+    'Показувати обкладинки в початкових пропорціях у сітці та на полицях. Вимкніть для карток однакової ширини.',
   'settings.sounds': 'Звуки навігації',
   'settings.soundsHint': 'Тихе клацання під час переміщення виділення, вибору й повернення.',
   'settings.scaleHint':

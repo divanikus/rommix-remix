@@ -807,6 +807,9 @@ export const ru: Catalog = {
   'settings.disconnect': 'Отключиться',
   'settings.disconnected': 'Отключено от RomM',
   'settings.interface': 'Интерфейс',
+  'settings.coverProportions': 'Сохранять пропорции обложек',
+  'settings.coverProportionsHint':
+    'Показывать обложки в исходных пропорциях в сетке и на полках. Выключите, чтобы карточки были одной ширины.',
   'settings.sounds': 'Звуки навигации',
   'settings.soundsHint': 'Тихий щелчок при перемещении выделения, выборе и возврате.',
   'settings.scaleHint':

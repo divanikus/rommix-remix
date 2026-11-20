@@ -33,7 +33,8 @@ import { Toasts } from './Toasts'
 /** Library-first shell. Utility routes remain available in the account/tools menu. */
 export function App(): JSX.Element {
   const { t } = useI18n()
-  const { route, goBack, canGoBack, navigate, offline, runningRomId, runningEmulator } = useApp()
+  const { route, goBack, canGoBack, navigate, offline, runningRomId, runningEmulator, settings } =
+    useApp()
   const { enterZone, retainFocus } = useFocusContext()
   const keyLabel = useKeyLabel()
   const inPlatform = route.name === 'library' && route.view?.platformId !== undefined
@@ -96,7 +97,12 @@ export function App(): JSX.Element {
       </div>
     )
   return (
-    <div className="app" data-screen={route.name} data-utility={inUtility}>
+    <div
+      className="app"
+      data-screen={route.name}
+      data-utility={inUtility}
+      data-cover-proportions={settings?.coverProportions !== false}
+    >
       {inUtility ? (
         <UtilityNavigation route={route} onBack={back} onMenu={() => setToolsOpen(true)} />
       ) : !inPlatform && route.name !== 'game' ? (

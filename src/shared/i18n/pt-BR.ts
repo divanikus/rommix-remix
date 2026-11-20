@@ -849,6 +849,9 @@ export const ptBR: Catalog = {
   'settings.disconnect': 'Desconectar',
   'settings.disconnected': 'Desconectado do RomM',
   'settings.interface': 'Interface',
+  'settings.coverProportions': 'Manter as proporções das capas',
+  'settings.coverProportionsHint':
+    'Mantém as proporções das capas na grade e nas prateleiras. Desative para usar cartões com a mesma largura.',
   'settings.sounds': 'Sons de navegação',
   'settings.soundsHint': 'Um clique suave ao mover o destaque, escolher ou voltar.',
   'settings.scaleHint':

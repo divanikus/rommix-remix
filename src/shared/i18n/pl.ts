@@ -808,6 +808,9 @@ export const pl: Catalog = {
   'settings.disconnect': 'Rozłącz',
   'settings.disconnected': 'Rozłączono z RomM',
   'settings.interface': 'Interfejs',
+  'settings.coverProportions': 'Zachowaj proporcje okładek',
+  'settings.coverProportionsHint':
+    'Używa proporcji okładek w siatkach i na półkach. Wyłącz, aby karty miały jednakową szerokość.',
   'settings.sounds': 'Dźwięki nawigacji',
   'settings.soundsHint': 'Ciche kliknięcie podczas przesuwania zaznaczenia, wybierania i powrotu.',
   'settings.scaleHint':

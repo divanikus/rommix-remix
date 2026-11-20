@@ -10,6 +10,8 @@ before releasing if you want prose instead. See [Releasing](README.md#releasing)
   AppImage picker, opt-in self-signed certificates and RetroArch save/state fixes.
 - Game covers keep their proportions in the library grid and cover shelves.
   The three library sizes set the height, and wider covers get more room.
+  Turn off Preserve cover proportions in Settings → General to use equal-width
+  cards.
 - Improved directional focus in rows that are still scrolling.
 
 ## 0.25.0 — 2026-11-19

@@ -942,6 +942,9 @@ export const de: Catalog = {
   'settings.disconnect': 'Verbindung trennen',
   'settings.disconnected': 'Verbindung zu RomM getrennt',
   'settings.interface': 'Oberfläche',
+  'settings.coverProportions': 'Coverproportionen beibehalten',
+  'settings.coverProportionsHint':
+    'Die Cover behalten im Raster und in den Reihen ihre Proportionen. Für gleich breite Karten ausschalten.',
   'settings.sounds': 'Navigationsklänge',
   'settings.soundsHint':
     'Ein leises Klicken, wenn die Auswahl wandert, bestätigt oder zurückgegangen wird.',

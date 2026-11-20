@@ -567,6 +567,7 @@ const SETTINGS: Settings = {
   syncSaves: true,
   syncStates: true,
   navigationSounds: true,
+  coverProportions: true,
   acceptSelfSigned: false,
   confirmUninstall: true,
   confirmSavePush: true,

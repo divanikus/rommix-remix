@@ -811,6 +811,9 @@ export const ro: Catalog = {
   'settings.disconnect': 'Deconectează',
   'settings.disconnected': 'Deconectat de la RomM',
   'settings.interface': 'Interfață',
+  'settings.coverProportions': 'Păstrează proporțiile coperților',
+  'settings.coverProportionsHint':
+    'Păstrează proporțiile în grile și pe rafturi. Dezactivează pentru carduri cu aceeași lățime.',
   'settings.sounds': 'Sunete de navigare',
   'settings.soundsHint': 'Un clic discret când muți selecția, alegi sau revii.',
   'settings.scaleHint':

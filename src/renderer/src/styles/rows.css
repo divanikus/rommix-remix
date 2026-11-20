@@ -47,23 +47,30 @@
 :is(.row, .grid) > .card[data-rom]:not(.card--scene) {
   flex: 0 0 auto;
   align-self: flex-start;
-  width: max-content;
+  width: var(--cover-width, 168px);
   max-width: 100%;
 }
 
-:is(.row, .grid) > .card[data-rom]:not(.card--scene) .cover {
+[data-cover-proportions='true'] :is(.row, .grid) > .card[data-rom]:not(.card--scene) {
+  width: max-content;
+}
+
+[data-cover-proportions='true'] :is(.row, .grid) > .card[data-rom]:not(.card--scene) .cover {
   min-width: var(--cover-width, 168px);
 }
 
 /* In flow, so the picture is what sizes the card; the spacer would stack its
    own height on top. */
-:is(.row, .grid) > .card[data-rom]:not(.card--scene) .cover:has(> img)::before {
+[data-cover-proportions='true']
+  :is(.row, .grid)
+  > .card[data-rom]:not(.card--scene)
+  .cover:has(> img)::before {
   display: none;
 }
 
 /* `object-fit` centres a picture narrower than 3:4 in the floor rather than
    stretching it. */
-:is(.row, .grid) > .card[data-rom]:not(.card--scene) .cover > img {
+[data-cover-proportions='true'] :is(.row, .grid) > .card[data-rom]:not(.card--scene) .cover > img {
   position: static;
   width: auto;
   min-width: 100%;
@@ -75,7 +82,10 @@
 /* The cover alone decides the card width. A title in flow reports the width of
    its whole unwrapped text, so a long name would widen the card past its
    picture. */
-:is(.row, .grid) > .card[data-rom]:not(.card--scene) :is(.card__title, .card__meta) {
+[data-cover-proportions='true']
+  :is(.row, .grid)
+  > .card[data-rom]:not(.card--scene)
+  :is(.card__title, .card__meta) {
   contain: inline-size;
 }
 

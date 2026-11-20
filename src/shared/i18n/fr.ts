@@ -933,6 +933,9 @@ export const fr: Catalog = {
   'settings.disconnect': 'Se déconnecter',
   'settings.disconnected': 'Déconnecté de RomM',
   'settings.interface': 'Interface',
+  'settings.coverProportions': 'Conserver les proportions des jaquettes',
+  'settings.coverProportionsHint':
+    'Les jaquettes gardent leurs proportions dans les grilles et les rangées. Désactivez pour obtenir des cartes de même largeur.',
   'settings.sounds': 'Sons de navigation',
   'settings.soundsHint':
     'Un clic discret quand la sélection se déplace, à la validation et au retour.',

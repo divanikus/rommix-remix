@@ -762,6 +762,8 @@ export const zhCN: Catalog = {
   'settings.disconnect': '断开连接',
   'settings.disconnected': '已断开 RomM 连接',
   'settings.interface': '界面',
+  'settings.coverProportions': '保留封面比例',
+  'settings.coverProportionsHint': '在网格和陈列栏中保留封面的原始比例。关闭后卡片宽度一致。',
   'settings.sounds': '导航音效',
   'settings.soundsHint': '移动焦点、选择或返回时播放轻微点击声。',
   'settings.scaleHint': '自动模式根据窗口大小调整界面。百分比选项使用固定缩放。',

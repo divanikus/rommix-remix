@@ -806,6 +806,9 @@ export const be: Catalog = {
   'settings.disconnect': 'Адключыцца',
   'settings.disconnected': 'Адключана ад RomM',
   'settings.interface': 'Інтэрфейс',
+  'settings.coverProportions': 'Захоўваць прапорцыі вокладак',
+  'settings.coverProportionsHint':
+    'Выкарыстоўвайце прапорцыі вокладак у сетках і на паліцах. Выключыце, каб карткі мелі аднолькавую шырыню.',
   'settings.sounds': 'Гукі навігацыі',
   'settings.soundsHint': 'Ціхая пстрычка пры перамяшчэнні вылучэння, выбары і вяртанні.',
   'settings.scaleHint':

@@ -802,6 +802,9 @@ export const ja: Catalog = {
   'settings.disconnect': '切断',
   'settings.disconnected': 'RomM から切断しました',
   'settings.interface': 'インターフェース',
+  'settings.coverProportions': 'カバー画像の縦横比を維持',
+  'settings.coverProportionsHint':
+    'グリッドと棚でカバー画像の縦横比を維持します。カードの幅をそろえるにはオフにしてください。',
   'settings.sounds': '操作音',
   'settings.soundsHint': '移動、選択、戻る操作で小さなクリック音を鳴らします。',
   'settings.scaleHint': '自動ではウィンドウに合わせます。パーセント指定では固定倍率になります。',

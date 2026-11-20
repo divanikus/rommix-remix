@@ -925,6 +925,9 @@ export const es: Catalog = {
   'settings.disconnect': 'Desconectar',
   'settings.disconnected': 'Desconectado de RomM',
   'settings.interface': 'Interfaz',
+  'settings.coverProportions': 'Conservar las proporciones de las carátulas',
+  'settings.coverProportionsHint':
+    'Respeta las proporciones en cuadrículas y estantes. Desactívalo para que todas las tarjetas tengan el mismo ancho.',
   'settings.sounds': 'Sonidos de navegación',
   'settings.soundsHint':
     'Un clic discreto cuando se mueve la selección, al elegir y al volver atrás.',

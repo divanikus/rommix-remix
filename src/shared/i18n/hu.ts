@@ -814,6 +814,9 @@ export const hu: Catalog = {
   'settings.disconnect': 'Kapcsolat bontása',
   'settings.disconnected': 'Kapcsolat bontva a RomM-mel',
   'settings.interface': 'Felület',
+  'settings.coverProportions': 'A borítók képarányának megőrzése',
+  'settings.coverProportionsHint':
+    'A borítók megtartják a képarányukat a rácsban és a polcokon. Kapcsold ki az azonos szélességű kártyákhoz.',
   'settings.sounds': 'Navigációs hangok',
   'settings.soundsHint': 'Halk kattintás kijelöléskor, választáskor és visszalépéskor.',
   'settings.scaleHint':

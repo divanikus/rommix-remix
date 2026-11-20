@@ -170,6 +170,8 @@ export interface Settings {
    * somebody who is not playing. See `playCue`.
    */
   navigationSounds: boolean
+  /** Keep the original artwork proportions in game grids and cover shelves. */
+  coverProportions: boolean
   /**
    * Trust a RomM server whose certificate signed itself, or was signed by an
    * authority this machine does not know.

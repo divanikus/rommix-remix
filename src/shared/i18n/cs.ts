@@ -804,6 +804,9 @@ export const cs: Catalog = {
   'settings.disconnect': 'Odpojit',
   'settings.disconnected': 'Odpojeno od RomM',
   'settings.interface': 'Rozhraní',
+  'settings.coverProportions': 'Zachovat proporce obalů',
+  'settings.coverProportionsHint':
+    'Použije proporce obalů v mřížce a na policích. Vypněte pro stejně široké karty.',
   'settings.sounds': 'Zvuky navigace',
   'settings.soundsHint': 'Tiché kliknutí při pohybu zvýraznění, výběru nebo návratu.',
   'settings.scaleHint':

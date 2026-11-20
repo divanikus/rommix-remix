@@ -809,6 +809,9 @@ export const sv: Catalog = {
   'settings.disconnect': 'Koppla från',
   'settings.disconnected': 'Frånkopplad från RomM',
   'settings.interface': 'Gränssnitt',
+  'settings.coverProportions': 'Behåll omslagens proportioner',
+  'settings.coverProportionsHint':
+    'Behåller omslagens proportioner i rutnät och på hyllor. Stäng av för kort med samma bredd.',
   'settings.sounds': 'Navigeringsljud',
   'settings.soundsHint': 'Ett tyst klick när markeringen flyttas, vid val och när du går tillbaka.',
   'settings.scaleHint':

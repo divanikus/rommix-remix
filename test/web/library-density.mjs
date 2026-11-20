@@ -255,6 +255,24 @@ try {
   }
   assert.deepEqual(errors, [])
   console.log('PASS all three sizes retain equal heights and the proportions of wide covers')
+
+  await tap(9)
+  await page.locator('[data-action="open-settings"]').click()
+  const widthSetting = page.locator('[data-setting="cover-proportions"]')
+  assert.equal(await widthSetting.locator('[data-option="on"]').getAttribute('data-active'), 'true')
+  await widthSetting.locator('[data-option="off"]').click()
+  await page.locator('.app[data-cover-proportions="false"]').waitFor()
+  await tap(1)
+  const [portrait, wide, fallback] = await Promise.all(
+    [300000, 300001, 300002].map((id) =>
+      page.locator(`.library-grid [data-rom="${id}"] .cover`).boundingBox()
+    )
+  )
+  assert.ok(Math.abs(portrait.width - wide.width) < 1)
+  assert.ok(Math.abs(portrait.width - fallback.width) < 1)
+  assert.ok(Math.abs(portrait.height - wide.height) < 1)
+  assert.deepEqual(errors, [])
+  console.log('PASS Settings switches the same grid to cards of equal width')
 } finally {
   await browser.close()
 }

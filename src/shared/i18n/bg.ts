@@ -814,6 +814,9 @@ export const bg: Catalog = {
   'settings.disconnect': 'Прекъсване на връзката',
   'settings.disconnected': 'Връзката с RomM е прекъсната',
   'settings.interface': 'Интерфейс',
+  'settings.coverProportions': 'Запазване на пропорциите на обложките',
+  'settings.coverProportionsHint':
+    'Показва обложките в мрежата и по рафтовете с оригиналните им пропорции. Изключете за карти с еднаква ширина.',
   'settings.sounds': 'Звуци при навигация',
   'settings.soundsHint': 'Тихо щракване при преместване на маркирането, избор или връщане назад.',
   'settings.scaleHint':

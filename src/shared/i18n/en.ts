@@ -926,6 +926,9 @@ export const en = {
   'settings.disconnect': 'Disconnect',
   'settings.disconnected': 'Disconnected from RomM',
   'settings.interface': 'Interface',
+  'settings.coverProportions': 'Preserve cover proportions',
+  'settings.coverProportionsHint':
+    'Use artwork proportions in grids and cover shelves. Turn this off for cards of equal width.',
   'settings.sounds': 'Navigation sounds',
   'settings.soundsHint': 'A quiet click as the highlight moves, and when you choose or go back.',
   'settings.scaleHint':

@@ -804,6 +804,9 @@ export const tr: Catalog = {
   'settings.disconnect': 'Bağlantıyı kes',
   'settings.disconnected': 'RomM bağlantısı kesildi',
   'settings.interface': 'Arayüz',
+  'settings.coverProportions': 'Kapak oranlarını koru',
+  'settings.coverProportionsHint':
+    'Kapakların ızgara ve raflarda özgün oranlarını korur. Kartları eşit genişlikte göstermek için kapatın.',
   'settings.sounds': 'Gezinme sesleri',
   'settings.soundsHint': 'Vurgu hareketinde, seçimde ve geri dönüşte hafif tıklama.',
   'settings.scaleHint': 'Otomatik, arayüzü pencereye uyarlar. Yüzdeler sabit ölçek belirler.',
