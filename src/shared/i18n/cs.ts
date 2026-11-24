@@ -688,17 +688,21 @@ export const cs: Catalog = {
   'saves.noAskAgain': 'Uložené pozice se budou odesílat bez dotazu',
   'saves.deleted': '{file} smazán {where}',
   'saves.retrodeckPcsx2':
-    'RetroDECK používá v PCSX2 jednu paměťovou kartu společnou všem hrám PS2, takže neexistuje soubor uložené pozice patřící pouze této hře. Stavy se synchronizují.',
+    'RetroDECK používá v PCSX2 jednu paměťovou kartu společnou všem hrám PS2, takže neexistuje soubor uložené pozice patřící pouze této hře. Stavy se synchronizují. Převeďte kartu v nastavení paměťových karet PCSX2 na složku, aby se uložené pozice synchronizovaly po jednotlivých hrách.',
   'saves.retrodeckDuckstation':
     'RetroDECK používá v DuckStation jednu paměťovou kartu společnou všem hrám PS1, takže neexistuje soubor uložené pozice patřící pouze této hře. Stavy se synchronizují.',
   'saves.pcsx2':
-    'PCSX2 používá jednu paměťovou kartu společnou všem hrám PS2, takže neexistuje soubor uložené pozice patřící pouze této hře. Stavy se synchronizují.',
+    'PCSX2 používá jednu paměťovou kartu společnou všem hrám PS2, takže neexistuje soubor uložené pozice patřící pouze této hře. Stavy se synchronizují. Převeďte kartu v nastavení paměťových karet PCSX2 na složku, aby se uložené pozice synchronizovaly po jednotlivých hrách.',
+  'saves.pcsx2NoSerial':
+    'PCSX2 řadí uložené pozice na kartě ve formě složky podle sériového čísla disku. RomMix jej čte z obrazů ISO, CSO a CHD, ale z tohoto obrazu ne.',
+  'saves.pcsx2Cards':
+    'PCSX2 má více paměťových karet ve formě složky. RomMix nedokáže určit, na kterou tato hra ukládá.',
   'saves.dolphin':
     'Dolphin používá jednu paměťovou kartu GameCube pro každý region, společnou všem hrám, takže neexistuje soubor uložené pozice patřící pouze této hře. Stavy se synchronizují.',
   'saves.primehack':
     'PrimeHack používá jednu paměťovou kartu pro všechny hry, takže neexistuje soubor uložené pozice patřící pouze této hře. Stavy se synchronizují.',
   'saves.ppsspp':
-    'PPSSPP ukládá hry pod ID hry uvnitř obrazu disku. RomMix je umí přečíst z obrazu ISO nebo CSO, ale z tohoto obrazu ne.',
+    'PPSSPP ukládá hry pod ID hry uvnitř obrazu disku. RomMix je umí přečíst z obrazu ISO, CSO nebo CHD, ale z tohoto obrazu ne.',
   'saves.rpcs3':
     'RPCS3 ukládá hry pod ID titulu PS3 místo názvu ROM, což RomMix nedokáže přiřadit této hře.',
   'saves.cemu':

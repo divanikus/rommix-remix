@@ -694,17 +694,21 @@ export const ro: Catalog = {
   'saves.noAskAgain': 'Salvările vor fi trimise fără confirmare',
   'saves.deleted': '{file} șters {where}',
   'saves.retrodeckPcsx2':
-    'RetroDECK oferă PCSX2 un card de memorie comun tuturor jocurilor PS2, deci nu există salvare separată pentru acest joc. Stările sunt sincronizate.',
+    'RetroDECK oferă PCSX2 un card de memorie comun tuturor jocurilor PS2, deci nu există salvare separată pentru acest joc. Stările sunt sincronizate. Transformă cardul într-un dosar din setările cardurilor de memorie PCSX2 pentru a sincroniza salvările fiecărui joc separat.',
   'saves.retrodeckDuckstation':
     'RetroDECK oferă DuckStation un card de memorie comun tuturor jocurilor PS1, deci nu există salvare separată pentru acest joc. Stările sunt sincronizate.',
   'saves.pcsx2':
-    'PCSX2 folosește un card de memorie comun tuturor jocurilor PS2, deci nu există salvare separată pentru acest joc. Stările sunt sincronizate.',
+    'PCSX2 folosește un card de memorie comun tuturor jocurilor PS2, deci nu există salvare separată pentru acest joc. Stările sunt sincronizate. Transformă cardul într-un dosar din setările cardurilor de memorie PCSX2 pentru a sincroniza salvările fiecărui joc separat.',
+  'saves.pcsx2NoSerial':
+    'PCSX2 organizează salvările de pe un card de tip dosar după numărul de serie al discului. RomMix îl poate citi din ISO, CSO sau CHD, dar nu din această imagine.',
+  'saves.pcsx2Cards':
+    'PCSX2 are mai multe carduri de tip dosar. RomMix nu poate stabili pe care dintre ele scrie acest joc.',
   'saves.dolphin':
     'Dolphin folosește un card GameCube pe regiune, comun tuturor jocurilor, deci nu există salvare separată pentru acest joc. Stările sunt sincronizate.',
   'saves.primehack':
     'PrimeHack folosește un card de memorie comun tuturor jocurilor, deci nu există salvare separată pentru acest joc. Stările sunt sincronizate.',
   'saves.ppsspp':
-    'PPSSPP organizează salvările după ID-ul jocului din imaginea discului. RomMix îl poate citi din ISO sau CSO, dar nu din această imagine.',
+    'PPSSPP organizează salvările după ID-ul jocului din imaginea discului. RomMix îl poate citi din ISO, CSO sau CHD, dar nu din această imagine.',
   'saves.rpcs3':
     'RPCS3 organizează salvările după ID-ul titlului PS3, nu după numele ROM-ului. RomMix nu îl poate asocia acestui joc.',
   'saves.cemu':

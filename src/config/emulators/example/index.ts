@@ -240,7 +240,7 @@ export const example: EmulatorDescriptor = {
    * game, which profile owns a title. `ctx` carries the discovered roots, the
    * game, the chosen variant, and `ctx.env` — a read-only view of the disk with
    * `exists`, `dirs`, `files`, `text`, `head`, `read` and `newest`, and
-   * `inflateRaw` for an image that deflates its blocks.
+   * `inflateRaw` and `zstd` for an image that compresses its blocks.
    *
    * Return a location per kind, or null where there is none. `match` is the
    * important part:
@@ -253,9 +253,9 @@ export const example: EmulatorDescriptor = {
    *   directory(dir)        the folder *is* this game's data, keyed by a title
    *                         or game id. Synced as one archive, because the
    *                         files inside carry no name tying them to a ROM.
-   *   prefixed(dir, id)     the folders under `dir` whose names begin with an
+   *   prefixed(dir, ...ids) the folders under `dir` whose names begin with an
    *                         id the game declares, beside every other game's —
-   *                         PPSSPP's SAVEDATA. Synced as one archive of those
+   *                         PPSSPP's SAVEDATA, a PCSX2 folder card. Synced as one archive of those
    *                         folders by name; nothing else under `dir` is read
    *                         or written.
    *   shared(dir)           a memory card, NAND or nvram every game writes to.

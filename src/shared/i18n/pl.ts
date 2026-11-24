@@ -693,17 +693,21 @@ export const pl: Catalog = {
   'saves.noAskAgain': 'Zapisy będą wysyłane bez pytania',
   'saves.deleted': 'Usunięto {file} {where}',
   'saves.retrodeckPcsx2':
-    'RetroDECK daje PCSX2 jedną kartę pamięci wspólną dla wszystkich gier PS2, więc brak osobnego zapisu tej gry. Stany są synchronizowane.',
+    'RetroDECK daje PCSX2 jedną kartę pamięci wspólną dla wszystkich gier PS2, więc brak osobnego zapisu tej gry. Stany są synchronizowane. Aby synchronizować zapisy każdej gry osobno, przekształć kartę w folder w ustawieniach kart pamięci PCSX2.',
   'saves.retrodeckDuckstation':
     'RetroDECK daje DuckStation jedną kartę pamięci wspólną dla wszystkich gier PS1, więc brak osobnego zapisu tej gry. Stany są synchronizowane.',
   'saves.pcsx2':
-    'PCSX2 używa jednej karty pamięci dla wszystkich gier PS2, więc brak osobnego zapisu tej gry. Stany są synchronizowane.',
+    'PCSX2 używa jednej karty pamięci dla wszystkich gier PS2, więc brak osobnego zapisu tej gry. Stany są synchronizowane. Aby synchronizować zapisy każdej gry osobno, przekształć kartę w folder w ustawieniach kart pamięci PCSX2.',
+  'saves.pcsx2NoSerial':
+    'PCSX2 porządkuje zapisy na karcie folderowej według numeru seryjnego płyty. RomMix może go odczytać z ISO, CSO lub CHD, ale nie z tego obrazu.',
+  'saves.pcsx2Cards':
+    'PCSX2 ma kilka kart folderowych. RomMix nie może ustalić, na której ta gra zapisuje dane.',
   'saves.dolphin':
     'Dolphin używa jednej karty GameCube na region, wspólnej dla wszystkich gier, więc brak osobnego zapisu tej gry. Stany są synchronizowane.',
   'saves.primehack':
     'PrimeHack używa jednej karty pamięci dla wszystkich gier, więc brak osobnego zapisu tej gry. Stany są synchronizowane.',
   'saves.ppsspp':
-    'PPSSPP zapisuje według identyfikatora gry z obrazu płyty. RomMix odczyta go z ISO lub CSO, ale nie z tego obrazu.',
+    'PPSSPP zapisuje według identyfikatora gry z obrazu płyty. RomMix odczyta go z ISO, CSO lub CHD, ale nie z tego obrazu.',
   'saves.rpcs3':
     'RPCS3 zapisuje według identyfikatora tytułu PS3 zamiast nazwy ROM-u. RomMix nie potrafi powiązać go z tą grą.',
   'saves.cemu':

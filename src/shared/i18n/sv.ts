@@ -693,17 +693,21 @@ export const sv: Catalog = {
   'saves.noAskAgain': 'Sparfiler skickas utan att fråga',
   'saves.deleted': '{file} raderad {where}',
   'saves.retrodeckPcsx2':
-    'RetroDECK ger PCSX2 ett minneskort som delas av alla PS2-spel, så ingen sparfil tillhör bara detta spel. Sparlägen synkroniseras.',
+    'RetroDECK ger PCSX2 ett minneskort som delas av alla PS2-spel, så ingen sparfil tillhör bara detta spel. Sparlägen synkroniseras. Konvertera kortet till en mapp i PCSX2:s minneskortsinställningar för att synkronisera sparfiler per spel.',
   'saves.retrodeckDuckstation':
     'RetroDECK ger DuckStation ett minneskort som delas av alla PS1-spel, så ingen sparfil tillhör bara detta spel. Sparlägen synkroniseras.',
   'saves.pcsx2':
-    'PCSX2 har ett minneskort som delas av alla PS2-spel, så ingen sparfil tillhör bara detta spel. Sparlägen synkroniseras.',
+    'PCSX2 har ett minneskort som delas av alla PS2-spel, så ingen sparfil tillhör bara detta spel. Sparlägen synkroniseras. Konvertera kortet till en mapp i PCSX2:s minneskortsinställningar för att synkronisera sparfiler per spel.',
+  'saves.pcsx2NoSerial':
+    'PCSX2 ordnar sparfiler på mappkort efter skivans serienummer. RomMix kan läsa det från ISO, CSO och CHD, men inte från den här avbildningen.',
+  'saves.pcsx2Cards':
+    'PCSX2 har flera mappkort. RomMix kan inte avgöra vilket kort spelet sparar på.',
   'saves.dolphin':
     'Dolphin har ett GameCube-minneskort per region som delas av alla spel, så ingen sparfil tillhör bara detta spel. Sparlägen synkroniseras.',
   'saves.primehack':
     'PrimeHack har ett minneskort för alla spel, så ingen sparfil tillhör bara detta spel. Sparlägen synkroniseras.',
   'saves.ppsspp':
-    'PPSSPP sparar efter spelets id i skivavbildningen. RomMix kan läsa det från ISO eller CSO, men inte från denna avbildning.',
+    'PPSSPP sparar efter spelets id i skivavbildningen. RomMix kan läsa det från ISO, CSO eller CHD, men inte från denna avbildning.',
   'saves.rpcs3':
     'RPCS3 sparar efter PS3-titelns id i stället för ROM-namnet, vilket RomMix inte kan koppla till spelet.',
   'saves.cemu':

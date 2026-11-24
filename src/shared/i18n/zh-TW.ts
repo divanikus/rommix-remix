@@ -663,15 +663,19 @@ export const zhTW: Catalog = {
   'saves.noAskAgain': '以後傳送存檔將不再詢問',
   'saves.deleted': '已刪除{where}的 {file}',
   'saves.retrodeckPcsx2':
-    'RetroDECK 的 PCSX2 讓所有 PS2 遊戲共用一張記憶卡，沒有此遊戲的獨立存檔。仍同步即時存檔。',
+    'RetroDECK 的 PCSX2 讓所有 PS2 遊戲共用一張記憶卡，沒有此遊戲的獨立存檔。仍同步即時存檔。若要逐一同步各遊戲的存檔，請在 PCSX2 的記憶卡設定中將記憶卡轉換成資料夾。',
   'saves.retrodeckDuckstation':
     'RetroDECK 的 DuckStation 讓所有 PS1 遊戲共用一張記憶卡，沒有此遊戲的獨立存檔。仍同步即時存檔。',
-  'saves.pcsx2': 'PCSX2 讓所有 PS2 遊戲共用一張記憶卡，沒有此遊戲的獨立存檔。仍同步即時存檔。',
+  'saves.pcsx2':
+    'PCSX2 讓所有 PS2 遊戲共用一張記憶卡，沒有此遊戲的獨立存檔。仍同步即時存檔。若要逐一同步各遊戲的存檔，請在 PCSX2 的記憶卡設定中將記憶卡轉換成資料夾。',
+  'saves.pcsx2NoSerial':
+    'PCSX2 依光碟序號將存檔儲存在資料夾式記憶卡中。RomMix 可從 ISO、CSO 或 CHD 讀取序號，但無法從此映像讀取。',
+  'saves.pcsx2Cards': 'PCSX2 有多張資料夾式記憶卡，RomMix 無法判斷此遊戲寫入哪張卡。',
   'saves.dolphin':
     'Dolphin 每個地區的 GameCube 遊戲共用記憶卡，沒有此遊戲的獨立存檔。仍同步即時存檔。',
   'saves.primehack': 'PrimeHack 所有遊戲共用記憶卡，沒有此遊戲的獨立存檔。仍同步即時存檔。',
   'saves.ppsspp':
-    'PPSSPP 依光碟映像內的遊戲 ID 存檔。RomMix 可從 ISO 或 CSO 讀取，但無法從此映像讀取。',
+    'PPSSPP 依光碟映像內的遊戲 ID 存檔。RomMix 可從 ISO、CSO 或 CHD 讀取，但無法從此映像讀取。',
   'saves.rpcs3': 'RPCS3 依 PS3 遊戲 ID 而非 ROM 名稱存檔，RomMix 無法與此遊戲比對。',
   'saves.cemu': 'Cemu 依 Wii U 遊戲 ID 而非 ROM 名稱存檔，RomMix 無法與此遊戲比對。',
   'saves.vita3k': 'Vita3K 依 Vita 遊戲 ID 而非 ROM 名稱存檔，RomMix 無法與此遊戲比對。',

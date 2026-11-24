@@ -687,17 +687,21 @@ export const ja: Catalog = {
   'saves.noAskAgain': '今後は確認せずセーブを送信します',
   'saves.deleted': '{where} から {file} を削除',
   'saves.retrodeckPcsx2':
-    'RetroDECK の PCSX2 は全 PS2 ゲームでメモリーカードを共有するため、このゲーム専用のセーブはありません。ステートセーブは同期します。',
+    'RetroDECK の PCSX2 は全 PS2 ゲームでメモリーカードを共有するため、このゲーム専用のセーブはありません。ステートセーブは同期します。ゲームごとにセーブを同期するには、PCSX2 のメモリーカード設定でカードをフォルダー形式に変換してください。',
   'saves.retrodeckDuckstation':
     'RetroDECK の DuckStation は全 PS1 ゲームでメモリーカードを共有するため、このゲーム専用のセーブはありません。ステートセーブは同期します。',
   'saves.pcsx2':
-    'PCSX2 は全 PS2 ゲームでメモリーカードを共有するため、このゲーム専用のセーブはありません。ステートセーブは同期します。',
+    'PCSX2 は全 PS2 ゲームでメモリーカードを共有するため、このゲーム専用のセーブはありません。ステートセーブは同期します。ゲームごとにセーブを同期するには、PCSX2 のメモリーカード設定でカードをフォルダー形式に変換してください。',
+  'saves.pcsx2NoSerial':
+    'PCSX2 はディスクのシリアル番号でフォルダー形式のカードにセーブを保存します。RomMix は ISO、CSO、CHD からシリアル番号を読み取れますが、このイメージからは読み取れません。',
+  'saves.pcsx2Cards':
+    'PCSX2 にフォルダー形式のカードが複数あり、このゲームがどのカードに保存するかを RomMix は判別できません。',
   'saves.dolphin':
     'Dolphin は地域ごとに全ゲームで GameCube メモリーカードを共有するため、このゲーム専用のセーブはありません。ステートセーブは同期します。',
   'saves.primehack':
     'PrimeHack は全ゲームでメモリーカードを共有するため、このゲーム専用のセーブはありません。ステートセーブは同期します。',
   'saves.ppsspp':
-    'PPSSPP はディスク内のゲーム ID で保存します。RomMix は ISO/CSO から読めますが、このイメージからは読めません。',
+    'PPSSPP はディスク内のゲーム ID で保存します。RomMix は ISO/CSO/CHD から読めますが、このイメージからは読めません。',
   'saves.rpcs3': 'RPCS3 は ROM 名ではなく PS3 タイトル ID で保存し、このゲームと照合できません。',
   'saves.cemu': 'Cemu は ROM 名ではなく Wii U タイトル ID で保存し、このゲームと照合できません。',
   'saves.vita3k':

@@ -1,9 +1,9 @@
-import type { Text } from '@shared/i18n'
 import { coreForSystem } from '../../systems.ts'
 import { libretroSavePaths, readLibretroConfig } from '../libretro.ts'
 import { joinPath, perRom, shared } from '../savepaths.ts'
 import { dolphinSaves, dolphinStates } from '../dolphin-saves.ts'
 import { ppssppSaves } from '../psp-saves.ts'
+import { pcsx2Saves } from '../ps2-saves.ts'
 import { switchSavePaths } from '../switch-saves.ts'
 import type { SaveContext, SavePaths } from '../savepaths.ts'
 
@@ -73,15 +73,6 @@ function standard(root: string): SavePaths {
   }
 }
 
-/** A memory-card emulator: states are per-game, the card is not. */
-function cards(root: string, reason: Text): SavePaths {
-  return {
-    saves: shared(joinPath(root, 'saves')),
-    states: perRom(joinPath(root, 'states'), [root]),
-    unsyncableReason: reason
-  }
-}
-
 /** The Wii NAND for a Wii game, the memory cards otherwise — see `dolphinSaves`. */
 function dolphinSaveDir(ctx: SaveContext, root: string): string {
   return joinPath(root, ctx.system === 'wii' ? 'Wii' : 'GC')
@@ -125,7 +116,19 @@ export const FOLDERS: Readonly<Record<string, FolderSaves>> = {
       { saves: joinPath(root, 'saves'), states: joinPath(root, 'states') }
     ),
 
-  pcsx2: (_ctx, root) => cards(root, 'saves.pcsx2'),
+  /**
+   * States are per-game; the card is a folder card's alone — see `pcsx2Saves`.
+   * EmuDeck runs PCSX2 as an AppImage, which keeps its configuration in the
+   * home's `.config`, and older installs ran the Flatpak, which keeps it in
+   * its own folder under `.var`.
+   */
+  pcsx2: (ctx, root) => ({
+    ...pcsx2Saves(ctx, joinPath(root, 'saves'), 'saves.pcsx2', [
+      joinPath(ctx.home, '.config', 'PCSX2'),
+      joinPath(ctx.home, '.var', 'app', 'net.pcsx2.PCSX2', 'config', 'PCSX2')
+    ]),
+    states: perRom(joinPath(root, 'states'), [root])
+  }),
 
   /**
    * DuckStation names its cards after the game — `Suikoden II_1.mcd` — which is

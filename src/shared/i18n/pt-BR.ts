@@ -730,17 +730,21 @@ export const ptBR: Catalog = {
   'saves.noAskAgain': 'Os dados salvos serão enviados sem perguntar',
   'saves.deleted': '{file} excluído {where}',
   'saves.retrodeckPcsx2':
-    'O RetroDECK usa no PCSX2 um cartão de memória compartilhado por todos os jogos PS2; não há arquivo exclusivo deste jogo. Estados salvos são sincronizados.',
+    'O RetroDECK usa no PCSX2 um cartão de memória compartilhado por todos os jogos PS2; não há arquivo exclusivo deste jogo. Estados salvos são sincronizados. Converta o cartão em uma pasta nas configurações de cartões de memória do PCSX2 para sincronizar os dados de cada jogo separadamente.',
   'saves.retrodeckDuckstation':
     'O RetroDECK usa no DuckStation um cartão de memória compartilhado por todos os jogos PS1; não há arquivo exclusivo deste jogo. Estados salvos são sincronizados.',
   'saves.pcsx2':
-    'O PCSX2 usa um cartão de memória compartilhado por todos os jogos PS2; não há arquivo exclusivo deste jogo. Estados salvos são sincronizados.',
+    'O PCSX2 usa um cartão de memória compartilhado por todos os jogos PS2; não há arquivo exclusivo deste jogo. Estados salvos são sincronizados. Converta o cartão em uma pasta nas configurações de cartões de memória do PCSX2 para sincronizar os dados de cada jogo separadamente.',
+  'saves.pcsx2NoSerial':
+    'O PCSX2 organiza os dados salvos de um cartão em formato de pasta pelo número de série do disco. O RomMix lê esse número em ISO, CSO ou CHD, mas não nesta imagem.',
+  'saves.pcsx2Cards':
+    'O PCSX2 tem mais de um cartão em formato de pasta. O RomMix não consegue determinar em qual cartão este jogo grava.',
   'saves.dolphin':
     'O Dolphin usa um cartão GameCube por região, compartilhado por todos os jogos; não há arquivo exclusivo deste jogo. Estados salvos são sincronizados.',
   'saves.primehack':
     'O PrimeHack usa um cartão de memória compartilhado; não há arquivo exclusivo deste jogo. Estados salvos são sincronizados.',
   'saves.ppsspp':
-    'O PPSSPP organiza dados salvos pelo ID dentro da imagem de disco. O RomMix lê esse ID em ISO ou CSO, mas não nesta imagem.',
+    'O PPSSPP organiza dados salvos pelo ID dentro da imagem de disco. O RomMix lê esse ID em ISO, CSO ou CHD, mas não nesta imagem.',
   'saves.rpcs3':
     'O RPCS3 usa o ID do título PS3, não o nome da ROM. O RomMix não consegue associá-lo a este jogo.',
   'saves.cemu':

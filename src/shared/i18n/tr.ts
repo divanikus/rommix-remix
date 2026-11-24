@@ -687,17 +687,21 @@ export const tr: Catalog = {
   'saves.noAskAgain': 'Kayıtlar sorulmadan gönderilecek',
   'saves.deleted': '{file} {where} silindi',
   'saves.retrodeckPcsx2':
-    "RetroDECK, PCSX2'ye tüm PS2 oyunlarının paylaştığı tek bellek kartı verir; bu oyuna özel kayıt dosyası yoktur. Durum kayıtları eşitlenir.",
+    "RetroDECK, PCSX2'ye tüm PS2 oyunlarının paylaştığı tek bellek kartı verir; bu oyuna özel kayıt dosyası yoktur. Durum kayıtları eşitlenir. Kayıtları oyun bazında eşitlemek için PCSX2 bellek kartı ayarlarından kartı klasöre dönüştürün.",
   'saves.retrodeckDuckstation':
     "RetroDECK, DuckStation'a tüm PS1 oyunlarının paylaştığı tek bellek kartı verir; bu oyuna özel kayıt dosyası yoktur. Durum kayıtları eşitlenir.",
   'saves.pcsx2':
-    'PCSX2 tüm PS2 oyunlarının paylaştığı tek bellek kartı kullanır; bu oyuna özel kayıt dosyası yoktur. Durum kayıtları eşitlenir.',
+    'PCSX2 tüm PS2 oyunlarının paylaştığı tek bellek kartı kullanır; bu oyuna özel kayıt dosyası yoktur. Durum kayıtları eşitlenir. Kayıtları oyun bazında eşitlemek için PCSX2 bellek kartı ayarlarından kartı klasöre dönüştürün.',
+  'saves.pcsx2NoSerial':
+    'PCSX2, klasör kartındaki kayıtları diskin seri numarasına göre saklar. RomMix seri numarasını ISO, CSO ve CHD imajlarından okuyabilir, ancak bu imajdan okuyamaz.',
+  'saves.pcsx2Cards':
+    'PCSX2’de birden fazla klasör kartı var. RomMix bu oyunun hangi karta yazdığını belirleyemiyor.',
   'saves.dolphin':
     'Dolphin her bölge için tüm oyunların paylaştığı tek GameCube bellek kartı kullanır; bu oyuna özel kayıt dosyası yoktur. Durum kayıtları eşitlenir.',
   'saves.primehack':
     'PrimeHack tüm oyunlar için tek bellek kartı kullanır; bu oyuna özel kayıt dosyası yoktur. Durum kayıtları eşitlenir.',
   'saves.ppsspp':
-    "PPSSPP kayıtları disk imajındaki oyun kimliğine göre saklar. RomMix bunu ISO veya CSO'dan okuyabilir, ancak bu imajdan okuyamaz.",
+    'PPSSPP kayıtları disk imajındaki oyun kimliğine göre saklar. RomMix bunu ISO, CSO veya CHD imajlarından okuyabilir, ancak bu imajdan okuyamaz.',
   'saves.rpcs3':
     'RPCS3 kayıtları ROM adı yerine PS3 oyun kimliğine göre saklar; RomMix bunu bu oyunla eşleştiremiyor.',
   'saves.cemu':

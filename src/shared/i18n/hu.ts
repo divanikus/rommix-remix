@@ -696,17 +696,21 @@ export const hu: Catalog = {
   'saves.noAskAgain': 'A mentések kérdés nélkül lesznek elküldve',
   'saves.deleted': '{file} törölve {where}',
   'saves.retrodeckPcsx2':
-    'A RetroDECK minden PS2-játékhoz közös memóriakártyát ad a PCSX2-nek, így nincs ehhez a játékhoz tartozó külön mentés. Az állapotmentések szinkronizálódnak.',
+    'A RetroDECK minden PS2-játékhoz közös memóriakártyát ad a PCSX2-nek, így nincs ehhez a játékhoz tartozó külön mentés. Az állapotmentések szinkronizálódnak. Alakítsd át a kártyát mappává a PCSX2 memóriakártya-beállításaiban, hogy a mentések játékonként szinkronizálhatók legyenek.',
   'saves.retrodeckDuckstation':
     'A RetroDECK minden PS1-játékhoz közös memóriakártyát ad a DuckStationnek, így nincs ehhez a játékhoz tartozó külön mentés. Az állapotmentések szinkronizálódnak.',
   'saves.pcsx2':
-    'A PCSX2 minden PS2-játékhoz közös memóriakártyát használ, így nincs ehhez a játékhoz tartozó külön mentés. Az állapotmentések szinkronizálódnak.',
+    'A PCSX2 minden PS2-játékhoz közös memóriakártyát használ, így nincs ehhez a játékhoz tartozó külön mentés. Az állapotmentések szinkronizálódnak. Alakítsd át a kártyát mappává a PCSX2 memóriakártya-beállításaiban, hogy a mentések játékonként szinkronizálhatók legyenek.',
+  'saves.pcsx2NoSerial':
+    'A PCSX2 a lemez sorozatszáma szerint tárolja a mentéseket a mappa típusú kártyán. A RomMix ezt ISO-, CSO- és CHD-képből ki tudja olvasni, ebből viszont nem.',
+  'saves.pcsx2Cards':
+    'A PCSX2 több mappa típusú kártyát használ. A RomMix nem tudja megállapítani, melyikre ment ez a játék.',
   'saves.dolphin':
     'A Dolphin régiónként egy közös GameCube-memóriakártyát használ, így nincs ehhez a játékhoz tartozó külön mentés. Az állapotmentések szinkronizálódnak.',
   'saves.primehack':
     'A PrimeHack minden játékhoz közös memóriakártyát használ, így nincs ehhez a játékhoz tartozó külön mentés. Az állapotmentések szinkronizálódnak.',
   'saves.ppsspp':
-    'A PPSSPP a lemezképen belüli játékazonosító szerint tárolja a mentéseket. Ezt a RomMix ISO- vagy CSO-képből ki tudja olvasni, ebből viszont nem.',
+    'A PPSSPP a lemezképen belüli játékazonosító szerint tárolja a mentéseket. Ezt a RomMix ISO-, CSO- vagy CHD-képből ki tudja olvasni, ebből viszont nem.',
   'saves.rpcs3':
     'Az RPCS3 a ROM-név helyett PS3-játékazonosító szerint tárolja a mentéseket, amit a RomMix nem tud ehhez a játékhoz társítani.',
   'saves.cemu':

@@ -680,17 +680,21 @@ export const ko: Catalog = {
   'saves.noAskAgain': '앞으로 확인 없이 저장 데이터를 전송합니다',
   'saves.deleted': '{where}에서 {file} 삭제됨',
   'saves.retrodeckPcsx2':
-    'RetroDECK의 PCSX2는 모든 PS2 게임이 메모리 카드를 공유하여 개별 저장 파일이 없습니다. 저장 상태는 동기화합니다.',
+    'RetroDECK의 PCSX2는 모든 PS2 게임이 메모리 카드를 공유하여 개별 저장 파일이 없습니다. 저장 상태는 동기화합니다. 게임별로 저장 데이터를 동기화하려면 PCSX2의 메모리 카드 설정에서 카드를 폴더 형식으로 변환하세요.',
   'saves.retrodeckDuckstation':
     'RetroDECK의 DuckStation은 모든 PS1 게임이 메모리 카드를 공유하여 개별 저장 파일이 없습니다. 저장 상태는 동기화합니다.',
   'saves.pcsx2':
-    'PCSX2는 모든 PS2 게임이 메모리 카드를 공유하여 개별 저장 파일이 없습니다. 저장 상태는 동기화합니다.',
+    'PCSX2는 모든 PS2 게임이 메모리 카드를 공유하여 개별 저장 파일이 없습니다. 저장 상태는 동기화합니다. 게임별로 저장 데이터를 동기화하려면 PCSX2의 메모리 카드 설정에서 카드를 폴더 형식으로 변환하세요.',
+  'saves.pcsx2NoSerial':
+    'PCSX2는 디스크 일련번호를 기준으로 폴더형 카드에 저장 데이터를 보관합니다. RomMix는 ISO, CSO, CHD 이미지에서 일련번호를 읽을 수 있지만 이 이미지에서는 읽을 수 없습니다.',
+  'saves.pcsx2Cards':
+    'PCSX2에 폴더형 카드가 여러 개 있어 이 게임이 어느 카드에 저장하는지 RomMix에서 확인할 수 없습니다.',
   'saves.dolphin':
     'Dolphin은 지역별 GameCube 메모리 카드를 모든 게임이 공유하여 개별 저장 파일이 없습니다. 저장 상태는 동기화합니다.',
   'saves.primehack':
     'PrimeHack은 모든 게임이 메모리 카드를 공유하여 개별 저장 파일이 없습니다. 저장 상태는 동기화합니다.',
   'saves.ppsspp':
-    'PPSSPP는 디스크 내부 게임 ID로 저장합니다. RomMix는 ISO나 CSO에서 읽지만 이 이미지에서는 읽을 수 없습니다.',
+    'PPSSPP는 디스크 내부 게임 ID로 저장합니다. RomMix는 ISO, CSO 또는 CHD에서 읽지만 이 이미지에서는 읽을 수 없습니다.',
   'saves.rpcs3': 'RPCS3는 ROM 이름 대신 PS3 타이틀 ID로 저장하여 이 게임과 연결할 수 없습니다.',
   'saves.cemu': 'Cemu는 ROM 이름 대신 Wii U 타이틀 ID로 저장하여 이 게임과 연결할 수 없습니다.',
   'saves.vita3k': 'Vita3K는 ROM 이름 대신 Vita 타이틀 ID로 저장하여 이 게임과 연결할 수 없습니다.',

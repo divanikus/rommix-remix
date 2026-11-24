@@ -93,6 +93,7 @@ Demo: https://leclercb.github.io/rommix/demo/
   | **RetroArch**    | Libretro, your core per system    | ✅ Flatpak; ❌ an AppImage you pick           |
   | **Eden**         | Nintendo Switch                   | ✅ AppImage                                   |
   | **Eglantine**    | Nintendo Switch 2                 | ❌ An AppImage you pick                       |
+  | **RPCS3**        | PlayStation 3                     | ✅ Flatpak and AppImage                       |
   | **shadPS4**      | PlayStation 4                     | ✅ Flatpak and AppImage                       |
   | **Xenia Canary** | Xbox 360                          | ✅ AppImage                                   |
 
@@ -286,8 +287,10 @@ one RomMix folder you point every emulator at.
 
 Saves named after the ROM sync cleanly, Switch-family saves are matched by
 title id, Wii saves by the game id on the disc, and PSP saves by the disc id in
-an ISO or CSO image. Emulators that share one memory card between every game
-cannot be synced, and RomMix says so rather than uploading the wrong data.
+an ISO, CSO or CHD image. PS2 saves sync when PCSX2's memory card is a folder
+card, matched by the serial in an ISO, CSO or CHD image. Emulators that share
+one memory card between every game cannot be synced, and RomMix says so rather
+than uploading the wrong data.
 
 **Games → Downloads → Ask before deleting a downloaded game**, on by default.
 
@@ -594,7 +597,9 @@ rather than a public issue — see [SECURITY.md](SECURITY.md).
 
 MIT — see [LICENSE](LICENSE).
 
-The two pixel themes are set in [VT323](https://fonts.google.com/specimen/VT323)
-and [Silkscreen](https://fonts.google.com/specimen/Silkscreen), both under the
-SIL Open Font License 1.1. The fonts ship with RomMix, and each licence sits
-beside its file in `src/renderer/src/assets/fonts/`.
+The interface is set in [Inter](https://fonts.google.com/specimen/Inter) and
+[JetBrains Mono](https://fonts.google.com/specimen/JetBrains+Mono), and the two
+pixel themes in [VT323](https://fonts.google.com/specimen/VT323) and
+[Silkscreen](https://fonts.google.com/specimen/Silkscreen), all under the SIL
+Open Font License 1.1. The fonts ship with RomMix, and each licence sits beside
+its file in `src/renderer/src/assets/fonts/`.

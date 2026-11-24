@@ -30,8 +30,8 @@ import type { Text } from '@shared/i18n'
  *                 archive, because the individual files inside carry no name
  *                 that ties them to a ROM.
  *  - `prefix`     the folders directly under the location whose names begin
- *                 with `prefix`, as PPSSPP keeps `ULUS10064DATA00` beside every
- *                 other game's. Synced as one archive of those folders by name;
+ *                 with one of `prefixes`, as PPSSPP keeps `ULUS10064DATA00`
+ *                 beside every other game's. Synced as one archive of those folders by name;
  *                 nothing else under the location is read or written.
  *  - `shared`     one memory card, NAND or nvram shared by every game. There is
  *                 nothing here that can honestly be attributed to this ROM, so
@@ -67,9 +67,11 @@ export interface SaveLocation {
   stem?: string
   /**
    * What the names of a `prefix` location's folders begin with: the id the
-   * game declares, which is all the emulator names them after.
+   * game declares, which is all the emulator names them after. More than one
+   * where the name carries something besides the id that the disc does not
+   * settle, as a PS2 save's region letter.
    */
-  prefix?: string
+  prefixes?: readonly string[]
 }
 
 /** Everything a descriptor can say about one game's save data. */
@@ -158,6 +160,12 @@ export interface SaveEnvironment {
    * of a disc on its own.
    */
   inflateRaw(data: string, maxBytes: number): string | null
+  /**
+   * A Zstandard frame, decompressed; null where it is not one or would come
+   * out longer than `maxBytes`. For CHD, which compresses hunks of a disc this
+   * way, and for the same reason as `inflateRaw`.
+   */
+  zstd(data: string, maxBytes: number): string | null
   /** Newest modification time (ms) of any file under `path`; 0 when there is none. */
   newest(path: string): number
 }
@@ -265,8 +273,8 @@ export function directory(dir: string): SaveLocation {
 }
 
 /** The folders under `dir` whose names begin with an id the game declares. */
-export function prefixed(dir: string, prefix: string): SaveLocation {
-  return { dir, match: 'prefix', prefix }
+export function prefixed(dir: string, ...prefixes: readonly string[]): SaveLocation {
+  return { dir, match: 'prefix', prefixes }
 }
 
 /** A location holding files named after something the game declares, not the ROM. */
