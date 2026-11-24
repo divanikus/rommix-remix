@@ -6,11 +6,17 @@ before releasing if you want prose instead. See [Releasing](README.md#releasing)
 
 ## 0.26.0-remix.1 — 2026-11-24
 
-- Updated to RomMix 0.26.0. RPCS3 can launch PS3 disc dumps and ISO images.
-- PS2 saves can sync from PCSX2 folder cards. RomMix uses the emulator's card
-  settings and the game's disc serial to find the right saves. PS2 and PSP
-  serial detection now also works with supported CHD images.
-- Inter and JetBrains Mono ship with the app for offline use.
+This release brings the changes from
+[RomMix 0.26.0](https://github.com/leclercb/rommix/releases/tag/v0.26.0) to Remix.
+
+- **PlayStation 3.** RPCS3 can launch folder-based games and ISO images.
+- **PCSX2 saves.** Sync PS2 saves per game with a folder memory card. RomMix
+  uses the card assigned in PCSX2's settings and matches saves by disc serial.
+- **CHD saves.** RomMix reads PS2 and PSP game IDs from supported CHD images
+  and handles incomplete sector reads and missing image hashes more reliably.
+- **Fonts.** Inter and JetBrains Mono Latin fonts ship with the app.
+- **Maintenance.** Updated Electron and other dependencies. The app tests
+  now use Xvfb correctly in Wayland sessions.
 
 ## 0.26.0 — 2026-11-24
 
